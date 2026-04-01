@@ -1,0 +1,75 @@
+name: managarr
+description: A Flutter app for managing self-hosted *Arr media automation services.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  intl: ^0.19.0
+
+  # Navigation
+  go_router: ^14.0.0
+
+  # HTTP
+  dio: ^5.7.0
+  xml: ^6.5.0
+
+  # JSON
+  json_annotation: ^4.9.0
+
+  # Local storage
+  drift: ^2.22.0
+  drift_flutter: ^0.2.0
+  sqlite3_flutter_libs: ^0.5.0
+  path_provider: ^2.1.5
+
+  # Theming
+  flex_color_scheme: ^8.0.2
+  google_fonts: ^6.2.1
+
+  flutter_svg: ^2.0.0
+  home_widget: ^0.7.0
+  fl_chart: ^0.68.0
+  cupertino_icons: ^1.0.8
+  flutter_native_splash: ^2.3.2
+  file_picker: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # Code generation
+  build_runner: ^2.4.13
+  drift_dev: ^2.22.0
+  json_serializable: ^6.8.0
+
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icon/
+    - assets/images/
+    - assets/brands/
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#EBF8FA"
+  adaptive_icon_foreground: "assets/icon/managarr_adaptive_foreground.png"
+
+flutter_native_splash:
+  image: assets/images/branding_full.png
+  color: "#EBF8FA"

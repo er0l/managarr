@@ -1,0 +1,46 @@
+<svg width="1024" height="1024" viewBox="0 0 680 680" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2A9BAD"/>
+      <stop offset="100%" style="stop-color:#0F5A68"/>
+    </linearGradient>
+    <linearGradient id="shieldInner" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8fffe"/>
+      <stop offset="100%" style="stop-color:#eaf7f9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Transparent background for adaptive foreground -->
+
+  <!-- Shield outer -->
+  <path d="M340 80 L530 155 L530 350 Q530 500 340 570 Q150 500 150 350 L150 155 Z"
+        fill="url(#shieldGrad)" />
+
+  <!-- Shield inner -->
+  <path d="M340 110 L504 176 L504 348 Q504 476 340 536 Q176 476 176 348 L176 176 Z"
+        fill="url(#shieldInner)" />
+
+  <!-- Download circle ring -->
+  <circle cx="318" cy="330" r="96" fill="none" stroke="#1A7A8A" stroke-width="16" stroke-linecap="round"
+          stroke-dasharray="480" stroke-dashoffset="120"/>
+
+  <!-- Download arrow shaft -->
+  <line x1="318" y1="260" x2="318" y2="348" stroke="#1A7A8A" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- Download arrow head -->
+  <polyline points="282,320 318,360 354,320" fill="none" stroke="#1A7A8A" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Download arrow base -->
+  <line x1="292" y1="372" x2="344" y2="372" stroke="#1A7A8A" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- Play -->
+  <polygon points="432,218 432,274 480,246" fill="#FF6B2B"/>
+
+  <!-- Pause -->
+  <rect x="432" y="290" width="16" height="42" rx="4" fill="#FF6B2B"/>
+  <rect x="454" y="290" width="16" height="42" rx="4" fill="#FF6B2B"/>
+
+  <!-- Skip/Next -->
+  <polygon points="432,350 432,394 468,372" fill="#4FC3F7"/>
+  <rect x="472" y="350" width="12" height="44" rx="3" fill="#4FC3F7"/>
+</svg>

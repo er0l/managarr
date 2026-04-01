@@ -1,0 +1,59 @@
+<svg width="1024" height="1024" viewBox="0 0 680 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2A9BAD"/>
+      <stop offset="100%" style="stop-color:#0F5A68"/>
+    </linearGradient>
+    <linearGradient id="shieldInner" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8fffe"/>
+      <stop offset="100%" style="stop-color:#eaf7f9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background (for app icon export) -->
+  <rect width="680" height="720" fill="#EBF8FA"/>
+
+  <!-- Shield outer shape -->
+  <path d="M340 60 L520 130 L520 320 Q520 460 340 530 Q160 460 160 320 L160 130 Z"
+        fill="url(#shieldGrad)" />
+
+  <!-- Shield inner fill -->
+  <path d="M340 88 L496 150 L496 318 Q496 438 340 500 Q184 438 184 318 L184 150 Z"
+        fill="url(#shieldInner)" />
+
+  <!-- Download circle ring -->
+  <circle cx="320" cy="300" r="88" fill="none" stroke="#1A7A8A" stroke-width="14" stroke-linecap="round"
+          stroke-dasharray="440" stroke-dashoffset="110"/>
+
+  <!-- Download arrow shaft -->
+  <line x1="320" y1="238" x2="320" y2="318" stroke="#1A7A8A" stroke-width="14" stroke-linecap="round"/>
+
+  <!-- Download arrow head -->
+  <polyline points="288,292 320,326 352,292" fill="none" stroke="#1A7A8A" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Download arrow base line -->
+  <line x1="296" y1="338" x2="344" y2="338" stroke="#1A7A8A" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Play triangle -->
+  <polygon points="424,198 424,248 466,223" fill="#FF6B2B"/>
+
+  <!-- Pause bars -->
+  <rect x="424" y="262" width="14" height="38" rx="4" fill="#FF6B2B"/>
+  <rect x="444" y="262" width="14" height="38" rx="4" fill="#FF6B2B"/>
+
+  <!-- Skip/Next -->
+  <polygon points="424,316 424,356 456,336" fill="#4FC3F7"/>
+  <rect x="458" y="316" width="10" height="40" rx="3" fill="#4FC3F7"/>
+
+  <!-- Wordmark -->
+  <text x="340" y="610"
+        font-family="'Helvetica Neue', 'Arial', sans-serif"
+        font-size="64" font-weight="400"
+        fill="#1A7A8A" text-anchor="middle" letter-spacing="-1">managarr</text>
+
+  <!-- Tagline -->
+  <text x="340" y="655"
+        font-family="'Helvetica Neue', 'Arial', sans-serif"
+        font-size="18" font-weight="400"
+        fill="#6B7A8D" text-anchor="middle" letter-spacing="2">SELF-HOSTED MEDIA CONTROL</text>
+</svg>
