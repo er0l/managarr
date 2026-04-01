@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../database/models/service_type.dart';
 import '../theme/app_colors.dart';
 import '../../features/settings/providers/instances_provider.dart';
+import '../../features/search/screens/global_search_screen.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
@@ -120,11 +121,16 @@ class AppDrawer extends ConsumerWidget {
           ListTile(
             dense: true,
             visualDensity: VisualDensity.compact,
-            leading: const Icon(Icons.dns_outlined, size: 20),
-            title: const Text('Services'),
+            leading: const Icon(Icons.search, size: 20),
+            title: const Text('Search'),
             onTap: () {
               Navigator.pop(context);
-              context.go('/services');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const GlobalSearchScreen(),
+                ),
+              );
             },
           ),
           ListTile(

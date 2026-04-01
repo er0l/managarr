@@ -16,8 +16,6 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final grouped = ref.watch(instancesByServiceProvider);
     final repo = ref.read(instanceRepositoryProvider);
-    final theme = Theme.of(context);
-
     final serviceOrder = ServiceType.values;
     final populated = serviceOrder.where((t) => grouped.containsKey(t)).toList();
 
@@ -51,17 +49,12 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 80),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/settings/add-instance'),
         backgroundColor: AppColors.orangeAccent,
         foregroundColor: AppColors.textOnPrimary,
-        icon: const Icon(Icons.add),
-        label: Text(
-          'Add Instance',
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: AppColors.textOnPrimary,
-          ),
-        ),
+        tooltip: 'Add Instance',
+        child: const Icon(Icons.add),
       ),
     );
   }

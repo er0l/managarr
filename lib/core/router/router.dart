@@ -25,7 +25,6 @@ import '../../features/sonarr/providers/sonarr_providers.dart';
 import '../database/app_database.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_drawer.dart';
-import '../../features/search/screens/global_search_screen.dart';
 import '../../features/widget/widget_update_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -116,30 +115,7 @@ class _AppShell extends ConsumerWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  List<Widget> _actionsForTab(BuildContext context, int index) {
-    return switch (index) {
-      0 => [
-          IconButton(
-            icon: const Icon(Icons.search, color: AppColors.textOnPrimary),
-            tooltip: 'Search',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const GlobalSearchScreen(),
-              ),
-            ),
-          ),
-        ],
-      3 => [
-          IconButton(
-            onPressed: () => context.push('/settings/add-instance'),
-            icon: const Icon(Icons.add, color: AppColors.textOnPrimary),
-            tooltip: 'Add Instance',
-          ),
-        ],
-      _ => [],
-    };
-  }
+  List<Widget> _actionsForTab(BuildContext context, int index) => [];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
