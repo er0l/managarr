@@ -25,6 +25,8 @@ import '../../features/sonarr/providers/sonarr_providers.dart';
 import '../database/app_database.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_drawer.dart';
+import '../../features/search/screens/global_search_screen.dart';
+import '../../features/settings/services/backup_restore_service.dart';
 import '../../features/widget/widget_update_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -115,7 +117,40 @@ class _AppShell extends ConsumerWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  List<Widget> _actionsForTab(BuildContext context, int index) => [];
+  List<Widget> _actionsForTab(BuildContext context, WidgetRef ref, int index) {
+    if (index != 3) return [];
+    return [
+      PopupMenuButton<_SettingsAction>(
+        icon: const Icon(Icons.more_vert, color: AppColors.textOnPrimary),
+        onSelected: (action) {
+          switch (action) {
+            case _SettingsAction.backup:
+              BackupRestoreService.backup(context, ref);
+            case _SettingsAction.restore:
+              BackupRestoreService.restore(context, ref);
+          }
+        },
+        itemBuilder: (context) => const [
+          PopupMenuItem(
+            value: _SettingsAction.backup,
+            child: ListTile(
+              leading: Icon(Icons.upload_outlined),
+              title: Text('Backup'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          PopupMenuItem(
+            value: _SettingsAction.restore,
+            child: ListTile(
+              leading: Icon(Icons.download_outlined),
+              title: Text('Restore'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -138,7 +173,7 @@ class _AppShell extends ConsumerWidget {
         ),
         iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
         actions: [
-          ..._actionsForTab(context, navigationShell.currentIndex),
+          ..._actionsForTab(context, ref, navigationShell.currentIndex),
           if (navigationShell.currentIndex == 2)
             IconButton(
               icon: Icon(
@@ -160,10 +195,19 @@ class _AppShell extends ConsumerWidget {
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
-        ),
+        onDestinationSelected: (index) {
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const GlobalSearchScreen()),
+            );
+            return;
+          }
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
@@ -171,9 +215,9 @@ class _AppShell extends ConsumerWidget {
             label: 'Dashboard',
           ),
           NavigationDestination(
-            icon: Icon(Icons.grid_view_outlined),
-            selectedIcon: Icon(Icons.grid_view),
-            label: 'Services',
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
+            label: 'Search',
           ),
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
@@ -585,3 +629,5 @@ class _SonarrSeriesDeepLink extends ConsumerWidget {
     );
   }
 }
+
+enum _SettingsAction { backup, restore }

@@ -18,6 +18,9 @@ class InstanceRepository {
   Future<Instance?> getById(int id) =>
       (_db.select(_db.instances)..where((t) => t.id.equals(id))).getSingleOrNull();
 
+  Future<List<Instance>> getAll() =>
+      (_db.select(_db.instances)..orderBy([(t) => OrderingTerm.asc(t.serviceType)])).get();
+
   // ---------------------------------------------------------------------------
   // Write
   // ---------------------------------------------------------------------------
@@ -30,6 +33,8 @@ class InstanceRepository {
 
   Future<int> delete(int id) =>
       (_db.delete(_db.instances)..where((t) => t.id.equals(id))).go();
+
+  Future<void> deleteAll() => _db.delete(_db.instances).go();
 }
 
 final instanceRepositoryProvider = Provider<InstanceRepository>((ref) {
