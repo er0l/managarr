@@ -36,11 +36,11 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > $HOME/managarr.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/managarr.jks
 
       - name: Build release APK
         env:
-          KEYSTORE_PATH: ${{ env.HOME }}/managarr.jks
+          KEYSTORE_PATH: ${{ github.workspace }}/managarr.jks
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
