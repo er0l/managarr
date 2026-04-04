@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build & publish APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > $HOME/managarr.jks
+
+      - name: Build release APK
+        env:
+          KEYSTORE_PATH: ${{ env.HOME }}/managarr.jks
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/managarr-${VERSION}.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: managarr ${{ github.ref_name }}
+          body: |
+            ## managarr ${{ github.ref_name }}
+
+            ### Install
+            Download `managarr-${{ github.ref_name }}.apk` below and install on your Android device.
+            You may need to enable **Install from unknown sources** in your Android settings.
+          files: build/app/outputs/flutter-apk/managarr-${{ github.ref_name }}.apk
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
