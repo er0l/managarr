@@ -6,6 +6,14 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/config/spacing.dart';
+import '../../../features/lidarr/providers/lidarr_providers.dart';
+import '../../../features/nzbget/providers/nzbget_providers.dart';
+import '../../../features/radarr/providers/radarr_providers.dart';
+import '../../../features/rtorrent/providers/rtorrent_providers.dart';
+import '../../../features/sabnzbd/providers/sabnzbd_providers.dart';
+import '../../../features/seer/providers/seer_providers.dart';
+import '../../../features/sonarr/providers/sonarr_providers.dart';
+import '../../../features/tautulli/providers/tautulli_providers.dart';
 import '../models/health_result.dart';
 import '../providers/health_check_provider.dart';
 
@@ -100,6 +108,8 @@ class ServiceStatusCard extends ConsumerWidget {
               const SizedBox(height: Spacing.s12),
               // Row 2: version / latency / error
               _HealthDetail(healthAsync: healthAsync),
+              // Summary stats (service-specific metrics)
+              _ServiceSummary(instance: instance, type: type),
             ],
           ),
         ),
@@ -108,6 +118,230 @@ class ServiceStatusCard extends ConsumerWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Service summary — per-type actionable metrics
+// ---------------------------------------------------------------------------
+
+class _ServiceSummary extends ConsumerWidget {
+  const _ServiceSummary({required this.instance, required this.type});
+
+  final Instance instance;
+  final ServiceType type;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final row = _buildRow(context, ref);
+    if (row == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: Spacing.s8),
+        const Divider(height: 1, thickness: 0.5),
+        const SizedBox(height: 6),
+        row,
+      ],
+    );
+  }
+
+  Widget? _buildRow(BuildContext context, WidgetRef ref) {
+    if (type == ServiceType.radarr) {
+      final q = ref.watch(radarrQueueProvider(instance));
+      final d = ref.watch(radarrDiskSpaceProvider(instance));
+      return _StatsRow(stats: [
+        _Stat(
+          Icons.download_outlined,
+          q.when(
+            data: (q) => '${q.totalRecords} queued',
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+        _Stat(
+          Icons.storage_outlined,
+          d.when(
+            data: (l) => l.isEmpty ? '—' : _sumFreeGb(l),
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+      ]);
+    }
+
+    if (type == ServiceType.sonarr) {
+      final q = ref.watch(sonarrQueueProvider(instance));
+      final d = ref.watch(sonarrDiskSpaceProvider(instance));
+      return _StatsRow(stats: [
+        _Stat(
+          Icons.download_outlined,
+          q.when(
+            data: (q) => '${q.totalRecords} queued',
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+        _Stat(
+          Icons.storage_outlined,
+          d.when(
+            data: (l) => l.isEmpty ? '—' : _sumFreeGb(l),
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+      ]);
+    }
+
+    if (type == ServiceType.lidarr) {
+      final q = ref.watch(lidarrQueueProvider(instance));
+      return _StatsRow(stats: [
+        _Stat(
+          Icons.download_outlined,
+          q.when(
+            data: (q) => '${q.totalRecords} queued',
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+      ]);
+    }
+
+    if (type == ServiceType.tautulli) {
+      final a = ref.watch(tautulliActivityProvider(instance));
+      return _StatsRow(stats: [
+        _Stat(
+          Icons.play_circle_outline,
+          a.when(
+            data: (a) => '${a.streamCount} streaming',
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+      ]);
+    }
+
+    if (type == ServiceType.seer) {
+      final r = ref.watch(seerRequestsProvider(instance));
+      return _StatsRow(stats: [
+        _Stat(
+          Icons.pending_outlined,
+          r.when(
+            data: (reqs) =>
+                '${reqs.where((r) => r.status == 1).length} pending',
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+      ]);
+    }
+
+    if (type == ServiceType.rtorrent) {
+      final t = ref.watch(rtorrentTorrentsProvider(instance));
+      return _StatsRow(stats: [
+        _Stat(
+          Icons.downloading_outlined,
+          t.when(
+            data: (list) =>
+                '${list.where((t) => t.isActive).length} active',
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+      ]);
+    }
+
+    if (type == ServiceType.sabnzbd) {
+      final q = ref.watch(sabnzbdQueueProvider(instance));
+      return _StatsRow(stats: [
+        _Stat(
+          Icons.download_outlined,
+          q.when(
+            data: (q) =>
+                '${q.items.length} item${q.items.length == 1 ? '' : 's'}',
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+        _Stat(
+          Icons.speed_outlined,
+          q.when(
+            data: (q) {
+              final s = q.speed.trim();
+              return s.isEmpty || s == '0' ? 'idle' : '$s KB/s';
+            },
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+      ]);
+    }
+
+    if (type == ServiceType.nzbget) {
+      final q = ref.watch(nzbgetQueueProvider(instance));
+      return _StatsRow(stats: [
+        _Stat(
+          Icons.download_outlined,
+          q.when(
+            data: (q) => '${q.items.length} queued',
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+      ]);
+    }
+
+    // Prowlarr — no applicable summary metrics
+    return null;
+  }
+}
+
+// Formats total free space across all root folders.
+String _sumFreeGb(List<Map<String, dynamic>> list) {
+  int totalFree = 0;
+  for (final item in list) {
+    totalFree += (item['freeSpace'] as int? ?? 0);
+  }
+  final gb = totalFree / (1024.0 * 1024.0 * 1024.0);
+  return '${gb.toStringAsFixed(1)} GB free';
+}
+
+class _Stat {
+  const _Stat(this.icon, this.label);
+  final IconData icon;
+  final String label;
+}
+
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({required this.stats});
+  final List<_Stat> stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontSize: 10,
+    );
+    return Wrap(
+      spacing: 10,
+      runSpacing: 4,
+      children: [
+        for (final s in stats)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(s.icon, size: 11,
+                  color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 3),
+              Text(s.label, style: style),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Existing helper widgets (unchanged)
 // ---------------------------------------------------------------------------
 
 class _ServiceAvatar extends StatelessWidget {
@@ -151,9 +385,12 @@ class _StatusDot extends StatelessWidget {
           color: AppColors.statusUnknown,
         ),
       ),
-      error: (e, s) => const _StatusIndicatorDot(color: AppColors.statusOffline),
+      error: (e, s) =>
+          const _StatusIndicatorDot(color: AppColors.statusOffline),
       data: (result) => _StatusIndicatorDot(
-        color: result.online ? AppColors.statusOnline : AppColors.statusOffline,
+        color: result.online
+            ? AppColors.statusOnline
+            : AppColors.statusOffline,
       ),
     );
   }
@@ -194,7 +431,8 @@ class _HealthDetail extends StatelessWidget {
                   size: 12, color: AppColors.statusOffline),
               const SizedBox(width: 4),
               Text('Unreachable',
-                  style: style?.copyWith(color: AppColors.statusOffline)),
+                  style: style?.copyWith(
+                      color: AppColors.statusOffline)),
             ],
           );
         }
@@ -205,7 +443,8 @@ class _HealthDetail extends StatelessWidget {
               Row(
                 children: [
                   Icon(Icons.tag,
-                      size: 12, color: theme.colorScheme.onSurfaceVariant),
+                      size: 12,
+                      color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text('v${result.version}', style: style),
                 ],
@@ -215,7 +454,8 @@ class _HealthDetail extends StatelessWidget {
               Row(
                 children: [
                   Icon(Icons.speed,
-                      size: 12, color: theme.colorScheme.onSurfaceVariant),
+                      size: 12,
+                      color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text('${result.responseMs}ms', style: style),
                 ],

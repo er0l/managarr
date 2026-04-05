@@ -65,7 +65,7 @@ class DashboardScreen extends ConsumerWidget {
                           MediaQuery.sizeOf(context).width >= 600 ? 3 : 2,
                       crossAxisSpacing: Spacing.cardGap,
                       mainAxisSpacing: Spacing.cardGap,
-                      childAspectRatio: 1.1,
+                      childAspectRatio: 0.88,
                     ),
                   ),
                 ),
