@@ -9,6 +9,7 @@ import '../providers/radarr_providers.dart';
 import 'radarr_activity_screen.dart';
 import 'radarr_add_movie_screen.dart';
 import 'radarr_calendar_screen.dart';
+import 'radarr_cutoff_unmet_screen.dart';
 import 'radarr_missing_screen.dart';
 import 'radarr_movies_screen.dart';
 import 'radarr_manual_import_screen.dart';
@@ -28,7 +29,7 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  static const _tabs = ['Library', 'Upcoming', 'Missing', 'Activity'];
+  static const _tabs = ['Library', 'Upcoming', 'Missing', 'Cutoff', 'Activity'];
 
   @override
   void initState() {
@@ -164,6 +165,7 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
         RadarrMoviesScreen(instance: widget.instance),
         RadarrCalendarScreen(instance: widget.instance),
         RadarrMissingScreen(instance: widget.instance),
+        RadarrCutoffUnmetScreen(instance: widget.instance),
         RadarrActivityScreen(instance: widget.instance),
       ],
     );

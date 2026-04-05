@@ -46,6 +46,13 @@ final radarrMoviesProvider = FutureProvider.autoDispose
   return api.getMovies();
 });
 
+/// Fetches movies that don't meet the quality cutoff for [instance].
+final radarrCutoffUnmetProvider = FutureProvider.autoDispose
+    .family<List<RadarrMovie>, Instance>((ref, instance) {
+  final api = ref.watch(radarrApiProvider(instance));
+  return api.getCutoffUnmet();
+});
+
 /// Fetches upcoming releases (Calendar) from Radarr for [instance].
 final radarrCalendarProvider = FutureProvider.autoDispose
     .family<List<RadarrMovie>, Instance>((ref, instance) {

@@ -4,6 +4,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/network/dio_client.dart';
 import '../api/models/calendar.dart';
+import '../api/models/cutoff_record.dart';
 import '../api/models/episode.dart';
 import '../api/models/history.dart';
 import '../api/models/quality_profile.dart';
@@ -45,6 +46,13 @@ final sonarrSeriesProvider = FutureProvider.autoDispose
     .family<List<SonarrSeries>, Instance>((ref, instance) {
   final api = ref.watch(sonarrApiProvider(instance));
   return api.getSeries();
+});
+
+/// Fetches episodes that don't meet the quality cutoff for [instance].
+final sonarrCutoffUnmetProvider = FutureProvider.autoDispose
+    .family<List<SonarrCutoffRecord>, Instance>((ref, instance) {
+  final api = ref.watch(sonarrApiProvider(instance));
+  return api.getCutoffUnmet();
 });
 
 /// Fetches upcoming episodes (Calendar) from Sonarr for [instance].

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../api/models/media_request.dart';
 
 class MediaRequestTile extends StatelessWidget {
@@ -7,10 +8,14 @@ class MediaRequestTile extends StatelessWidget {
     super.key,
     required this.request,
     this.onTap,
+    this.onApprove,
+    this.onDecline,
   });
 
   final SeerMediaRequest request;
   final VoidCallback? onTap;
+  final VoidCallback? onApprove;
+  final VoidCallback? onDecline;
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +92,29 @@ class MediaRequestTile extends StatelessWidget {
         ],
       ),
       isThreeLine: true,
+      trailing: request.status == 1 && (onApprove != null || onDecline != null)
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onApprove != null)
+                  IconButton(
+                    icon: const Icon(Icons.check_circle_outline),
+                    color: AppColors.statusOnline,
+                    tooltip: 'Approve',
+                    onPressed: onApprove,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                if (onDecline != null)
+                  IconButton(
+                    icon: const Icon(Icons.cancel_outlined),
+                    color: AppColors.statusOffline,
+                    tooltip: 'Decline',
+                    onPressed: onDecline,
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            )
+          : null,
     );
   }
 }

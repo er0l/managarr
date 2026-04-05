@@ -12,6 +12,7 @@ import '../providers/sonarr_providers.dart';
 import 'sonarr_activity_screen.dart';
 import 'sonarr_add_series_screen.dart';
 import 'sonarr_calendar_screen.dart';
+import 'sonarr_cutoff_unmet_screen.dart';
 import 'sonarr_missing_screen.dart';
 import 'sonarr_series_detail_screen.dart';
 import 'sonarr_manual_import_screen.dart';
@@ -32,7 +33,7 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
   late final TabController _tabController;
   int _currentTabIndex = 0;
 
-  static const _tabs = ['Library', 'Calendar', 'Missing', 'Activity'];
+  static const _tabs = ['Library', 'Calendar', 'Missing', 'Cutoff', 'Activity'];
 
   @override
   void initState() {
@@ -160,6 +161,7 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
         SonarrSeriesScreen(instance: widget.instance),
         SonarrCalendarScreen(instance: widget.instance),
         SonarrMissingScreen(instance: widget.instance),
+        SonarrCutoffUnmetScreen(instance: widget.instance),
         SonarrActivityScreen(instance: widget.instance),
       ],
       floatingActionButton: _currentTabIndex == 0

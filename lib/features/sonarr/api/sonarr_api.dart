@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'models/calendar.dart';
+import 'models/cutoff_record.dart';
 import 'models/episode.dart';
 import 'models/history.dart';
 import 'models/quality_profile.dart';
@@ -256,5 +257,21 @@ class SonarrApi {
   Future<void> executeManualImport(
       List<Map<String, dynamic>> items) async {
     await _dio.post('/api/v3/manualimport', data: items);
+  }
+
+  Future<List<SonarrCutoffRecord>> getCutoffUnmet(
+      {int page = 1, int pageSize = 100}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v3/wanted/cutoff',
+      queryParameters: {
+        'page': page,
+        'pageSize': pageSize,
+        'monitored': true,
+      },
+    );
+    final records = response.data?['records'] as List? ?? [];
+    return records
+        .map((e) => SonarrCutoffRecord.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

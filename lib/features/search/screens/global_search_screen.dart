@@ -6,6 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../lidarr/api/models/artist.dart';
+import '../../lidarr/providers/lidarr_providers.dart';
+import '../../lidarr/screens/lidarr_add_artist_detail_screen.dart';
+import '../../lidarr/screens/lidarr_artist_detail_screen.dart';
 import '../../radarr/api/models/movie.dart';
 import '../../radarr/providers/radarr_providers.dart';
 import '../../radarr/screens/radarr_add_movie_detail_screen.dart';
@@ -30,6 +34,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
   // Per-instance results
   final Map<Instance, AsyncValue<List<RadarrMovie>>> _radarrResults = {};
   final Map<Instance, AsyncValue<List<SonarrSeries>>> _sonarrResults = {};
+  final Map<Instance, AsyncValue<List<LidarrArtist>>> _lidarrResults = {};
 
   // Cached existing library sets for in-library detection
   final Map<Instance, Set<int?>> _sonarrLibraryTvdbIds = {};
@@ -47,6 +52,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
       setState(() {
         _radarrResults.clear();
         _sonarrResults.clear();
+        _lidarrResults.clear();
       });
       return;
     }
@@ -57,6 +63,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     final grouped = ref.read(instancesByServiceProvider);
     final radarrInstances = grouped[ServiceType.radarr] ?? [];
     final sonarrInstances = grouped[ServiceType.sonarr] ?? [];
+    final lidarrInstances = grouped[ServiceType.lidarr] ?? [];
 
     // Seed loading state
     setState(() {
@@ -65,6 +72,9 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
       }
       for (final inst in sonarrInstances) {
         _sonarrResults[inst] = const AsyncValue.loading();
+      }
+      for (final inst in lidarrInstances) {
+        _lidarrResults[inst] = const AsyncValue.loading();
       }
     });
 
@@ -79,7 +89,6 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
 
     // Fetch Sonarr results + prefetch library tvdbIds for in-library detection
     for (final inst in sonarrInstances) {
-      // Grab existing series from cached provider (may already be loaded)
       final existingAsync = ref.read(sonarrSeriesProvider(inst));
       existingAsync.whenData((series) {
         _sonarrLibraryTvdbIds[inst] = series.map((s) => s.tvdbId).toSet();
@@ -91,6 +100,15 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
         if (mounted) setState(() => _sonarrResults[inst] = AsyncValue.error(e, StackTrace.current));
       });
     }
+
+    // Fetch Lidarr results
+    for (final inst in lidarrInstances) {
+      ref.read(lidarrApiProvider(inst)).lookupArtist(query).then((artists) {
+        if (mounted) setState(() => _lidarrResults[inst] = AsyncValue.data(artists));
+      }).catchError((e) {
+        if (mounted) setState(() => _lidarrResults[inst] = AsyncValue.error(e, StackTrace.current));
+      });
+    }
   }
 
   void _clear() {
@@ -99,18 +117,21 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     setState(() {
       _radarrResults.clear();
       _sonarrResults.clear();
+      _lidarrResults.clear();
     });
   }
 
   bool get _isLoading =>
       _radarrResults.values.any((v) => v is AsyncLoading) ||
-      _sonarrResults.values.any((v) => v is AsyncLoading);
+      _sonarrResults.values.any((v) => v is AsyncLoading) ||
+      _lidarrResults.values.any((v) => v is AsyncLoading);
 
   bool get _hasQuery => _controller.text.trim().isNotEmpty;
 
   bool get _hasAnyResults =>
       _radarrResults.values.any((v) => v.valueOrNull?.isNotEmpty == true) ||
-      _sonarrResults.values.any((v) => v.valueOrNull?.isNotEmpty == true);
+      _sonarrResults.values.any((v) => v.valueOrNull?.isNotEmpty == true) ||
+      _lidarrResults.values.any((v) => v.valueOrNull?.isNotEmpty == true);
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +154,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
           style: const TextStyle(color: AppColors.textOnPrimary),
           cursorColor: AppColors.orangeAccent,
           decoration: const InputDecoration(
-            hintText: 'Search movies and series…',
+            hintText: 'Search movies, series and artists…',
             hintStyle: TextStyle(color: Colors.white54),
             border: InputBorder.none,
             contentPadding: EdgeInsets.symmetric(horizontal: 4),
@@ -166,6 +187,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                   radarrResults: _radarrResults,
                   sonarrResults: _sonarrResults,
                   sonarrLibraryTvdbIds: _sonarrLibraryTvdbIds,
+                  lidarrResults: _lidarrResults,
                 ),
     );
   }
@@ -184,7 +206,7 @@ class _EmptyPrompt extends StatelessWidget {
               size: 64, color: AppColors.textSecondary.withAlpha(80)),
           const SizedBox(height: 16),
           Text(
-            'Search across all Radarr and Sonarr instances',
+            'Search across all Radarr, Sonarr and Lidarr instances',
             style: Theme.of(context)
                 .textTheme
                 .bodyLarge
@@ -224,11 +246,13 @@ class _ResultsList extends StatelessWidget {
     required this.radarrResults,
     required this.sonarrResults,
     required this.sonarrLibraryTvdbIds,
+    required this.lidarrResults,
   });
 
   final Map<Instance, AsyncValue<List<RadarrMovie>>> radarrResults;
   final Map<Instance, AsyncValue<List<SonarrSeries>>> sonarrResults;
   final Map<Instance, Set<int?>> sonarrLibraryTvdbIds;
+  final Map<Instance, AsyncValue<List<LidarrArtist>>> lidarrResults;
 
   @override
   Widget build(BuildContext context) {
@@ -272,6 +296,25 @@ class _ResultsList extends StatelessWidget {
               instance: inst,
               inLibrary: libraryIds.contains(s.tvdbId),
             ));
+          }
+        }
+      }
+    }
+
+    for (final entry in lidarrResults.entries) {
+      final inst = entry.key;
+      final async = entry.value;
+      final artists = async.valueOrNull ?? [];
+      if (async is AsyncLoading || artists.isNotEmpty) {
+        sections.add(_SectionHeader(
+          label: 'Lidarr',
+          instanceName: inst.name,
+        ));
+        if (async is AsyncLoading) {
+          sections.add(const _LoadingRow());
+        } else {
+          for (final a in artists) {
+            sections.add(_ArtistTile(artist: a, instance: inst));
           }
         }
       }
@@ -446,6 +489,69 @@ class _SeriesTile extends StatelessWidget {
           if (series.year != null && series.year! > 0) '${series.year}',
           if (series.network != null) series.network!,
         ].join(' · '),
+        style:
+            theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (inLibrary) _InLibraryChip(),
+          const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Artist tile ─────────────────────────────────────────────────────────────
+
+class _ArtistTile extends StatelessWidget {
+  const _ArtistTile({required this.artist, required this.instance});
+  final LidarrArtist artist;
+  final Instance instance;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final inLibrary = artist.id > 0;
+    final posterUrl = artist.posterUrl;
+
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => inLibrary
+              ? LidarrArtistDetailScreen(artist: artist, instance: instance)
+              : LidarrAddArtistDetailScreen(artist: artist, instance: instance),
+        ),
+      ),
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: SizedBox(
+          width: 44,
+          height: 64,
+          child: posterUrl != null
+              ? Image.network(posterUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, _) => _PosterFallback(
+                      initial:
+                          artist.artistName.isNotEmpty ? artist.artistName[0] : 'A'))
+              : _PosterFallback(
+                  initial:
+                      artist.artistName.isNotEmpty ? artist.artistName[0] : 'A'),
+        ),
+      ),
+      title: Text(
+        artist.artistName,
+        style:
+            theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        artist.artistType ?? '',
         style:
             theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
       ),

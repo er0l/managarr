@@ -165,6 +165,14 @@ class SeerApi {
         .toList();
   }
 
+  Future<void> approveRequest(int id) async {
+    await _dio.post('/request/$id/approve');
+  }
+
+  Future<void> declineRequest(int id) async {
+    await _dio.post('/request/$id/decline');
+  }
+
   Future<List<SeerSearchResult>> getDiscoverMovies({int page = 1}) async {
     final res = await _dio.get('/discover/movies', queryParameters: {'page': page});
     return (res.data['results'] as List? ?? [])

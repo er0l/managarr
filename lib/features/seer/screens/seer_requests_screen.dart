@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/media_request.dart';
+import '../api/seer_api.dart';
 import '../providers/seer_providers.dart';
 import '../widgets/media_request_tile.dart';
 import 'seer_media_detail_screen.dart';
@@ -35,6 +36,44 @@ class _SeerRequestsScreenState extends ConsumerState<SeerRequestsScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _approveRequest(SeerMediaRequest request) async {
+    try {
+      final api = SeerApi.fromInstance(widget.instance);
+      await api.approveRequest(request.id);
+      ref.invalidate(seerRequestsProvider(widget.instance));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"${request.title}" approved')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to approve: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _declineRequest(SeerMediaRequest request) async {
+    try {
+      final api = SeerApi.fromInstance(widget.instance);
+      await api.declineRequest(request.id);
+      ref.invalidate(seerRequestsProvider(widget.instance));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"${request.title}" declined')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to decline: $e')),
+        );
+      }
+    }
   }
 
   void _openDetail(BuildContext context, SeerMediaRequest request) {
@@ -235,6 +274,8 @@ class _SeerRequestsScreenState extends ConsumerState<SeerRequestsScreen> {
                     : _RequestsList(
                         requests: filtered,
                         onTap: (r) => _openDetail(context, r),
+                        onApprove: (r) => _approveRequest(r),
+                        onDecline: (r) => _declineRequest(r),
                       ),
               );
             },
@@ -293,9 +334,16 @@ class _RequestsGrid extends StatelessWidget {
 }
 
 class _RequestsList extends StatelessWidget {
-  const _RequestsList({required this.requests, required this.onTap});
+  const _RequestsList({
+    required this.requests,
+    required this.onTap,
+    this.onApprove,
+    this.onDecline,
+  });
   final List<SeerMediaRequest> requests;
   final void Function(SeerMediaRequest) onTap;
+  final void Function(SeerMediaRequest)? onApprove;
+  final void Function(SeerMediaRequest)? onDecline;
 
   @override
   Widget build(BuildContext context) {
@@ -306,6 +354,8 @@ class _RequestsList extends StatelessWidget {
       itemBuilder: (ctx, i) => MediaRequestTile(
         request: requests[i],
         onTap: () => onTap(requests[i]),
+        onApprove: onApprove != null ? () => onApprove!(requests[i]) : null,
+        onDecline: onDecline != null ? () => onDecline!(requests[i]) : null,
       ),
     );
   }
