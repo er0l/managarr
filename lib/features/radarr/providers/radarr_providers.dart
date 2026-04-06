@@ -4,6 +4,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/network/dio_client.dart';
 import '../api/models/history.dart';
+import '../api/models/import_list.dart';
 import '../api/models/movie.dart';
 import '../api/models/movie_file.dart';
 import '../api/models/quality_profile.dart';
@@ -226,4 +227,11 @@ final radarrFilteredMoviesProvider = Provider.family<List<RadarrMovie>, Instance
     },
     orElse: () => [],
   );
+});
+
+
+final radarrImportListsProvider =
+    FutureProvider.autoDispose.family<List<RadarrImportList>, Instance>((ref, instance) {
+  final api = ref.watch(radarrApiProvider(instance));
+  return api.getImportLists();
 });

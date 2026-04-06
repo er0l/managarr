@@ -16,6 +16,7 @@ import 'sonarr_cutoff_unmet_screen.dart';
 import 'sonarr_missing_screen.dart';
 import 'sonarr_series_detail_screen.dart';
 import 'sonarr_manual_import_screen.dart';
+import 'sonarr_import_lists_screen.dart';
 import 'sonarr_system_status_screen.dart';
 import 'sonarr_tags_screen.dart';
 
@@ -110,6 +111,11 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => SonarrManualImportScreen(instance: widget.instance),
                 ));
+              case 'importLists':
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) =>
+                      SonarrImportListsScreen(instance: widget.instance),
+                ));
               case 'tags':
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => SonarrTagsScreen(instance: widget.instance),
@@ -134,6 +140,14 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
               child: ListTile(
                 leading: Icon(Icons.drive_folder_upload_outlined),
                 title: Text('Manual Import'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            PopupMenuItem(
+              value: 'importLists',
+              child: ListTile(
+                leading: Icon(Icons.list_alt_outlined),
+                title: Text('Import Lists'),
                 contentPadding: EdgeInsets.zero,
               ),
             ),

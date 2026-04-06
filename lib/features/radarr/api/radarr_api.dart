@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'models/history.dart';
+import 'models/import_list.dart';
 import 'models/movie.dart';
 import 'models/movie_file.dart';
 import 'models/quality_profile.dart';
@@ -265,5 +266,17 @@ class RadarrApi {
     return records
         .map((e) => RadarrMovie.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<List<RadarrImportList>> getImportLists() async {
+    final res = await _dio.get<List>('/api/v3/importlist');
+    return (res.data ?? [])
+        .map((j) => RadarrImportList.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> toggleImportList(RadarrImportList list, bool enabled) async {
+    final body = Map<String, dynamic>.from(list.raw)..['enabled'] = enabled;
+    await _dio.put('/api/v3/importlist/${list.id}', data: body);
   }
 }

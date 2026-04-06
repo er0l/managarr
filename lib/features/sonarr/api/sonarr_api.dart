@@ -4,6 +4,7 @@ import 'models/calendar.dart';
 import 'models/cutoff_record.dart';
 import 'models/episode.dart';
 import 'models/history.dart';
+import 'models/import_list.dart';
 import 'models/quality_profile.dart';
 import 'models/queue.dart';
 import 'models/release.dart';
@@ -257,6 +258,18 @@ class SonarrApi {
   Future<void> executeManualImport(
       List<Map<String, dynamic>> items) async {
     await _dio.post('/api/v3/manualimport', data: items);
+  }
+
+  Future<List<SonarrImportList>> getImportLists() async {
+    final res = await _dio.get<List>('/api/v3/importlist');
+    return (res.data ?? [])
+        .map((j) => SonarrImportList.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> toggleImportList(SonarrImportList list, bool enabled) async {
+    final body = Map<String, dynamic>.from(list.raw)..['enabled'] = enabled;
+    await _dio.put('/api/v3/importlist/${list.id}', data: body);
   }
 
   Future<List<SonarrCutoffRecord>> getCutoffUnmet(

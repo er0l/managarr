@@ -105,6 +105,40 @@ class ProwlarrIndexersScreen extends ConsumerWidget {
                         ));
                       }
                     },
+                    onDelete: () async {
+                      final messenger = ScaffoldMessenger.of(ctx);
+                      final confirmed = await showDialog<bool>(
+                        context: ctx,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Delete Indexer'),
+                          content: Text(
+                              'Delete "${indexers[i].name}"? This cannot be undone.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.statusOffline),
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed != true) return;
+                      final api = ref.read(prowlarrApiProvider(instance));
+                      try {
+                        await api.deleteIndexer(indexers[i].id);
+                        ref.invalidate(prowlarrIndexersProvider(instance));
+                      } catch (e) {
+                        messenger.showSnackBar(SnackBar(
+                          content: Text('Delete failed: $e'),
+                          backgroundColor: AppColors.statusOffline,
+                        ));
+                      }
+                    },
                   ),
                 ),
             ],
@@ -116,10 +150,15 @@ class ProwlarrIndexersScreen extends ConsumerWidget {
 }
 
 class _IndexerTile extends StatelessWidget {
-  const _IndexerTile({required this.indexer, required this.onTest});
+  const _IndexerTile({
+    required this.indexer,
+    required this.onTest,
+    required this.onDelete,
+  });
 
   final ProwlarrIndexer indexer;
   final VoidCallback onTest;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +212,7 @@ class _IndexerTile extends StatelessWidget {
       trailing: PopupMenuButton<String>(
         onSelected: (v) {
           if (v == 'test') onTest();
+          if (v == 'delete') onDelete();
         },
         itemBuilder: (_) => [
           const PopupMenuItem(
@@ -180,6 +220,18 @@ class _IndexerTile extends StatelessWidget {
             child: ListTile(
               leading: Icon(Icons.wifi_outlined),
               title: Text('Test'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'delete',
+            child: ListTile(
+              leading: Icon(Icons.delete_outline,
+                  color: AppColors.statusOffline),
+              title: Text('Delete',
+                  style: TextStyle(color: AppColors.statusOffline)),
+              contentPadding: EdgeInsets.zero,
             ),
           ),
         ],

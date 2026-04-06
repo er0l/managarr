@@ -7,6 +7,7 @@ import '../api/models/calendar.dart';
 import '../api/models/cutoff_record.dart';
 import '../api/models/episode.dart';
 import '../api/models/history.dart';
+import '../api/models/import_list.dart';
 import '../api/models/quality_profile.dart';
 import '../api/models/queue.dart';
 import '../api/models/release.dart';
@@ -240,4 +241,10 @@ final sonarrFilteredSeriesProvider = Provider.family<List<SonarrSeries>, Instanc
     },
     orElse: () => [],
   );
+});
+
+final sonarrImportListsProvider =
+    FutureProvider.autoDispose.family<List<SonarrImportList>, Instance>((ref, instance) {
+  final api = ref.watch(sonarrApiProvider(instance));
+  return api.getImportLists();
 });

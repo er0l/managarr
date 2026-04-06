@@ -13,6 +13,7 @@ import 'radarr_cutoff_unmet_screen.dart';
 import 'radarr_missing_screen.dart';
 import 'radarr_movies_screen.dart';
 import 'radarr_manual_import_screen.dart';
+import 'radarr_import_lists_screen.dart';
 import 'radarr_system_status_screen.dart';
 import 'radarr_tags_screen.dart';
 
@@ -101,6 +102,11 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => RadarrManualImportScreen(instance: widget.instance),
                 ));
+              case 'importLists':
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) =>
+                      RadarrImportListsScreen(instance: widget.instance),
+                ));
               case 'tags':
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => RadarrTagsScreen(instance: widget.instance),
@@ -125,6 +131,14 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
               child: ListTile(
                 leading: Icon(Icons.drive_folder_upload_outlined),
                 title: Text('Manual Import'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            PopupMenuItem(
+              value: 'importLists',
+              child: ListTile(
+                leading: Icon(Icons.list_alt_outlined),
+                title: Text('Import Lists'),
                 contentPadding: EdgeInsets.zero,
               ),
             ),
