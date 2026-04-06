@@ -173,15 +173,27 @@ class SeerApi {
     await _dio.post('/request/$id/decline');
   }
 
-  Future<List<SeerSearchResult>> getDiscoverMovies({int page = 1}) async {
-    final res = await _dio.get('/discover/movies', queryParameters: {'page': page});
+  Future<List<SeerSearchResult>> getDiscoverMovies({
+    int page = 1,
+    String sortBy = 'popularity.desc',
+  }) async {
+    final res = await _dio.get('/discover/movies', queryParameters: {
+      'page': page,
+      'sortBy': sortBy,
+    });
     return (res.data['results'] as List? ?? [])
         .map((j) => SeerSearchResult.fromJson(j as Map<String, dynamic>))
         .toList();
   }
 
-  Future<List<SeerSearchResult>> getDiscoverTv({int page = 1}) async {
-    final res = await _dio.get('/discover/tv', queryParameters: {'page': page});
+  Future<List<SeerSearchResult>> getDiscoverTv({
+    int page = 1,
+    String sortBy = 'popularity.desc',
+  }) async {
+    final res = await _dio.get('/discover/tv', queryParameters: {
+      'page': page,
+      'sortBy': sortBy,
+    });
     return (res.data['results'] as List? ?? [])
         .map((j) => SeerSearchResult.fromJson(j as Map<String, dynamic>))
         .toList();

@@ -50,8 +50,9 @@ class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen>
   }
 
   void _refresh() {
-    ref.invalidate(seerDiscoverMoviesProvider(widget.instance));
-    ref.invalidate(seerDiscoverTvProvider(widget.instance));
+    // Invalidate entire families — clears all sortBy variants at once.
+    ref.invalidate(seerDiscoverMoviesProvider);
+    ref.invalidate(seerDiscoverTvProvider);
     final q = ref
         .read(seerDiscoverSearchQueryProvider(widget.instance.id))
         .trim();
@@ -164,7 +165,7 @@ class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen>
               ),
               const SizedBox(width: Spacing.s8),
               _SortButton(
-                isActive: sort != SeerDiscoverSort.defaultOrder,
+                isActive: sort != SeerDiscoverSort.popularityDesc,
                 onTap: _showSortSheet,
               ),
             ],
