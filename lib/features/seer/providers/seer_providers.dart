@@ -105,6 +105,26 @@ final seerFilteredRequestsProvider =
 
 // ─── Discover providers ──────────────────────────────────────────────────────
 
+enum SeerDiscoverSort {
+  defaultOrder('Default'),
+  titleAz('Title A → Z'),
+  titleZa('Title Z → A'),
+  yearNewest('Year: Newest first'),
+  yearOldest('Year: Oldest first'),
+  ratingHighest('Rating: Highest first'),
+  ratingLowest('Rating: Lowest first');
+
+  const SeerDiscoverSort(this.label);
+  final String label;
+}
+
+final seerDiscoverSearchQueryProvider =
+    StateProvider.family<String, int>((ref, instanceId) => '');
+
+final seerDiscoverSortProvider =
+    StateProvider.family<SeerDiscoverSort, int>(
+        (ref, instanceId) => SeerDiscoverSort.defaultOrder);
+
 final seerDiscoverMoviesProvider =
     FutureProvider.autoDispose.family<List<SeerSearchResult>, Instance>(
         (ref, instance) async {
@@ -130,6 +150,58 @@ final seerSearchProvider = FutureProvider.autoDispose
   final api = ref.read(seerApiProvider(key.instance));
   return api.search(key.query);
 });
+
+// ─── Filtered discover providers ─────────────────────────────────────────────
+
+final seerFilteredDiscoverMoviesProvider = Provider.autoDispose
+    .family<AsyncValue<List<SeerSearchResult>>, Instance>((ref, instance) {
+  final query = ref.watch(seerDiscoverSearchQueryProvider(instance.id)).trim();
+  final sort = ref.watch(seerDiscoverSortProvider(instance.id));
+
+  final AsyncValue<List<SeerSearchResult>> raw = query.isEmpty
+      ? ref.watch(seerDiscoverMoviesProvider(instance))
+      : ref
+          .watch(seerSearchProvider((instance: instance, query: query)))
+          .whenData((r) => r.where((x) => x.mediaType == 'movie').toList());
+
+  return raw.whenData((list) => _sortDiscover(list, sort));
+});
+
+final seerFilteredDiscoverTvProvider = Provider.autoDispose
+    .family<AsyncValue<List<SeerSearchResult>>, Instance>((ref, instance) {
+  final query = ref.watch(seerDiscoverSearchQueryProvider(instance.id)).trim();
+  final sort = ref.watch(seerDiscoverSortProvider(instance.id));
+
+  final AsyncValue<List<SeerSearchResult>> raw = query.isEmpty
+      ? ref.watch(seerDiscoverTvProvider(instance))
+      : ref
+          .watch(seerSearchProvider((instance: instance, query: query)))
+          .whenData((r) => r.where((x) => x.mediaType == 'tv').toList());
+
+  return raw.whenData((list) => _sortDiscover(list, sort));
+});
+
+List<SeerSearchResult> _sortDiscover(
+    List<SeerSearchResult> list, SeerDiscoverSort sort) {
+  final sorted = List.of(list);
+  switch (sort) {
+    case SeerDiscoverSort.defaultOrder:
+      break;
+    case SeerDiscoverSort.titleAz:
+      sorted.sort((a, b) => a.title.compareTo(b.title));
+    case SeerDiscoverSort.titleZa:
+      sorted.sort((a, b) => b.title.compareTo(a.title));
+    case SeerDiscoverSort.yearNewest:
+      sorted.sort((a, b) => b.releaseDate.compareTo(a.releaseDate));
+    case SeerDiscoverSort.yearOldest:
+      sorted.sort((a, b) => a.releaseDate.compareTo(b.releaseDate));
+    case SeerDiscoverSort.ratingHighest:
+      sorted.sort((a, b) => b.voteAverage.compareTo(a.voteAverage));
+    case SeerDiscoverSort.ratingLowest:
+      sorted.sort((a, b) => a.voteAverage.compareTo(b.voteAverage));
+  }
+  return sorted;
+}
 
 // ─── Issues providers ────────────────────────────────────────────────────────
 

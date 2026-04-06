@@ -23,23 +23,102 @@ class SeerDiscoverScreen extends ConsumerStatefulWidget {
 class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  final _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchController.text = ref.read(
+          seerDiscoverSearchQueryProvider(widget.instance.id));
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    ref
+        .read(seerDiscoverSearchQueryProvider(widget.instance.id).notifier)
+        .state = '';
+  }
+
+  void _refresh() {
+    ref.invalidate(seerDiscoverMoviesProvider(widget.instance));
+    ref.invalidate(seerDiscoverTvProvider(widget.instance));
+    final q = ref
+        .read(seerDiscoverSearchQueryProvider(widget.instance.id))
+        .trim();
+    if (q.isNotEmpty) {
+      ref.invalidate(
+          seerSearchProvider((instance: widget.instance, query: q)));
+    }
+  }
+
+  void _showSortSheet() {
+    final current =
+        ref.read(seerDiscoverSortProvider(widget.instance.id));
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(Spacing.s16),
+              child: Text('Sort by',
+                  style: Theme.of(ctx).textTheme.titleLarge),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: RadioGroup<SeerDiscoverSort>(
+                groupValue: current,
+                onChanged: (val) {
+                  if (val != null) {
+                    ref
+                        .read(seerDiscoverSortProvider(
+                                widget.instance.id)
+                            .notifier)
+                        .state = val;
+                    Navigator.pop(ctx);
+                  }
+                },
+                child: ListView(
+                  shrinkWrap: true,
+                  children: SeerDiscoverSort.values
+                      .map((opt) => RadioListTile<SeerDiscoverSort>(
+                            title: Text(opt.label),
+                            value: opt,
+                          ))
+                      .toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final displayMode =
         ref.watch(seerDisplayModeProvider(widget.instance.id));
+    final query =
+        ref.watch(seerDiscoverSearchQueryProvider(widget.instance.id));
+    final sort = ref.watch(seerDiscoverSortProvider(widget.instance.id));
+    final moviesAsync =
+        ref.watch(seerFilteredDiscoverMoviesProvider(widget.instance));
+    final tvAsync =
+        ref.watch(seerFilteredDiscoverTvProvider(widget.instance));
 
     return Column(
       children: [
@@ -50,19 +129,65 @@ class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen>
             Tab(text: 'TV Shows'),
           ],
         ),
+        // ── Search & sort bar ──────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.pageHorizontal,
+            Spacing.s8,
+            Spacing.pageHorizontal,
+            Spacing.s4,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search movies & shows…',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: query.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: _clearSearch,
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onChanged: (v) => ref
+                      .read(seerDiscoverSearchQueryProvider(
+                              widget.instance.id)
+                          .notifier)
+                      .state = v,
+                ),
+              ),
+              const SizedBox(width: Spacing.s8),
+              _SortButton(
+                isActive: sort != SeerDiscoverSort.defaultOrder,
+                onTap: _showSortSheet,
+              ),
+            ],
+          ),
+        ),
+        // ── Tab content ────────────────────────────────────────────────
         Expanded(
           child: TabBarView(
             controller: _tabController,
             children: [
               _DiscoverView(
                 instance: widget.instance,
-                provider: seerDiscoverMoviesProvider,
+                resultsAsync: moviesAsync,
                 displayMode: displayMode,
+                query: query,
+                onRefresh: _refresh,
               ),
               _DiscoverView(
                 instance: widget.instance,
-                provider: seerDiscoverTvProvider,
+                resultsAsync: tvAsync,
                 displayMode: displayMode,
+                query: query,
+                onRefresh: _refresh,
               ),
             ],
           ),
@@ -72,17 +197,46 @@ class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen>
   }
 }
 
-class _DiscoverView extends ConsumerWidget {
+// ---------------------------------------------------------------------------
+
+class _SortButton extends StatelessWidget {
+  const _SortButton({required this.isActive, required this.onTap});
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return IconButton.filledTonal(
+      onPressed: onTap,
+      iconSize: 20,
+      style: IconButton.styleFrom(
+        backgroundColor:
+            isActive ? colorScheme.primaryContainer : null,
+        foregroundColor:
+            isActive ? colorScheme.onPrimaryContainer : null,
+      ),
+      icon: const Icon(Icons.sort),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+class _DiscoverView extends StatelessWidget {
   const _DiscoverView({
     required this.instance,
-    required this.provider,
+    required this.resultsAsync,
     required this.displayMode,
+    required this.query,
+    required this.onRefresh,
   });
 
   final Instance instance;
-  final AutoDisposeFutureProviderFamily<List<SeerSearchResult>, Instance>
-      provider;
+  final AsyncValue<List<SeerSearchResult>> resultsAsync;
   final DisplayMode displayMode;
+  final String query;
+  final VoidCallback onRefresh;
 
   void _openDetail(BuildContext context, SeerSearchResult result) {
     Navigator.push(
@@ -99,10 +253,8 @@ class _DiscoverView extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(provider(instance));
-
-    return async.when(
+  Widget build(BuildContext context) {
+    return resultsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, s) => Center(
         child: Column(
@@ -114,7 +266,7 @@ class _DiscoverView extends ConsumerWidget {
             const Text('Failed to load'),
             const SizedBox(height: 8),
             TextButton(
-              onPressed: () => ref.invalidate(provider(instance)),
+              onPressed: onRefresh,
               child: const Text('Retry'),
             ),
           ],
@@ -122,11 +274,21 @@ class _DiscoverView extends ConsumerWidget {
       ),
       data: (results) {
         if (results.isEmpty) {
-          return const Center(child: Text('Nothing to show'));
+          return Center(
+            child: Text(
+              query.isNotEmpty
+                  ? 'No results for "$query"'
+                  : 'Nothing to show',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: AppColors.textSecondary),
+            ),
+          );
         }
         return RefreshIndicator(
           color: AppColors.tealPrimary,
-          onRefresh: () async => ref.invalidate(provider(instance)),
+          onRefresh: () async => onRefresh(),
           child: displayMode == DisplayMode.grid
               ? _DiscoverGrid(
                   results: results,
@@ -141,6 +303,8 @@ class _DiscoverView extends ConsumerWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
 
 class _DiscoverGrid extends StatelessWidget {
   const _DiscoverGrid({required this.results, required this.onTap});
@@ -210,35 +374,17 @@ class _MediaTile extends StatelessWidget {
               ? Image.network(
                   posterUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (ctx, e, s) => Container(
-                    color: AppColors.tealDark,
-                    alignment: Alignment.center,
-                    child: Icon(
-                      result.mediaType == 'movie'
-                          ? Icons.movie_outlined
-                          : Icons.tv_outlined,
-                      color: Colors.white24,
-                      size: 24,
-                    ),
+                  errorBuilder: (ctx, e, s) => _PosterPlaceholder(
+                    mediaType: result.mediaType,
                   ),
                 )
-              : Container(
-                  color: AppColors.tealDark,
-                  alignment: Alignment.center,
-                  child: Icon(
-                    result.mediaType == 'movie'
-                        ? Icons.movie_outlined
-                        : Icons.tv_outlined,
-                    color: Colors.white24,
-                    size: 24,
-                  ),
-                ),
+              : _PosterPlaceholder(mediaType: result.mediaType),
         ),
       ),
       title: Text(
         result.title,
-        style:
-            theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+        style: theme.textTheme.bodyLarge
+            ?.copyWith(fontWeight: FontWeight.w600),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
@@ -246,11 +392,31 @@ class _MediaTile extends StatelessWidget {
         [
           if (result.year.isNotEmpty) result.year,
           result.mediaType == 'movie' ? 'Movie' : 'TV Show',
+          if (result.voteAverage > 0)
+            '★ ${result.voteAverage.toStringAsFixed(1)}',
         ].join(' · '),
         style: theme.textTheme.bodySmall
             ?.copyWith(color: AppColors.textSecondary),
       ),
       onTap: onTap,
+    );
+  }
+}
+
+class _PosterPlaceholder extends StatelessWidget {
+  const _PosterPlaceholder({required this.mediaType});
+  final String mediaType;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.tealDark,
+      alignment: Alignment.center,
+      child: Icon(
+        mediaType == 'movie' ? Icons.movie_outlined : Icons.tv_outlined,
+        color: Colors.white24,
+        size: 24,
+      ),
     );
   }
 }
