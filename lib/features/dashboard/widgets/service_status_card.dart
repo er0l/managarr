@@ -147,20 +147,11 @@ class _ServiceSummary extends ConsumerWidget {
   Widget? _buildRow(BuildContext context, WidgetRef ref) {
     if (type == ServiceType.radarr) {
       final q = ref.watch(radarrQueueProvider(instance));
-      final d = ref.watch(radarrDiskSpaceProvider(instance));
       return _StatsRow(stats: [
         _Stat(
           Icons.download_outlined,
           q.when(
             data: (q) => '${q.totalRecords} queued',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
-        _Stat(
-          Icons.storage_outlined,
-          d.when(
-            data: (l) => l.isEmpty ? '—' : _sumFreeGb(l),
             loading: () => '…',
             error: (e, _) => '—',
           ),
@@ -170,20 +161,11 @@ class _ServiceSummary extends ConsumerWidget {
 
     if (type == ServiceType.sonarr) {
       final q = ref.watch(sonarrQueueProvider(instance));
-      final d = ref.watch(sonarrDiskSpaceProvider(instance));
       return _StatsRow(stats: [
         _Stat(
           Icons.download_outlined,
           q.when(
             data: (q) => '${q.totalRecords} queued',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
-        _Stat(
-          Icons.storage_outlined,
-          d.when(
-            data: (l) => l.isEmpty ? '—' : _sumFreeGb(l),
             loading: () => '…',
             error: (e, _) => '—',
           ),
@@ -294,15 +276,6 @@ class _ServiceSummary extends ConsumerWidget {
   }
 }
 
-// Formats total free space across all root folders.
-String _sumFreeGb(List<Map<String, dynamic>> list) {
-  int totalFree = 0;
-  for (final item in list) {
-    totalFree += (item['freeSpace'] as int? ?? 0);
-  }
-  final gb = totalFree / (1024.0 * 1024.0 * 1024.0);
-  return '${gb.toStringAsFixed(1)} GB free';
-}
 
 class _Stat {
   const _Stat(this.icon, this.label);
