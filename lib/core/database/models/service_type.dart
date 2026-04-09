@@ -7,7 +7,8 @@ enum ServiceType {
   sabnzbd,
   rtorrent,
   nzbget,
-  tautulli;
+  tautulli,
+  romm;
 
   String get displayName => switch (this) {
         ServiceType.radarr => 'Radarr',
@@ -19,6 +20,7 @@ enum ServiceType {
         ServiceType.rtorrent => 'rTorrent',
         ServiceType.nzbget => 'NZBGet',
         ServiceType.tautulli => 'Tautulli',
+        ServiceType.romm => 'ROMM',
       };
 
   /// API path used to verify connectivity.
@@ -35,7 +37,13 @@ enum ServiceType {
         // NZBGet uses JSON-RPC; health check handled separately.
         ServiceType.nzbget => '/jsonrpc',
         ServiceType.tautulli => '/api/v2?cmd=server_status',
+        ServiceType.romm => '/api/platforms',
       };
+
+  bool get usesBasicAuth =>
+      this == ServiceType.rtorrent ||
+      this == ServiceType.nzbget ||
+      this == ServiceType.romm;
 
   bool get usesSabnzbdAuth => this == ServiceType.sabnzbd;
   bool get usesXmlRpc => this == ServiceType.rtorrent;

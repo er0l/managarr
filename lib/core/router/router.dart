@@ -20,6 +20,7 @@ import '../../features/sonarr/screens/sonarr_series_detail_screen.dart';
 import '../../features/lidarr/screens/lidarr_home_screen.dart';
 import '../../features/nzbget/screens/nzbget_home_screen.dart';
 import '../../features/tautulli/screens/tautulli_home_screen.dart';
+import '../../features/romm/screens/romm_home_screen.dart';
 import '../../features/radarr/providers/radarr_providers.dart';
 import '../../features/sonarr/providers/sonarr_providers.dart';
 import '../database/app_database.dart';
@@ -382,6 +383,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           return _TautulliLoader(instanceId: id);
         },
       ),
+      GoRoute(
+        path: '/romm/:instanceId',
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['instanceId']!);
+          return _RommLoader(instanceId: id);
+        },
+      ),
 
     ],
   );
@@ -551,6 +559,31 @@ class _TautulliLoader extends ConsumerWidget {
           return const Scaffold(body: Center(child: Text('Instance not found')));
         }
         return TautulliHomeScreen(instance: instance);
+      },
+    );
+  }
+}
+
+class _RommLoader extends ConsumerWidget {
+  const _RommLoader({required this.instanceId});
+  final int instanceId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.read(instanceRepositoryProvider);
+    return FutureBuilder<Instance?>(
+      future: repo.getById(instanceId),
+      builder: (context, snap) {
+        if (!snap.hasData) {
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
+        }
+        final instance = snap.data;
+        if (instance == null) {
+          return const Scaffold(
+              body: Center(child: Text('Instance not found')));
+        }
+        return RommHomeScreen(instance: instance);
       },
     );
   }

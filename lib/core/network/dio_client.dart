@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
+import '../database/models/service_type.dart';
 
 /// Typed API error wrapping a [DioException].
 class ApiError implements Exception {
@@ -24,6 +27,19 @@ class _ApiKeyInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     options.headers['X-Api-Key'] = apiKey;
+    handler.next(options);
+  }
+}
+
+/// Interceptor that injects an HTTP Basic Auth header.
+class _BasicAuthInterceptor extends Interceptor {
+  _BasicAuthInterceptor(this._encoded);
+
+  final String _encoded;
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    options.headers['Authorization'] = 'Basic $_encoded';
     handler.next(options);
   }
 }
@@ -91,8 +107,13 @@ Dio buildDioForInstance(Instance instance) {
     );
   }
 
+  final type = ServiceType.values.byName(instance.serviceType);
+  final authInterceptor = type.usesBasicAuth
+      ? _BasicAuthInterceptor(base64.encode(utf8.encode(instance.apiKey)))
+      : _ApiKeyInterceptor(instance.apiKey);
+
   dio.interceptors.addAll([
-    _ApiKeyInterceptor(instance.apiKey),
+    authInterceptor,
     _RedirectInterceptor(dio),
     _ErrorInterceptor(),
   ]);

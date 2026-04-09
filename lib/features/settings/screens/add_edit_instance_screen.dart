@@ -51,7 +51,9 @@ class _AddEditInstanceScreenState
   bool _enabled = true;
 
   bool get _useUserPass =>
-      _serviceType == ServiceType.rtorrent || _serviceType == ServiceType.nzbget;
+      _serviceType == ServiceType.rtorrent ||
+      _serviceType == ServiceType.nzbget ||
+      _serviceType == ServiceType.romm;
 
   _TestStatus _testStatus = _TestStatus.idle;
   String? _testMessage;
@@ -191,6 +193,19 @@ class _AddEditInstanceScreenState
           "id": 1,
         };
         await dio.post('/jsonrpc', data: body);
+      } else if (_serviceType == ServiceType.romm) {
+        final credential =
+            '${_usernameCtrl.text.trim()}:${_passwordCtrl.text}';
+        final encoded = base64.encode(utf8.encode(credential));
+        final dio = Dio(
+          BaseOptions(
+            baseUrl: _baseUrl,
+            connectTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 10),
+            headers: {'Authorization': 'Basic $encoded'},
+          ),
+        );
+        await dio.get('/api/platforms');
       } else {
         final dio = Dio(
           BaseOptions(

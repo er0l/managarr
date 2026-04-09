@@ -120,6 +120,7 @@ class _InstanceTile extends StatelessWidget {
         ServiceType.prowlarr => '/prowlarr/${instance.id}',
         ServiceType.nzbget => '/nzbget/${instance.id}',
         ServiceType.tautulli => '/tautulli/${instance.id}',
+        ServiceType.romm => '/romm/${instance.id}',
       };
 
   bool get _isSupported => _routePath != null;

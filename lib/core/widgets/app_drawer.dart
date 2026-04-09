@@ -96,6 +96,8 @@ class AppDrawer extends ConsumerWidget {
                               '/nzbget/${instance.id}',
                             ServiceType.tautulli =>
                               '/tautulli/${instance.id}',
+                            ServiceType.romm =>
+                              '/romm/${instance.id}',
                           };
                           context.push(path);
                         },

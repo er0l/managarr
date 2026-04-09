@@ -14,6 +14,7 @@ import '../../../features/sabnzbd/providers/sabnzbd_providers.dart';
 import '../../../features/seer/providers/seer_providers.dart';
 import '../../../features/sonarr/providers/sonarr_providers.dart';
 import '../../../features/tautulli/providers/tautulli_providers.dart';
+import '../../../features/romm/providers/romm_providers.dart';
 import '../models/health_result.dart';
 import '../providers/health_check_provider.dart';
 
@@ -33,6 +34,7 @@ class ServiceStatusCard extends ConsumerWidget {
       ServiceType.prowlarr => '/prowlarr/${instance.id}',
       ServiceType.lidarr => '/lidarr/${instance.id}',
       ServiceType.tautulli => '/tautulli/${instance.id}',
+      ServiceType.romm => '/romm/${instance.id}',
       _ => null,
     };
 
@@ -264,6 +266,20 @@ class _ServiceSummary extends ConsumerWidget {
           Icons.download_outlined,
           q.when(
             data: (q) => '${q.items.length} queued',
+            loading: () => '…',
+            error: (e, _) => '—',
+          ),
+        ),
+      ]);
+    }
+
+    if (type == ServiceType.romm) {
+      final p = ref.watch(rommPlatformsProvider(instance));
+      return _StatsRow(stats: [
+        _Stat(
+          Icons.videogame_asset_outlined,
+          p.when(
+            data: (list) => '${list.length} platforms',
             loading: () => '…',
             error: (e, _) => '—',
           ),
