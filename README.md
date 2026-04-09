@@ -1,6 +1,6 @@
 # managarr
 
-A Flutter mobile client for managing your self-hosted media automation stack. Connect to Radarr, Sonarr, Lidarr, Prowlarr, Overseerr/Jellyseerr, SABnzbd, NZBGet, rTorrent, and Tautulli from a single app.
+A Flutter mobile client for managing your self-hosted media automation stack. Connect to Radarr, Sonarr, Lidarr, Prowlarr, Overseerr/Jellyseerr, SABnzbd, NZBGet, rTorrent, Tautulli, and ROMM from a single app.
 
 ## Features
 
@@ -16,6 +16,7 @@ A Flutter mobile client for managing your self-hosted media automation stack. Co
 | **NZBGet** | Download queue, history, status |
 | **rTorrent** | Torrent list, status, speed monitoring |
 | **Tautulli** | Plex activity, history, libraries, users, statistics, logs |
+| **ROMM** | Browse ROM library by platform, search ROMs, view game metadata, download ROMs to device |
 
 ### App-wide
 - **Unified Calendar** — month and list view of upcoming movies and episodes across all Radarr and Sonarr instances; Downloaded/quality and Unaired status badges
@@ -72,6 +73,8 @@ Open the app and go to **Settings → +** to add your first service instance. Ea
 - **Base URL** — the full URL including port (e.g. `http://192.168.1.10:7878`)
 - **API Key** — found in the service's web UI under Settings → General
 
+> **ROMM** uses a username and password instead of an API key. Enter your ROMM credentials in the Username and Password fields when adding a ROMM instance.
+
 Multiple instances of the same service are supported (e.g. two Sonarr instances for different libraries).
 
 To back up your configuration go to **Settings → ⋮ → Backup**. To restore, use **Settings → ⋮ → Restore**.
@@ -99,6 +102,7 @@ lib/
     ├── settings/        # Instance management, backup/restore, theme
     ├── sonarr/          # Sonarr integration
     ├── tautulli/        # Tautulli integration
+    ├── romm/            # ROMM integration
     └── widget/          # Android home-screen widget update service
 ```
 
