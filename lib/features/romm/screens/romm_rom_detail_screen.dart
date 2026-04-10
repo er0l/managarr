@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
@@ -131,7 +134,7 @@ class _RomDetailBodyState extends State<_RomDetailBody> {
                 ),
                 const SizedBox(height: 6),
 
-                // Platform + year + rating row
+                // Platform + year + rating chips
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
@@ -147,67 +150,58 @@ class _RomDetailBodyState extends State<_RomDetailBody> {
                       _Chip(
                           '★ ${rom.averageRating!.toStringAsFixed(1)}',
                           color: Colors.amber),
+                    if (rom.playerCount != null && rom.playerCount! > 0)
+                      _Chip(
+                          '${rom.playerCount} ${rom.playerCount == 1 ? 'player' : 'players'}',
+                          icon: Icons.people_outline),
                   ],
                 ),
                 const SizedBox(height: 12),
 
                 // Summary
                 if (rom.summary != null && rom.summary!.isNotEmpty) ...[
-                  Text(
-                    'Summary',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
+                  _SectionLabel('Summary'),
                   const SizedBox(height: 4),
-                  Text(rom.summary!,
-                      style: theme.textTheme.bodyMedium),
+                  Text(rom.summary!, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 12),
                 ],
+
+                // YouTube video
+                if (rom.youtubeVideoId != null &&
+                    rom.youtubeVideoId!.isNotEmpty)
+                  _YouTubeCard(videoId: rom.youtubeVideoId!),
 
                 // Genres
-                if (rom.genres.isNotEmpty) ...[
-                  Text(
-                    'Genres',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: rom.genres
-                        .map((g) => _Chip(g))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                if (rom.genres.isNotEmpty)
+                  _ChipSection('Genres', rom.genres),
+
+                // Game modes
+                if (rom.gameModes.isNotEmpty)
+                  _ChipSection('Game Modes', rom.gameModes),
+
+                // Franchises
+                if (rom.franchises.isNotEmpty)
+                  _ChipSection('Franchises', rom.franchises),
+
+                // Collections
+                if (rom.collections.isNotEmpty)
+                  _ChipSection('Collections', rom.collections),
 
                 // Companies
-                if (rom.companies.isNotEmpty) ...[
-                  Text(
-                    'Companies',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: rom.companies
-                        .map((c) => _Chip(c))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                if (rom.companies.isNotEmpty)
+                  _ChipSection('Companies', rom.companies),
+
+                // Age ratings
+                if (rom.ageRatings.isNotEmpty)
+                  _ChipSection('Age Ratings', rom.ageRatings),
+
+                // Regions
+                if (rom.regions.isNotEmpty)
+                  _ChipSection('Regions', rom.regions),
+
+                // Languages
+                if (rom.languages.isNotEmpty)
+                  _ChipSection('Languages', rom.languages),
 
                 // File info
                 const Divider(),
@@ -276,19 +270,13 @@ class _RomDetailBodyState extends State<_RomDetailBody> {
       _progress = 0;
     });
 
+    File? tempFile;
     try {
-      // Resolve save directory
-      Directory? dir;
-      try {
-        dir = await getDownloadsDirectory();
-      } catch (_) {
-        dir = null;
-      }
-      dir ??= await getApplicationDocumentsDirectory();
+      // Download to temp directory first
+      final tempDir = await getTemporaryDirectory();
+      tempFile = File('${tempDir.path}/${rom.fsName}');
 
-      final savePath = '${dir.path}/${rom.fsName}';
       final url = api.downloadUrl(rom.id, rom.fsName);
-
       final dio = Dio(BaseOptions(
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(minutes: 30),
@@ -297,7 +285,7 @@ class _RomDetailBodyState extends State<_RomDetailBody> {
 
       await dio.download(
         url,
-        savePath,
+        tempFile.path,
         onReceiveProgress: (received, total) {
           if (total > 0 && mounted) {
             setState(() => _progress = received / total);
@@ -305,11 +293,31 @@ class _RomDetailBodyState extends State<_RomDetailBody> {
         },
       );
 
-      if (mounted) {
+      if (!mounted) return;
+
+      // Read bytes from temp file and offer save dialog
+      setState(() => _progress = 0); // reset while reading
+      final Uint8List bytes = await tempFile.readAsBytes();
+
+      if (!mounted) return;
+
+      final result = await FilePicker.platform.saveFile(
+        fileName: rom.fsName,
+        bytes: bytes,
+      );
+
+      if (!mounted) return;
+
+      if (result != null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Saved to ${dir.path}/${rom.fsName}'),
+          content: Text('Saved: ${rom.fsName}'),
           backgroundColor: AppColors.statusOnline,
           duration: const Duration(seconds: 4),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Save cancelled'),
+          duration: Duration(seconds: 2),
         ));
       }
     } catch (e) {
@@ -320,6 +328,10 @@ class _RomDetailBodyState extends State<_RomDetailBody> {
         ));
       }
     } finally {
+      // Clean up temp file
+      try {
+        await tempFile?.delete();
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _downloading = false;
@@ -327,6 +339,139 @@ class _RomDetailBodyState extends State<_RomDetailBody> {
         });
       }
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// YouTube card
+// ---------------------------------------------------------------------------
+
+class _YouTubeCard extends StatelessWidget {
+  const _YouTubeCard({required this.videoId});
+
+  final String videoId;
+
+  @override
+  Widget build(BuildContext context) {
+    final thumbnailUrl =
+        'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
+    final watchUrl = 'https://www.youtube.com/watch?v=$videoId';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel('Trailer'),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.network(
+                  thumbnailUrl,
+                  width: double.infinity,
+                  height: 180,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    width: double.infinity,
+                    height: 180,
+                    color: Colors.black87,
+                    child: const Icon(Icons.play_circle_outline,
+                        size: 64, color: Colors.white54),
+                  ),
+                ),
+                // Play button overlay
+                GestureDetector(
+                  onTap: () async {
+                    final uri = Uri.parse(watchUrl);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha(160),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.play_arrow,
+                        color: Colors.white, size: 36),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          TextButton.icon(
+            onPressed: () async {
+              final uri = Uri.parse(watchUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            icon: const Icon(Icons.open_in_new, size: 16),
+            label: const Text('Watch on YouTube'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.tealPrimary,
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Section helpers
+// ---------------------------------------------------------------------------
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.6,
+          ),
+    );
+  }
+}
+
+class _ChipSection extends StatelessWidget {
+  const _ChipSection(this.title, this.items);
+
+  final String title;
+  final List<String> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(title),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: items.map((s) => _Chip(s)).toList(),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -353,8 +498,7 @@ class _Chip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12,
-                color: color ?? AppColors.tealPrimary),
+            Icon(icon, size: 12, color: color ?? AppColors.tealPrimary),
             const SizedBox(width: 4),
           ],
           Text(

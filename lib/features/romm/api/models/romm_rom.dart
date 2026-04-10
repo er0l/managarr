@@ -14,6 +14,14 @@ class RommRom {
     this.summary,
     this.genres = const [],
     this.companies = const [],
+    this.franchises = const [],
+    this.collections = const [],
+    this.ageRatings = const [],
+    this.gameModes = const [],
+    this.regions = const [],
+    this.languages = const [],
+    this.playerCount,
+    this.youtubeVideoId,
   });
 
   final int id;
@@ -26,12 +34,20 @@ class RommRom {
   final String? pathCoverLarge;
   final String? urlCover;
 
-  /// Unix timestamp in milliseconds (from ROMM's first_release_date).
+  /// Unix timestamp in seconds (from ROMM's first_release_date).
   final int? firstReleaseDate;
   final double? averageRating;
   final String? summary;
   final List<String> genres;
   final List<String> companies;
+  final List<String> franchises;
+  final List<String> collections;
+  final List<String> ageRatings;
+  final List<String> gameModes;
+  final List<String> regions;
+  final List<String> languages;
+  final int? playerCount;
+  final String? youtubeVideoId;
 
   int? get releaseYear {
     if (firstReleaseDate == null) return null;
@@ -69,6 +85,16 @@ class RommRom {
       return const [];
     }
 
+    List<String> parseAgeRatings(dynamic raw) {
+      if (raw == null) return const [];
+      if (raw is! List) return const [];
+      return raw.whereType<Map>().map((e) {
+        final category = (e['category'] as num?)?.toInt() ?? 0;
+        final rating = (e['rating'] as num?)?.toInt() ?? 0;
+        return _ageRatingLabel(category, rating);
+      }).where((s) => s.isNotEmpty).toList();
+    }
+
     return RommRom(
       id: (json['id'] as num).toInt(),
       name: json['name'] as String? ?? json['fs_name'] as String? ?? '',
@@ -86,6 +112,37 @@ class RommRom {
       summary: json['summary'] as String?,
       genres: toStrings(json['genres']),
       companies: toNames(json['companies']),
+      franchises: toNames(json['franchises']),
+      collections: toNames(json['collections']),
+      ageRatings: parseAgeRatings(json['age_ratings']),
+      gameModes: toNames(json['game_modes']),
+      regions: toStrings(json['regions']),
+      languages: toStrings(json['languages']),
+      playerCount: (json['player_count'] as num?)?.toInt(),
+      youtubeVideoId: json['youtube_video_id'] as String?,
     );
   }
 }
+
+String _ageRatingLabel(int category, int rating) {
+  if (category == 1) {
+    // ESRB
+    const labels = {
+      6: 'EC',
+      7: 'E',
+      8: 'E10+',
+      9: 'T',
+      10: 'M',
+      11: 'AO',
+    };
+    final label = labels[rating];
+    return label != null ? 'ESRB $label' : '';
+  } else if (category == 2) {
+    // PEGI
+    const labels = {1: '3', 2: '7', 3: '12', 4: '16', 5: '18'};
+    final label = labels[rating];
+    return label != null ? 'PEGI $label' : '';
+  }
+  return '';
+}
+

@@ -4,8 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/database/app_database.dart';
+import 'models/romm_available_filters.dart';
+import 'models/romm_collection.dart';
 import 'models/romm_platform.dart';
 import 'models/romm_rom.dart';
+import 'models/romm_search_filters.dart';
 
 class RommApi {
   RommApi._(this._dio, this._baseUrl, this._authHeader);
@@ -49,6 +52,17 @@ class RommApi {
   }
 
   // ---------------------------------------------------------------------------
+  // Collections
+  // ---------------------------------------------------------------------------
+
+  Future<List<RommCollection>> getCollections() async {
+    final res = await _dio.get<List>('/collections');
+    return (res.data ?? [])
+        .map((j) => RommCollection.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  // ---------------------------------------------------------------------------
   // ROMs
   // ---------------------------------------------------------------------------
 
@@ -76,9 +90,90 @@ class RommApi {
         .toList();
   }
 
+  Future<List<RommRom>> getCollectionRoms(
+    int collectionId, {
+    String? searchTerm,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final params = <String, dynamic>{
+      'collection_id': collectionId,
+      'limit': limit,
+      'offset': offset,
+    };
+    if (searchTerm != null && searchTerm.isNotEmpty) {
+      params['search_term'] = searchTerm;
+    }
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/roms',
+      queryParameters: params,
+    );
+    final items = res.data?['items'] as List? ?? [];
+    return items
+        .map((j) => RommRom.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<RommRom>> searchRoms(
+    String? searchTerm,
+    RommSearchFilters filters, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final params = <String, dynamic>{
+      'limit': limit,
+      'offset': offset,
+    };
+    if (searchTerm != null && searchTerm.isNotEmpty) {
+      params['search_term'] = searchTerm;
+    }
+    if (filters.platformIds.isNotEmpty) {
+      params['platform_ids'] = filters.platformIds.join(',');
+    }
+    if (filters.genres.isNotEmpty) {
+      params['genres'] = filters.genres.join(',');
+    }
+    if (filters.franchises.isNotEmpty) {
+      params['franchises'] = filters.franchises.join(',');
+    }
+    if (filters.companies.isNotEmpty) {
+      params['companies'] = filters.companies.join(',');
+    }
+    if (filters.ageRatings.isNotEmpty) {
+      params['age_ratings'] = filters.ageRatings.join(',');
+    }
+    if (filters.regions.isNotEmpty) {
+      params['regions'] = filters.regions.join(',');
+    }
+    if (filters.languages.isNotEmpty) {
+      params['languages'] = filters.languages.join(',');
+    }
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/roms',
+      queryParameters: params,
+    );
+    final items = res.data?['items'] as List? ?? [];
+    return items
+        .map((j) => RommRom.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<RommRom> getRomDetail(int id) async {
     final res = await _dio.get<Map<String, dynamic>>('/roms/$id');
     return RommRom.fromJson(res.data!);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Filters (available options for search)
+  // ---------------------------------------------------------------------------
+
+  Future<RommAvailableFilters> getAvailableFilters() async {
+    try {
+      final res = await _dio.get<Map<String, dynamic>>('/roms/filters');
+      return RommAvailableFilters.fromJson(res.data ?? {});
+    } catch (_) {
+      return const RommAvailableFilters();
+    }
   }
 
   // ---------------------------------------------------------------------------
