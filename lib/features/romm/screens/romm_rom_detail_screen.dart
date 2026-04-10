@@ -351,11 +351,28 @@ class _YouTubeCard extends StatelessWidget {
 
   final String videoId;
 
+  static Future<void> _openYouTube(BuildContext context, String videoId) async {
+    final uri = Uri.parse('https://www.youtube.com/watch?v=$videoId');
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      // Try YouTube app first; fall back to browser if not installed.
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      try {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      } catch (e) {
+        messenger?.showSnackBar(SnackBar(
+          content: Text('Could not open YouTube: $e'),
+          backgroundColor: AppColors.statusOffline,
+        ));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final thumbnailUrl =
         'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
-    final watchUrl = 'https://www.youtube.com/watch?v=$videoId';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -384,13 +401,7 @@ class _YouTubeCard extends StatelessWidget {
                 ),
                 // Play button overlay
                 GestureDetector(
-                  onTap: () async {
-                    final uri = Uri.parse(watchUrl);
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri,
-                          mode: LaunchMode.externalApplication);
-                    }
-                  },
+                  onTap: () => _openYouTube(context, videoId),
                   child: Container(
                     width: 64,
                     height: 64,
@@ -407,12 +418,7 @@ class _YouTubeCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           TextButton.icon(
-            onPressed: () async {
-              final uri = Uri.parse(watchUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
+            onPressed: () => _openYouTube(context, videoId),
             icon: const Icon(Icons.open_in_new, size: 16),
             label: const Text('Watch on YouTube'),
             style: TextButton.styleFrom(

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -70,6 +72,7 @@ class _PlatformsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final platformsAsync = ref.watch(rommPlatformsProvider(instance));
+    final api = ref.watch(rommApiProvider(instance));
 
     return platformsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -119,6 +122,7 @@ class _PlatformsTab extends ConsumerWidget {
             itemBuilder: (ctx, i) => _PlatformCard(
               platform: platforms[i],
               instance: instance,
+              api: api,
             ),
           ),
         );
@@ -128,14 +132,36 @@ class _PlatformsTab extends ConsumerWidget {
 }
 
 class _PlatformCard extends StatelessWidget {
-  const _PlatformCard({required this.platform, required this.instance});
+  const _PlatformCard({
+    required this.platform,
+    required this.instance,
+    required this.api,
+  });
 
   final RommPlatform platform;
   final Instance instance;
+  final RommApi api;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Resolve logo URL and auth header.
+    // IGDB logos start with https:// — public, no auth needed.
+    // ROMM-hosted logos may be relative paths — need base URL + auth.
+    final rawLogoUrl = platform.urlLogo;
+    String? logoUrl;
+    Map<String, String>? logoHeaders;
+    if (rawLogoUrl != null && rawLogoUrl.isNotEmpty) {
+      final isExternal = rawLogoUrl.startsWith('http');
+      logoUrl = isExternal ? rawLogoUrl : '${instance.baseUrl}$rawLogoUrl';
+      if (!isExternal) {
+        final encoded =
+            base64.encode(utf8.encode(instance.apiKey));
+        logoHeaders = {'Authorization': 'Basic $encoded'};
+      }
+    }
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -154,16 +180,21 @@ class _PlatformCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo in dark badge (IGDB logos are white-on-transparent)
+              // Logo area — full-width row so the dark badge fills the space
               SizedBox(
-                height: 36,
-                child: platform.urlLogo != null && platform.urlLogo!.isNotEmpty
-                    ? _PlatformLogo(url: platform.urlLogo!)
-                    : const Icon(
-                        Icons.videogame_asset_outlined,
-                        size: 32,
-                        color: AppColors.tealPrimary,
-                      ),
+                height: 40,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: logoUrl != null
+                          ? _PlatformLogo(
+                              url: logoUrl,
+                              headers: logoHeaders,
+                            )
+                          : _LetterBadge(platform.displayName),
+                    ),
+                  ],
+                ),
               ),
               const Spacer(),
               Text(
@@ -187,12 +218,13 @@ class _PlatformCard extends StatelessWidget {
   }
 }
 
-/// Renders a platform logo on a dark badge so white-on-transparent IGDB logos
-/// are visible on both light and dark themes.
+/// Dark badge containing the IGDB platform logo (white-on-transparent PNG),
+/// making it visible on both light and dark themes.
 class _PlatformLogo extends StatelessWidget {
-  const _PlatformLogo({required this.url});
+  const _PlatformLogo({required this.url, this.headers});
 
   final String url;
+  final Map<String, String>? headers;
 
   @override
   Widget build(BuildContext context) {
@@ -201,15 +233,44 @@ class _PlatformLogo extends StatelessWidget {
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(6),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Image.network(
         url,
         fit: BoxFit.contain,
-        alignment: Alignment.centerLeft,
-        errorBuilder: (_, _, _) => const Icon(
-          Icons.videogame_asset_outlined,
-          size: 28,
+        headers: headers,
+        errorBuilder: (_, _, _) => const FittedBox(
+          fit: BoxFit.contain,
+          child: Icon(
+            Icons.videogame_asset_outlined,
+            color: AppColors.tealPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fallback when no logo URL is available — shows the first letter of the
+/// platform name on a teal badge.
+class _LetterBadge extends StatelessWidget {
+  const _LetterBadge(this.name);
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.tealPrimary.withAlpha(30),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        name.isNotEmpty ? name[0].toUpperCase() : '?',
+        style: const TextStyle(
           color: AppColors.tealPrimary,
+          fontWeight: FontWeight.bold,
+          fontSize: 22,
         ),
       ),
     );
@@ -435,18 +496,34 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
   }
 
   Future<void> _showFilterSheet() async {
-    final filtersData =
-        ref.read(rommAvailableFiltersProvider(widget.instance)).valueOrNull;
+    // Await available filters; show snackbar on error but still open sheet
+    // so users can clear existing active filters.
+    RommAvailableFilters filtersData;
+    try {
+      filtersData = await ref
+          .read(rommAvailableFiltersProvider(widget.instance).future);
+    } catch (e) {
+      filtersData = const RommAvailableFilters();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not load filter options: $e'),
+          backgroundColor: AppColors.statusOffline,
+          duration: const Duration(seconds: 4),
+        ));
+      }
+    }
+    if (!mounted) return;
+
     final updated = await showModalBottomSheet<RommSearchFilters>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _FilterSheet(
         current: _filters,
-        available: filtersData ?? const RommAvailableFilters(),
+        available: filtersData,
       ),
     );
-    if (updated != null) {
+    if (updated != null && mounted) {
       setState(() {
         _filters = updated;
         _hasSearched = _shouldSearch;
@@ -456,6 +533,9 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Pre-fetch filter options in the background as soon as the Search tab opens.
+    ref.watch(rommAvailableFiltersProvider(widget.instance));
+
     final theme = Theme.of(context);
 
     return Column(

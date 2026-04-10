@@ -168,12 +168,8 @@ class RommApi {
   // ---------------------------------------------------------------------------
 
   Future<RommAvailableFilters> getAvailableFilters() async {
-    try {
-      final res = await _dio.get<Map<String, dynamic>>('/roms/filters');
-      return RommAvailableFilters.fromJson(res.data ?? {});
-    } catch (_) {
-      return const RommAvailableFilters();
-    }
+    final res = await _dio.get<Map<String, dynamic>>('/roms/filters');
+    return RommAvailableFilters.fromJson(res.data ?? {});
   }
 
   // ---------------------------------------------------------------------------

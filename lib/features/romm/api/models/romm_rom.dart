@@ -67,32 +67,44 @@ class RommRom {
   }
 
   factory RommRom.fromJson(Map<String, dynamic> json) {
-    List<String> toStrings(dynamic raw) {
+    /// Handles plain strings, {name: ...} objects, and {company: {name: ...}}
+    /// nested objects (IGDB InvolvedCompany). Returns de-duplicated non-empty list.
+    List<String> toAny(dynamic raw) {
       if (raw == null) return const [];
-      if (raw is List) return raw.map((e) => e.toString()).toList();
-      return const [];
-    }
-
-    List<String> toNames(dynamic raw) {
-      if (raw == null) return const [];
-      if (raw is List) {
-        return raw
-            .whereType<Map>()
-            .map((e) => e['name']?.toString() ?? '')
-            .where((s) => s.isNotEmpty)
-            .toList();
+      if (raw is! List) return const [];
+      final seen = <String>{};
+      final result = <String>[];
+      for (final e in raw) {
+        String s = '';
+        if (e is String) {
+          s = e;
+        } else if (e is Map) {
+          // Direct name field
+          s = e['name']?.toString() ?? '';
+          // Nested company object (IGDB InvolvedCompany → company → name)
+          if (s.isEmpty) {
+            final nested = e['company'];
+            if (nested is Map) s = nested['name']?.toString() ?? '';
+          }
+        }
+        if (s.isNotEmpty && seen.add(s)) result.add(s);
       }
-      return const [];
+      return result;
     }
 
     List<String> parseAgeRatings(dynamic raw) {
       if (raw == null) return const [];
       if (raw is! List) return const [];
-      return raw.whereType<Map>().map((e) {
+      final seen = <String>{};
+      final result = <String>[];
+      for (final e in raw) {
+        if (e is! Map) continue;
         final category = (e['category'] as num?)?.toInt() ?? 0;
         final rating = (e['rating'] as num?)?.toInt() ?? 0;
-        return _ageRatingLabel(category, rating);
-      }).where((s) => s.isNotEmpty).toList();
+        final label = _ageRatingLabel(category, rating);
+        if (label.isNotEmpty && seen.add(label)) result.add(label);
+      }
+      return result;
     }
 
     return RommRom(
@@ -101,23 +113,21 @@ class RommRom {
       fsName: json['fs_name'] as String? ?? '',
       fsSizeBytes: (json['fs_size_bytes'] as num?)?.toInt() ?? 0,
       platformId: (json['platform_id'] as num?)?.toInt() ?? 0,
-      platformDisplayName:
-          json['platform_display_name'] as String? ?? '',
+      platformDisplayName: json['platform_display_name'] as String? ?? '',
       pathCoverSmall: json['path_cover_small'] as String?,
       pathCoverLarge: json['path_cover_large'] as String?,
       urlCover: json['url_cover'] as String?,
-      firstReleaseDate:
-          (json['first_release_date'] as num?)?.toInt(),
+      firstReleaseDate: (json['first_release_date'] as num?)?.toInt(),
       averageRating: (json['average_rating'] as num?)?.toDouble(),
       summary: json['summary'] as String?,
-      genres: toStrings(json['genres']),
-      companies: toNames(json['companies']),
-      franchises: toNames(json['franchises']),
-      collections: toNames(json['collections']),
+      genres: toAny(json['genres']),
+      companies: toAny(json['companies']),
+      franchises: toAny(json['franchises']),
+      collections: toAny(json['collections']),
       ageRatings: parseAgeRatings(json['age_ratings']),
-      gameModes: toNames(json['game_modes']),
-      regions: toStrings(json['regions']),
-      languages: toStrings(json['languages']),
+      gameModes: toAny(json['game_modes']),
+      regions: toAny(json['regions']),
+      languages: toAny(json['languages']),
       playerCount: (json['player_count'] as num?)?.toInt(),
       youtubeVideoId: json['youtube_video_id'] as String?,
     );
