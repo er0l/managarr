@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/external_link_chips.dart';
 import '../api/models/series.dart';
 import '../providers/sonarr_providers.dart';
 import 'sonarr_edit_series_screen.dart';
@@ -208,6 +209,50 @@ class _SonarrSeriesDetailScreenState
         }
       }
     });
+  }
+
+  Widget _buildExternalLinks() {
+    final links = <ExternalLink>[
+      if (_series.tvdbId != null && _series.tvdbId! > 0)
+        ExternalLink(
+          label: 'TVDB',
+          url: 'https://www.thetvdb.com/?id=${_series.tvdbId}&tab=series',
+          color: const Color(0xFF6DBE45),
+        ),
+      if (_series.imdbId != null && _series.imdbId!.isNotEmpty)
+        ExternalLink(
+          label: 'IMDB',
+          url: 'https://www.imdb.com/title/${_series.imdbId}/',
+          color: const Color(0xFFF5C518),
+        ),
+      if (_series.tmdbId != null && _series.tmdbId! > 0)
+        ExternalLink(
+          label: 'TMDB',
+          url: 'https://www.themoviedb.org/tv/${_series.tmdbId}',
+          color: const Color(0xFF01B4E4),
+        ),
+      if (_series.tvdbId != null && _series.tvdbId! > 0)
+        ExternalLink(
+          label: 'Trakt',
+          url:
+              'https://trakt.tv/search/tvdb/${_series.tvdbId}?id_type=show',
+          color: const Color(0xFFED1C24),
+        ),
+      if (_series.tvMazeId != null && _series.tvMazeId! > 0)
+        ExternalLink(
+          label: 'TVMaze',
+          url: 'https://www.tvmaze.com/shows/${_series.tvMazeId}',
+          color: const Color(0xFFEAB83C),
+        ),
+      ExternalLink(
+        label: 'MDBList',
+        url: _series.imdbId != null && _series.imdbId!.isNotEmpty
+            ? 'https://mdblist.com/?q=${_series.imdbId}'
+            : 'https://mdblist.com/?q=${Uri.encodeComponent(_series.title)}',
+        color: const Color(0xFF1B6EC2),
+      ),
+    ];
+    return ExternalLinksSection(links: links);
   }
 
   @override
@@ -434,6 +479,10 @@ class _SonarrSeriesDetailScreenState
                       ),
                     ),
                   ],
+
+                  // External links
+                  const SizedBox(height: Spacing.s16),
+                  _buildExternalLinks(),
 
                   // Seasons
                   if (seasons.isNotEmpty) ...[

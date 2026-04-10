@@ -24,6 +24,9 @@ class SonarrSeries {
     this.images,
     this.seasons,
     this.tvdbId,
+    this.imdbId,
+    this.tvMazeId,
+    this.tmdbId,
     this.path,
     this.rootFolderPath,
     this.tags,
@@ -53,6 +56,11 @@ class SonarrSeries {
   final List<SonarrImage>? images;
   final List<SonarrSeason>? seasons;
   final int? tvdbId;
+  final String? imdbId;
+  final int? tvMazeId;
+
+  /// TV show TMDB ID — present in Sonarr v4+, null on v3.
+  final int? tmdbId;
   final String? path;
   final String? rootFolderPath;
   final List<int>? tags;
@@ -64,6 +72,11 @@ class SonarrSeries {
 
   String? get fanartUrl => images
       ?.where((i) => i.coverType == 'fanart')
+      .map((i) => i.remoteUrl)
+      .firstOrNull;
+
+  String? get bannerUrl => images
+      ?.where((i) => i.coverType == 'banner')
       .map((i) => i.remoteUrl)
       .firstOrNull;
 

@@ -34,112 +34,154 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
         ? 'Specials'
         : 'Season ${season.seasonNumber}';
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18)),
-            Text(series.title,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400)),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: AppColors.textOnPrimary),
-            tooltip: 'Search Season',
-            onPressed: () => _searchSeason(context, ref),
+    // Prefer the wide banner image; fall back to fanart if no banner.
+    final headerImageUrl = series.bannerUrl ?? series.fanartUrl;
+
+    final actions = [
+      IconButton(
+        icon: const Icon(Icons.search, color: AppColors.textOnPrimary),
+        tooltip: 'Search Season',
+        onPressed: () => _searchSeason(context, ref),
+      ),
+      IconButton(
+        icon: const Icon(Icons.cloud_download_outlined,
+            color: AppColors.textOnPrimary),
+        tooltip: 'Season Releases',
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SonarrReleasesScreen(
+              series: series,
+              instance: instance,
+              seasonNumber: season.seasonNumber,
+              title: label,
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.cloud_download_outlined,
-                color: AppColors.textOnPrimary),
-            tooltip: 'Season Releases',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SonarrReleasesScreen(
-                  series: series,
-                  instance: instance,
-                  seasonNumber: season.seasonNumber,
-                  title: label,
-                ),
+        ),
+      ),
+    ];
+
+    final titleWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                color: AppColors.textOnPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 18)),
+        Text(series.title,
+            style: const TextStyle(
+                color: AppColors.textOnPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w400)),
+      ],
+    );
+
+    Widget buildBody(List<SonarrEpisode> episodes) {
+      if (episodes.isEmpty) {
+        return Center(
+          child: Text('No episodes found',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: AppColors.textSecondary)),
+        );
+      }
+      final sorted = [...episodes]
+        ..sort((a, b) => a.episodeNumber.compareTo(b.episodeNumber));
+      return ListView.builder(
+        padding: const EdgeInsets.only(top: Spacing.s8, bottom: Spacing.s24),
+        itemCount: sorted.length,
+        itemBuilder: (context, index) => _EpisodeTile(
+          episode: sorted[index],
+          series: series,
+          instance: instance,
+        ),
+      );
+    }
+
+    return Scaffold(
+      body: NestedScrollView(
+        headerSliverBuilder: (context, _) => [
+          SliverAppBar(
+            expandedHeight: headerImageUrl != null ? 180 : null,
+            pinned: true,
+            backgroundColor: AppColors.tealPrimary,
+            iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+            flexibleSpace: headerImageUrl != null
+                ? FlexibleSpaceBar(
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          headerImageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              Container(color: AppColors.tealPrimary),
+                        ),
+                        // Gradient so collapsed title text stays readable.
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Colors.black54],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 52),
+                    title: titleWidget,
+                  )
+                : null,
+            // When no image, show title inline in the AppBar.
+            title: headerImageUrl == null ? titleWidget : null,
+            actions: actions,
+          ),
+        ],
+        body: episodesAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(Spacing.s32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.cloud_off,
+                      size: 48, color: AppColors.statusOffline),
+                  const SizedBox(height: Spacing.s16),
+                  Text('Failed to load episodes',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: Spacing.s8),
+                  Text(e.toString(),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: AppColors.textSecondary),
+                      textAlign: TextAlign.center,
+                      maxLines: 3),
+                  const SizedBox(height: Spacing.s24),
+                  FilledButton.icon(
+                    onPressed: () => ref.invalidate(sonarrEpisodesProvider((
+                      instance: instance,
+                      seriesId: series.id,
+                      seasonNumber: season.seasonNumber,
+                    ))),
+                    style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.tealPrimary,
+                        foregroundColor: AppColors.textOnPrimary,
+                        shape: const StadiumBorder()),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
-      ),
-      body: episodesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(Spacing.s32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.cloud_off,
-                    size: 48, color: AppColors.statusOffline),
-                const SizedBox(height: Spacing.s16),
-                Text('Failed to load episodes',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: Spacing.s8),
-                Text(e.toString(),
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                    maxLines: 3),
-                const SizedBox(height: Spacing.s24),
-                FilledButton.icon(
-                  onPressed: () => ref.invalidate(sonarrEpisodesProvider((
-                    instance: instance,
-                    seriesId: series.id,
-                    seasonNumber: season.seasonNumber,
-                  ))),
-                  style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.tealPrimary,
-                      foregroundColor: AppColors.textOnPrimary,
-                      shape: const StadiumBorder()),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
+          data: buildBody,
         ),
-        data: (episodes) {
-          if (episodes.isEmpty) {
-            return Center(
-              child: Text('No episodes found',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(color: AppColors.textSecondary)),
-            );
-          }
-          final sorted = [...episodes]
-            ..sort((a, b) => a.episodeNumber.compareTo(b.episodeNumber));
-          return ListView.builder(
-            padding:
-                const EdgeInsets.only(top: Spacing.s8, bottom: Spacing.s24),
-            itemCount: sorted.length,
-            itemBuilder: (context, index) => _EpisodeTile(
-              episode: sorted[index],
-              series: series,
-              instance: instance,
-            ),
-          );
-        },
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/external_link_chips.dart';
 import '../api/models/movie.dart';
 import '../providers/radarr_providers.dart';
 import 'radarr_edit_movie_screen.dart';
@@ -380,9 +381,24 @@ class _OverviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final links = _buildMovieLinks(movie);
     return ListView(
       padding: const EdgeInsets.all(Spacing.pageHorizontal),
       children: [
+        // Banner image (TV-style wide banner; rare for movies but shown when available)
+        if (movie.bannerUrl != null) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              movie.bannerUrl!,
+              width: double.infinity,
+              height: 90,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+          ),
+          const SizedBox(height: Spacing.s16),
+        ],
         // Meta chips
         Wrap(
           spacing: Spacing.s8,
@@ -431,11 +447,74 @@ class _OverviewTab extends StatelessWidget {
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: AppColors.textSecondary, height: 1.55)),
         ],
+        // External links
+        if (links.isNotEmpty) ...[
+          const SizedBox(height: Spacing.s16),
+          ExternalLinksSection(links: links),
+        ],
         const SizedBox(height: Spacing.s48),
       ],
     );
   }
 }
+
+List<ExternalLink> _buildMovieLinks(RadarrMovie movie) => [
+  if (movie.tmdbId != null && movie.tmdbId! > 0)
+    ExternalLink(
+      label: 'TMDB',
+      url: 'https://www.themoviedb.org/movie/${movie.tmdbId}',
+      color: const Color(0xFF01B4E4),
+    ),
+  if (movie.imdbId != null && movie.imdbId!.isNotEmpty) ...[
+    ExternalLink(
+      label: 'IMDB',
+      url: 'https://www.imdb.com/title/${movie.imdbId}/',
+      color: const Color(0xFFF5C518),
+    ),
+    ExternalLink(
+      label: 'Trakt',
+      url: 'https://trakt.tv/search/imdb/${movie.imdbId}',
+      color: const Color(0xFFED1C24),
+    ),
+    ExternalLink(
+      label: 'MovieChat',
+      url: 'https://moviechat.org/${movie.imdbId}',
+      color: const Color(0xFF607D8B),
+    ),
+    ExternalLink(
+      label: 'MDBList',
+      url: 'https://mdblist.com/?q=${movie.imdbId}',
+      color: const Color(0xFF1B6EC2),
+    ),
+  ] else
+    ExternalLink(
+      label: 'MDBList',
+      url:
+          'https://mdblist.com/?q=${Uri.encodeComponent(movie.title)}',
+      color: const Color(0xFF1B6EC2),
+    ),
+  ExternalLink(
+    label: 'Letterboxd',
+    url:
+        'https://letterboxd.com/search/films/${Uri.encodeComponent(movie.title)}/',
+    color: const Color(0xFF00AC6C),
+  ),
+  ExternalLink(
+    label: 'Blu-ray',
+    url: 'https://www.blu-ray.com/search/?quicksearch=1'
+        '&quicksearch_keyword=${Uri.encodeComponent(movie.title)}'
+        '&section=bluraymovies',
+    color: const Color(0xFF1C355E),
+  ),
+  if (movie.youtubeTrailerId != null &&
+      movie.youtubeTrailerId!.isNotEmpty)
+    ExternalLink(
+      label: 'Trailer',
+      url:
+          'https://www.youtube.com/watch?v=${movie.youtubeTrailerId}',
+      color: const Color(0xFFFF0000),
+    ),
+];
 
 // =============================================================================
 // Files Tab

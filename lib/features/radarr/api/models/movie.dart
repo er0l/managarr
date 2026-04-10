@@ -11,6 +11,8 @@ class RadarrMovie {
     this.monitored = false,
     this.hasFile = false,
     this.tmdbId,
+    this.imdbId,
+    this.youtubeTrailerId,
     this.sortTitle,
     this.added,
     this.studio,
@@ -41,6 +43,8 @@ class RadarrMovie {
   @JsonKey(defaultValue: false)
   final bool hasFile;
   final int? tmdbId;
+  final String? imdbId;
+  final String? youtubeTrailerId;
   final String? sortTitle;
   final DateTime? added;
   final String? studio;
@@ -74,6 +78,11 @@ class RadarrMovie {
 
   String? get fanartUrl => images
       ?.where((i) => i.coverType == 'fanart')
+      .map((i) => i.remoteUrl)
+      .firstOrNull;
+
+  String? get bannerUrl => images
+      ?.where((i) => i.coverType == 'banner')
       .map((i) => i.remoteUrl)
       .firstOrNull;
 
