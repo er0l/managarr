@@ -22,6 +22,9 @@ class RommRom {
     this.languages = const [],
     this.playerCount,
     this.youtubeVideoId,
+    this.files = const [],
+    this.pathScreenshots = const [],
+    this.isFavourite = false,
   });
 
   final int id;
@@ -48,6 +51,9 @@ class RommRom {
   final List<String> languages;
   final int? playerCount;
   final String? youtubeVideoId;
+  final List<RommRomFile> files;
+  final List<String> pathScreenshots;
+  final bool isFavourite;
 
   int? get releaseYear {
     if (firstReleaseDate == null) return null;
@@ -130,6 +136,31 @@ class RommRom {
       languages: toAny(json['languages']),
       playerCount: (json['player_count'] as num?)?.toInt(),
       youtubeVideoId: json['youtube_video_id'] as String?,
+      files: (json['files'] as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(RommRomFile.fromJson)
+          .toList(),
+      pathScreenshots: (json['path_screenshots'] as List? ?? [])
+          .whereType<String>()
+          .toList(),
+      isFavourite: json['is_favourite'] as bool? ??
+          json['favourite'] as bool? ??
+          false,
+    );
+  }
+}
+
+class RommRomFile {
+  const RommRomFile({required this.id, required this.fileName, this.sizeBytes});
+  final int id;
+  final String fileName;
+  final int? sizeBytes;
+  factory RommRomFile.fromJson(Map<String, dynamic> json) {
+    return RommRomFile(
+      id: (json['id'] as num).toInt(),
+      fileName: json['file_name'] as String? ?? json['fs_name'] as String? ?? '',
+      sizeBytes: (json['file_size_bytes'] as num?)?.toInt() ??
+          (json['fs_size_bytes'] as num?)?.toInt(),
     );
   }
 }

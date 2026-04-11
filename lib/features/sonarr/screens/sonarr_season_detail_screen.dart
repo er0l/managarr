@@ -206,7 +206,7 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
 
 // ─── Episode tile ─────────────────────────────────────────────────────────────
 
-class _EpisodeTile extends StatelessWidget {
+class _EpisodeTile extends ConsumerStatefulWidget {
   const _EpisodeTile({
     required this.episode,
     required this.series,
@@ -218,10 +218,48 @@ class _EpisodeTile extends StatelessWidget {
   final Instance instance;
 
   @override
+  ConsumerState<_EpisodeTile> createState() => _EpisodeTileState();
+}
+
+class _EpisodeTileState extends ConsumerState<_EpisodeTile> {
+  late bool _monitored;
+  bool _toggling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _monitored = widget.episode.monitored;
+  }
+
+  Future<void> _toggleMonitor() async {
+    if (_toggling) return;
+    final newVal = !_monitored;
+    setState(() {
+      _monitored = newVal;
+      _toggling = true;
+    });
+    try {
+      final api = ref.read(sonarrApiProvider(widget.instance));
+      await api.toggleMonitorEpisode(widget.episode.id, newVal);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _monitored = !newVal);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error: $e'),
+              behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _toggling = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasFile = episode.hasFile;
-    final airDate = episode.airDate;
+    final hasFile = widget.episode.hasFile;
+    final airDate = widget.episode.airDate;
     String? formattedDate;
     if (airDate != null) {
       try {
@@ -249,7 +287,7 @@ class _EpisodeTile extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: Text(
-          episode.episodeNumber.toString(),
+          widget.episode.episodeNumber.toString(),
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -258,7 +296,7 @@ class _EpisodeTile extends StatelessWidget {
         ),
       ),
       title: Text(
-        episode.title,
+        widget.episode.title,
         style: theme.textTheme.bodyMedium?.copyWith(
           fontWeight: FontWeight.w600,
           color: hasFile ? null : AppColors.textSecondary,
@@ -274,9 +312,24 @@ class _EpisodeTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (!episode.monitored)
-            const Icon(Icons.bookmark_border,
-                size: 16, color: AppColors.textSecondary),
+          if (_toggling)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            GestureDetector(
+              onTap: _toggleMonitor,
+              child: Icon(
+                _monitored ? Icons.bookmark : Icons.bookmark_border,
+                size: 16,
+                color: _monitored
+                    ? AppColors.tealPrimary
+                    : AppColors.textSecondary,
+              ),
+            ),
+          const SizedBox(width: 4),
           if (hasFile)
             const Icon(Icons.check_circle_outline,
                 size: 16, color: AppColors.statusOnline),
@@ -295,9 +348,9 @@ class _EpisodeTile extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => _EpisodeDetailSheet(
-        episode: episode,
-        series: series,
-        instance: instance,
+        episode: widget.episode,
+        series: widget.series,
+        instance: widget.instance,
       ),
     );
   }

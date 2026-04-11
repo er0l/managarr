@@ -745,6 +745,36 @@ class _HistoryIcon extends StatelessWidget {
 // Shared widgets
 // =============================================================================
 
+void _showFullscreenImage(BuildContext context, String imageUrl) {
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      opaque: false,
+      barrierDismissible: true,
+      barrierColor: Colors.black87,
+      pageBuilder: (ctx, anim, secondaryAnim) => GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.broken_image,
+                    color: Colors.white54,
+                    size: 64),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 class _BackdropHeader extends StatelessWidget {
   const _BackdropHeader({required this.movie});
   final RadarrMovie movie;
@@ -758,8 +788,11 @@ class _BackdropHeader extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         if (fanart != null)
-          Image.network(fanart, fit: BoxFit.cover,
-              errorBuilder: (_, e, s) => _ColoredFallback(movie: movie))
+          GestureDetector(
+            onTap: () => _showFullscreenImage(context, fanart),
+            child: Image.network(fanart, fit: BoxFit.cover,
+                errorBuilder: (_, e, s) => _ColoredFallback(movie: movie)),
+          )
         else
           _ColoredFallback(movie: movie),
         const DecoratedBox(
@@ -775,17 +808,45 @@ class _BackdropHeader extends StatelessWidget {
         Positioned(
           bottom: 92,
           left: 16,
-          child: Container(
-            width: 60,
-            height: 90,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 8)],
+          child: GestureDetector(
+            onTap: poster != null
+                ? () => _showFullscreenImage(context, poster)
+                : null,
+            child: Stack(
+              children: [
+                Container(
+                  width: 60,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black54, blurRadius: 8)
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: poster != null
+                      ? Image.network(poster, fit: BoxFit.cover)
+                      : Container(color: AppColors.tealDark),
+                ),
+                if (poster != null)
+                  Positioned(
+                    right: 2,
+                    bottom: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(
+                        Icons.zoom_in,
+                        color: Colors.white70,
+                        size: 12,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            clipBehavior: Clip.antiAlias,
-            child: poster != null
-                ? Image.network(poster, fit: BoxFit.cover)
-                : Container(color: AppColors.tealDark),
           ),
         ),
       ],

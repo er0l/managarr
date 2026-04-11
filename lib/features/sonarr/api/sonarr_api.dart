@@ -287,4 +287,27 @@ class SonarrApi {
         .map((e) => SonarrCutoffRecord.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<void> toggleMonitorEpisode(int episodeId, bool monitored) async {
+    final getResp = await _dio.get<Map<String, dynamic>>('/api/v3/episode/$episodeId');
+    final json = Map<String, dynamic>.from(getResp.data!);
+    json['monitored'] = monitored;
+    await _dio.put<void>('/api/v3/episode/$episodeId', data: json);
+  }
+
+  Future<void> toggleMonitorSeason(int seriesId, int seasonNumber, bool monitored) async {
+    final getResp = await _dio.get<Map<String, dynamic>>('/api/v3/series/$seriesId');
+    final json = Map<String, dynamic>.from(getResp.data!);
+    final seasons = (json['seasons'] as List?)
+        ?.map((s) {
+          final m = Map<String, dynamic>.from(s as Map);
+          if ((m['seasonNumber'] as num?)?.toInt() == seasonNumber) {
+            m['monitored'] = monitored;
+          }
+          return m;
+        })
+        .toList();
+    if (seasons != null) json['seasons'] = seasons;
+    await _dio.put<void>('/api/v3/series/$seriesId', data: json);
+  }
 }

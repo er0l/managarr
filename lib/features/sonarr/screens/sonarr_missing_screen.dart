@@ -20,11 +20,36 @@ class SonarrMissingScreen extends ConsumerStatefulWidget {
 class _SonarrMissingScreenState extends ConsumerState<SonarrMissingScreen> {
   final _searchController = TextEditingController();
   String _query = '';
+  bool _isSearchingAll = false;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _searchAllMissing() async {
+    if (_isSearchingAll) return;
+    setState(() => _isSearchingAll = true);
+    try {
+      final api = ref.read(sonarrApiProvider(widget.instance));
+      await api.sendCommand('MissingEpisodeSearch');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Search all missing episodes started'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error: $e'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isSearchingAll = false);
+    }
   }
 
   List<SonarrSeries> _filterMissing(List<SonarrSeries> series) {
@@ -53,24 +78,48 @@ class _SonarrMissingScreenState extends ConsumerState<SonarrMissingScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search missing…',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              suffixIcon: _query.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _query = '');
-                      },
-                    )
-                  : null,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-            onChanged: (v) => setState(() => _query = v.trim()),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search missing…',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _query.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _query = '');
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onChanged: (v) => setState(() => _query = v.trim()),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Search All Missing',
+                child: IconButton(
+                  icon: _isSearchingAll
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.travel_explore_outlined),
+                  onPressed: _isSearchingAll ? null : _searchAllMissing,
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.tealPrimary.withAlpha(20),
+                    foregroundColor: AppColors.tealPrimary,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(

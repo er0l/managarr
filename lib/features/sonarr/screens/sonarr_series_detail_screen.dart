@@ -605,7 +605,7 @@ class _ColoredFallback extends StatelessWidget {
   }
 }
 
-class _SeasonTile extends StatelessWidget {
+class _SeasonTile extends ConsumerStatefulWidget {
   const _SeasonTile({
     required this.season,
     required this.series,
@@ -616,26 +616,64 @@ class _SeasonTile extends StatelessWidget {
   final Instance instance;
 
   @override
+  ConsumerState<_SeasonTile> createState() => _SeasonTileState();
+}
+
+class _SeasonTileState extends ConsumerState<_SeasonTile> {
+  late bool _monitored;
+  bool _toggling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _monitored = widget.season.monitored;
+  }
+
+  Future<void> _toggleMonitor() async {
+    if (_toggling) return;
+    final newVal = !_monitored;
+    setState(() {
+      _monitored = newVal;
+      _toggling = true;
+    });
+    try {
+      final api = ref.read(sonarrApiProvider(widget.instance));
+      await api.toggleMonitorSeason(
+          widget.series.id, widget.season.seasonNumber, newVal);
+      ref.invalidate(sonarrSeriesProvider(widget.instance));
+    } catch (e) {
+      if (mounted) {
+        setState(() => _monitored = !newVal);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error: $e'),
+              behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _toggling = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final stats = season.statistics;
+    final stats = widget.season.statistics;
     final fileCount = stats?.episodeFileCount ?? 0;
     final totalCount = stats?.totalEpisodeCount ?? 0;
-    final percent = totalCount > 0
-        ? fileCount / totalCount
-        : 1.0;
-    final label = season.seasonNumber == 0
+    final percent = totalCount > 0 ? fileCount / totalCount : 1.0;
+    final label = widget.season.seasonNumber == 0
         ? 'Specials'
-        : 'Season ${season.seasonNumber}';
+        : 'Season ${widget.season.seasonNumber}';
 
     return InkWell(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => SonarrSeasonDetailScreen(
-            series: series,
-            season: season,
-            instance: instance,
+            series: widget.series,
+            season: widget.season,
+            instance: widget.instance,
           ),
         ),
       ),
@@ -646,13 +684,23 @@ class _SeasonTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              season.monitored ? Icons.bookmark : Icons.bookmark_border,
-              size: 18,
-              color: season.monitored
-                  ? AppColors.tealPrimary
-                  : AppColors.textSecondary,
-            ),
+            _toggling
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.tealPrimary),
+                  )
+                : GestureDetector(
+                    onTap: _toggleMonitor,
+                    child: Icon(
+                      _monitored ? Icons.bookmark : Icons.bookmark_border,
+                      size: 18,
+                      color: _monitored
+                          ? AppColors.tealPrimary
+                          : AppColors.textSecondary,
+                    ),
+                  ),
             const SizedBox(width: Spacing.s12),
             Expanded(
               child: Column(

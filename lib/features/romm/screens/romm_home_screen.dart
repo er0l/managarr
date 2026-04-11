@@ -11,6 +11,7 @@ import '../api/models/romm_collection.dart';
 import '../api/models/romm_platform.dart';
 import '../api/models/romm_rom.dart';
 import '../api/models/romm_search_filters.dart';
+import '../api/models/romm_stats.dart';
 import '../api/romm_api.dart';
 import '../providers/romm_providers.dart';
 import 'romm_collection_screen.dart';
@@ -72,7 +73,9 @@ class _PlatformsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final platformsAsync = ref.watch(rommPlatformsProvider(instance));
+    final statsAsync = ref.watch(rommStatsProvider(instance));
     final api = ref.watch(rommApiProvider(instance));
+    final theme = Theme.of(context);
 
     return platformsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -106,27 +109,124 @@ class _PlatformsTab extends ConsumerWidget {
             ),
           );
         }
-        return RefreshIndicator(
-          onRefresh: () async =>
-              ref.invalidate(rommPlatformsProvider(instance)),
-          color: AppColors.tealPrimary,
-          child: GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.5,
+        return Column(
+          children: [
+            // Stats card
+            statsAsync.maybeWhen(
+              data: (stats) => _StatsCard(
+                stats: stats,
+                theme: theme,
+                onRescan: () async {
+                  try {
+                    await api.scanLibrary();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Library scan started'),
+                          backgroundColor: AppColors.statusOnline,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Scan failed: $e'),
+                          backgroundColor: AppColors.statusOffline,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+              orElse: () => const SizedBox.shrink(),
             ),
-            itemCount: platforms.length,
-            itemBuilder: (ctx, i) => _PlatformCard(
-              platform: platforms[i],
-              instance: instance,
-              api: api,
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(rommPlatformsProvider(instance));
+                  ref.invalidate(rommStatsProvider(instance));
+                },
+                color: AppColors.tealPrimary,
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.5,
+                  ),
+                  itemCount: platforms.length,
+                  itemBuilder: (ctx, i) => _PlatformCard(
+                    platform: platforms[i],
+                    instance: instance,
+                    api: api,
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         );
       },
+    );
+  }
+}
+
+class _StatsCard extends StatelessWidget {
+  const _StatsCard({
+    required this.stats,
+    required this.theme,
+    required this.onRescan,
+  });
+
+  final RommStats stats;
+  final ThemeData theme;
+  final VoidCallback onRescan;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = [
+      '${stats.totalRoms} ROMs',
+      '${stats.totalPlatforms} platforms',
+      if (stats.formattedSize.isNotEmpty) stats.formattedSize,
+    ];
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            const Icon(Icons.storage_outlined,
+                size: 18, color: AppColors.tealPrimary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                parts.join(' · '),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: onRescan,
+              icon: const Icon(Icons.refresh, size: 14),
+              label: const Text('Rescan'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.tealPrimary,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                textStyle: const TextStyle(fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -300,101 +400,188 @@ class _CollectionsTabState extends ConsumerState<_CollectionsTab> {
     super.dispose();
   }
 
+  Future<void> _showCreateCollectionDialog(
+      BuildContext context, RommApi api) async {
+    final nameCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New Collection'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              minLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    final name = nameCtrl.text.trim();
+    final desc = descCtrl.text.trim();
+    nameCtrl.dispose();
+    descCtrl.dispose();
+    if (confirmed != true || !mounted) return;
+    if (name.isEmpty) return;
+    try {
+      await api.createCollection(
+          name,
+          description: desc.isEmpty ? null : desc);
+      ref.invalidate(rommCollectionsProvider(widget.instance));
+      messenger.showSnackBar(SnackBar(
+        content: Text('Collection "$name" created'),
+        backgroundColor: AppColors.statusOnline,
+      ));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('Failed to create collection: $e'),
+        backgroundColor: AppColors.statusOffline,
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final collectionsAsync =
         ref.watch(rommCollectionsProvider(widget.instance));
+    final api = ref.watch(rommApiProvider(widget.instance));
 
-    return Column(
+    return Stack(
       children: [
-        // Search bar
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search collections…',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              suffixIcon: _searchTerm.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchTerm = '');
-                      },
-                    )
-                  : null,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-            ),
-            onChanged: (v) => setState(() => _searchTerm = v.toLowerCase()),
-          ),
-        ),
-        Expanded(
-          child: collectionsAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline,
-                      size: 48, color: AppColors.statusOffline),
-                  const SizedBox(height: 12),
-                  Text('$e'),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () =>
-                        ref.invalidate(rommCollectionsProvider(widget.instance)),
-                    child: const Text('Retry'),
+        Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search collections…',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _searchTerm.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchTerm = '');
+                          },
+                        )
+                      : null,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
                   ),
-                ],
+                  filled: true,
+                ),
+                onChanged: (v) => setState(() => _searchTerm = v.toLowerCase()),
               ),
             ),
-            data: (collections) {
-              final filtered = _searchTerm.isEmpty
-                  ? collections
-                  : collections
-                      .where((c) =>
-                          c.name.toLowerCase().contains(_searchTerm))
-                      .toList();
-
-              if (filtered.isEmpty) {
-                return Center(
+            Expanded(
+              child: collectionsAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.folder_off_outlined,
-                          size: 48, color: AppColors.textSecondary),
+                      const Icon(Icons.error_outline,
+                          size: 48, color: AppColors.statusOffline),
                       const SizedBox(height: 12),
-                      Text(
-                        _searchTerm.isNotEmpty
-                            ? 'No collections match "$_searchTerm"'
-                            : 'No collections found',
+                      Text('$e'),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => ref
+                            .invalidate(rommCollectionsProvider(widget.instance)),
+                        child: const Text('Retry'),
                       ),
                     ],
                   ),
-                );
-              }
-              return RefreshIndicator(
-                onRefresh: () async =>
-                    ref.invalidate(rommCollectionsProvider(widget.instance)),
-                color: AppColors.tealPrimary,
-                child: ListView.separated(
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (ctx, i) => _CollectionTile(
-                    collection: filtered[i],
-                    instance: widget.instance,
-                  ),
                 ),
-              );
-            },
+                data: (collections) {
+                  final filtered = _searchTerm.isEmpty
+                      ? collections
+                      : collections
+                          .where((c) =>
+                              c.name.toLowerCase().contains(_searchTerm))
+                          .toList();
+
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.folder_off_outlined,
+                              size: 48, color: AppColors.textSecondary),
+                          const SizedBox(height: 12),
+                          Text(
+                            _searchTerm.isNotEmpty
+                                ? 'No collections match "$_searchTerm"'
+                                : 'No collections found',
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return RefreshIndicator(
+                    onRefresh: () async =>
+                        ref.invalidate(rommCollectionsProvider(widget.instance)),
+                    color: AppColors.tealPrimary,
+                    child: ListView.separated(
+                      // Add padding at bottom so FAB doesn't cover last item
+                      padding: const EdgeInsets.only(bottom: 80),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (ctx, i) => _CollectionTile(
+                        collection: filtered[i],
+                        instance: widget.instance,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        // FAB for creating new collection
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton.extended(
+            heroTag: 'create_collection_fab',
+            backgroundColor: AppColors.tealPrimary,
+            foregroundColor: AppColors.textOnPrimary,
+            icon: const Icon(Icons.add),
+            label: const Text('New Collection'),
+            onPressed: () => _showCreateCollectionDialog(context, api),
           ),
         ),
       ],

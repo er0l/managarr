@@ -36,6 +36,8 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
 
   String _searchTerm = '';
   _ViewMode _viewMode = _ViewMode.list;
+  String _orderBy = 'name';
+  String _orderDir = 'asc';
 
   List<RommRom> _roms = [];
   int _offset = 0;
@@ -89,6 +91,8 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
         searchTerm: _searchTerm.isEmpty ? null : _searchTerm,
         limit: _pageSize,
         offset: reset ? 0 : _offset,
+        orderBy: _orderBy,
+        orderDir: _orderDir,
       );
       if (mounted) {
         setState(() {
@@ -122,6 +126,8 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
         searchTerm: _searchTerm.isEmpty ? null : _searchTerm,
         limit: _pageSize,
         offset: _offset,
+        orderBy: _orderBy,
+        orderDir: _orderDir,
       );
       if (mounted) {
         setState(() {
@@ -182,6 +188,39 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
           ],
         ),
         actions: [
+          PopupMenuButton<_SortOption>(
+            icon: const Icon(Icons.sort, color: AppColors.textOnPrimary),
+            tooltip: 'Sort',
+            onSelected: (opt) {
+              setState(() {
+                _orderBy = opt.orderBy;
+                _orderDir = opt.orderDir;
+              });
+              _loadPage(reset: true);
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: _SortOption('name', 'asc'),
+                child: Text('Name (A-Z)'),
+              ),
+              PopupMenuItem(
+                value: _SortOption('name', 'desc'),
+                child: Text('Name (Z-A)'),
+              ),
+              PopupMenuItem(
+                value: _SortOption('average_rating', 'desc'),
+                child: Text('Rating ↓'),
+              ),
+              PopupMenuItem(
+                value: _SortOption('fs_size_bytes', 'desc'),
+                child: Text('Size ↓'),
+              ),
+              PopupMenuItem(
+                value: _SortOption('first_release_date', 'desc'),
+                child: Text('Year ↓'),
+              ),
+            ],
+          ),
           IconButton(
             icon: Icon(
               _viewMode == _ViewMode.list
@@ -490,4 +529,14 @@ class _RomGridCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Sort option helper
+// ---------------------------------------------------------------------------
+
+class _SortOption {
+  const _SortOption(this.orderBy, this.orderDir);
+  final String orderBy;
+  final String orderDir;
 }

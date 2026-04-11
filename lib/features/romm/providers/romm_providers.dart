@@ -6,6 +6,7 @@ import '../api/models/romm_collection.dart';
 import '../api/models/romm_platform.dart';
 import '../api/models/romm_rom.dart';
 import '../api/models/romm_search_filters.dart';
+import '../api/models/romm_stats.dart';
 import '../api/romm_api.dart';
 
 final rommApiProvider = Provider.family<RommApi, Instance>(
@@ -99,3 +100,12 @@ final rommAvailableFiltersProvider =
     FutureProvider.autoDispose.family<RommAvailableFilters, Instance>(
         (ref, instance) =>
             ref.watch(rommApiProvider(instance)).getAvailableFilters());
+
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+
+final rommStatsProvider =
+    FutureProvider.autoDispose.family<RommStats, Instance>(
+        (ref, instance) =>
+            ref.watch(rommApiProvider(instance)).getStats());
