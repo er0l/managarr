@@ -1,3 +1,5 @@
+<img src="assets/images/logo.svg" width="64" height="64" align="left" alt="managarr logo">&nbsp;
+
 # managarr
 
 A Flutter mobile client for managing your self-hosted media automation stack. Connect to Radarr, Sonarr, Lidarr, Prowlarr, Overseerr/Jellyseerr, SABnzbd, NZBGet, rTorrent, Tautulli, and ROMM from a single app.

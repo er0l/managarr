@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="managarr logo">
+  <defs>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2A9BAD"></stop>
+      <stop offset="100%" stop-color="#0F5A68"></stop>
+    </linearGradient>
+    <clipPath id="shieldClip">
+      <path d="M64 8 L108 22 L108 60 C108 86 90 106 64 118 C38 106 20 86 20 60 L20 22 Z"></path>
+    </clipPath>
+  </defs>
+
+  
+  <path d="M64 8 L108 22 L108 60 C108 86 90 106 64 118 C38 106 20 86 20 60 L20 22 Z" fill="url(#shield)"></path>
+
+  
+  <g clip-path="url(#shieldClip)">
+    <circle cx="64" cy="54" r="26" fill="#EBF8FA" opacity="0.14"></circle>
+  </g>
+
+  
+  <g transform="translate(64 50)">
+    <circle r="22" fill="#EBF8FA"></circle>
+    <path d="M0 -11 L0 7 M-8 -1 L0 7 L8 -1" stroke="#0F5A68" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+    <line x1="-10" y1="12" x2="10" y2="12" stroke="#0F5A68" stroke-width="3.5" stroke-linecap="round"></line>
+  </g>
+
+  
+  <g transform="translate(64 92)">
+    
+    <circle cx="-18" cy="0" r="8" fill="#FF6B2B"></circle>
+    <path d="M-20 -3.2 L-20 3.2 L-15 0 Z" fill="#FFFFFF"></path>
+
+    
+    <circle cx="0" cy="0" r="8" fill="#FF6B2B"></circle>
+    <rect x="-3" y="-3.5" width="2" height="7" fill="#FFFFFF" rx="0.5"></rect>
+    <rect x="1" y="-3.5" width="2" height="7" fill="#FFFFFF" rx="0.5"></rect>
+
+    
+    <circle cx="18" cy="0" r="8" fill="#4FC3F7"></circle>
+    <path d="M15 -3 L15 3 L19 0 Z" fill="#FFFFFF"></path>
+    <rect x="19.5" y="-3" width="1.8" height="6" fill="#FFFFFF" rx="0.5"></rect>
+  </g>
+</svg>
