@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
@@ -246,19 +249,22 @@ class _PlatformCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Resolve logo URL and auth header.
+    // GitHub CDN SVG logo (primary) — matches platform slug exactly.
+    final githubSvgUrl =
+        'https://raw.githubusercontent.com/rommapp/romm/master/frontend/assets/platforms/${platform.slug}.svg';
+
+    // Resolve ROMM/IGDB fallback logo URL and auth header.
     // IGDB logos start with https:// — public, no auth needed.
     // ROMM-hosted logos may be relative paths — need base URL + auth.
     final rawLogoUrl = platform.urlLogo;
-    String? logoUrl;
-    Map<String, String>? logoHeaders;
+    String? fallbackUrl;
+    Map<String, String>? fallbackHeaders;
     if (rawLogoUrl != null && rawLogoUrl.isNotEmpty) {
       final isExternal = rawLogoUrl.startsWith('http');
-      logoUrl = isExternal ? rawLogoUrl : '${instance.baseUrl}$rawLogoUrl';
+      fallbackUrl = isExternal ? rawLogoUrl : '${instance.baseUrl}$rawLogoUrl';
       if (!isExternal) {
-        final encoded =
-            base64.encode(utf8.encode(instance.apiKey));
-        logoHeaders = {'Authorization': 'Basic $encoded'};
+        final encoded = base64.encode(utf8.encode(instance.apiKey));
+        fallbackHeaders = {'Authorization': 'Basic $encoded'};
       }
     }
 
@@ -280,18 +286,18 @@ class _PlatformCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo area — full-width row so the dark badge fills the space
+              // Logo area — tries GitHub SVG first, then IGDB/ROMM, then letter.
               SizedBox(
-                height: 40,
+                height: 48,
                 child: Row(
                   children: [
                     Expanded(
-                      child: logoUrl != null
-                          ? _PlatformLogo(
-                              url: logoUrl,
-                              headers: logoHeaders,
-                            )
-                          : _LetterBadge(platform.displayName),
+                      child: _PlatformLogo(
+                        githubSvgUrl: githubSvgUrl,
+                        fallbackUrl: fallbackUrl,
+                        fallbackHeaders: fallbackHeaders,
+                        platformName: platform.displayName,
+                      ),
                     ),
                   ],
                 ),
@@ -318,34 +324,104 @@ class _PlatformCard extends StatelessWidget {
   }
 }
 
-/// Dark badge containing the IGDB platform logo (white-on-transparent PNG),
-/// making it visible on both light and dark themes.
-class _PlatformLogo extends StatelessWidget {
-  const _PlatformLogo({required this.url, this.headers});
+/// Platform logo widget with a three-tier fallback chain:
+///   1. GitHub CDN SVG (rommapp/romm, keyed by platform slug)
+///   2. IGDB / ROMM-hosted raster logo (existing urlLogo field)
+///   3. _LetterBadge (first letter of platform name)
+///
+/// SVGs from GitHub are displayed directly on the card background — they are
+/// designed for transparent backgrounds and look great at any size.
+/// Raster IGDB logos (white-on-transparent PNGs) still use the dark badge so
+/// they stay visible on light themes.
+class _PlatformLogo extends StatefulWidget {
+  const _PlatformLogo({
+    required this.githubSvgUrl,
+    required this.platformName,
+    this.fallbackUrl,
+    this.fallbackHeaders,
+  });
 
-  final String url;
-  final Map<String, String>? headers;
+  final String githubSvgUrl;
+  final String? fallbackUrl;
+  final Map<String, String>? fallbackHeaders;
+  final String platformName;
+
+  @override
+  State<_PlatformLogo> createState() => _PlatformLogoState();
+}
+
+class _PlatformLogoState extends State<_PlatformLogo> {
+  // Cache the future so rebuilds don't re-trigger the fetch.
+  late final Future<Uint8List?> _svgFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _svgFuture = _fetchSvgBytes(widget.githubSvgUrl);
+  }
+
+  /// Fetches raw SVG bytes from [url].  Returns null on any error (including
+  /// HTTP non-200 responses), so the caller can fall back gracefully.
+  static Future<Uint8List?> _fetchSvgBytes(String url) async {
+    try {
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 8);
+      final request = await client.getUrl(Uri.parse(url));
+      final response = await request.close();
+      if (response.statusCode != 200) {
+        client.close(force: true);
+        return null;
+      }
+      final builder = BytesBuilder(copy: false);
+      await for (final chunk in response) {
+        builder.add(chunk);
+      }
+      client.close();
+      return builder.takeBytes();
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Image.network(
-        url,
-        fit: BoxFit.contain,
-        headers: headers,
-        errorBuilder: (_, _, _) => const FittedBox(
-          fit: BoxFit.contain,
-          child: Icon(
-            Icons.videogame_asset_outlined,
-            color: AppColors.tealPrimary,
-          ),
-        ),
-      ),
+    return FutureBuilder<Uint8List?>(
+      future: _svgFuture,
+      builder: (context, snap) {
+        // While loading — show nothing (card still visible, name shown below).
+        if (snap.connectionState != ConnectionState.done) {
+          return const SizedBox.expand();
+        }
+
+        final bytes = snap.data;
+        if (bytes != null) {
+          // Tier 1: GitHub SVG loaded successfully.
+          return SvgPicture.memory(
+            bytes,
+            fit: BoxFit.contain,
+          );
+        }
+
+        // Tier 2: GitHub SVG unavailable — try IGDB / ROMM raster logo.
+        if (widget.fallbackUrl != null) {
+          return Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Image.network(
+              widget.fallbackUrl!,
+              fit: BoxFit.contain,
+              headers: widget.fallbackHeaders,
+              errorBuilder: (_, _, _) => _LetterBadge(widget.platformName),
+            ),
+          );
+        }
+
+        // Tier 3: no logo at all — letter badge.
+        return _LetterBadge(widget.platformName);
+      },
     );
   }
 }
