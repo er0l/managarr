@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/instances_provider.dart';
 import '../repositories/instance_repository.dart';
+import '../services/image_cache_service.dart';
 import '../widgets/instance_list_tile.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -25,6 +26,11 @@ class SettingsScreen extends ConsumerWidget {
           // ── Appearance ──────────────────────────────────────────────────
           _SectionHeader(label: 'Appearance'),
           _ThemeSelector(),
+
+          // ── Storage ─────────────────────────────────────────────────────
+          _SectionHeader(label: 'Storage'),
+          const _InMemoryCacheTile(),
+          const _TempFilesTile(),
 
           // ── Instances ───────────────────────────────────────────────────
           if (populated.isNotEmpty) _SectionHeader(label: 'Instances'),
@@ -179,6 +185,164 @@ class _ServiceTypeHeader extends StatelessWidget {
               letterSpacing: 0.5,
             ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// In-memory image cache tile
+// ---------------------------------------------------------------------------
+
+class _InMemoryCacheTile extends StatefulWidget {
+  const _InMemoryCacheTile();
+
+  @override
+  State<_InMemoryCacheTile> createState() => _InMemoryCacheTileState();
+}
+
+class _InMemoryCacheTileState extends State<_InMemoryCacheTile> {
+  void _clear() {
+    ImageCacheService.clearInMemoryCache();
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Image cache cleared'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final info = ImageCacheService.getInMemoryInfo();
+    final theme = Theme.of(context);
+
+    final subtitle = info.isEmpty
+        ? 'Empty'
+        : '${ImageCacheService.formatBytes(info.sizeBytes)}'
+            ' · ${info.imageCount} image${info.imageCount == 1 ? '' : 's'} loaded';
+
+    return ListTile(
+      contentPadding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.tealPrimary.withAlpha(18),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.image_outlined,
+          size: 20,
+          color: AppColors.tealPrimary,
+        ),
+      ),
+      title: Text('Image cache', style: theme.textTheme.bodyLarge),
+      subtitle: Text(
+        subtitle,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      ),
+      trailing: TextButton(
+        onPressed: info.isEmpty ? null : _clear,
+        child: const Text('Clear'),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Temporary files tile
+// ---------------------------------------------------------------------------
+
+class _TempFilesTile extends StatefulWidget {
+  const _TempFilesTile();
+
+  @override
+  State<_TempFilesTile> createState() => _TempFilesTileState();
+}
+
+class _TempFilesTileState extends State<_TempFilesTile> {
+  late Future<int> _sizeFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _sizeFuture = ImageCacheService.getTempDirSize();
+  }
+
+  Future<void> _clear() async {
+    await ImageCacheService.clearTempDir();
+    if (!mounted) return;
+    setState(() {
+      _sizeFuture = ImageCacheService.getTempDirSize();
+    });
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Temporary files cleared'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return FutureBuilder<int>(
+      future: _sizeFuture,
+      builder: (context, snap) {
+        final loading = !snap.hasData && !snap.hasError;
+        final bytes = snap.data ?? 0;
+        final empty = bytes == 0;
+
+        final subtitle = loading
+            ? 'Calculating…'
+            : empty
+                ? 'Empty'
+                : ImageCacheService.formatBytes(bytes);
+
+        return ListTile(
+          contentPadding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.tealPrimary.withAlpha(18),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.folder_open_outlined,
+              size: 20,
+              color: AppColors.tealPrimary,
+            ),
+          ),
+          title: Text('Temporary files', style: theme.textTheme.bodyLarge),
+          subtitle: Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          trailing: loading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.tealPrimary,
+                  ),
+                )
+              : TextButton(
+                  onPressed: empty ? null : _clear,
+                  child: const Text('Clear'),
+                ),
+        );
+      },
     );
   }
 }
