@@ -174,7 +174,24 @@ class _AppShell extends ConsumerWidget {
         ),
         iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
         actions: [
+          // Dashboard: grid ↔ list density toggle
+          if (navigationShell.currentIndex == 0)
+            IconButton(
+              icon: Icon(
+                ref.watch(dashboardListModeProvider)
+                    ? Icons.grid_view_outlined
+                    : Icons.view_list_outlined,
+                color: AppColors.textOnPrimary,
+              ),
+              tooltip: ref.watch(dashboardListModeProvider)
+                  ? 'Grid view'
+                  : 'List view',
+              onPressed: () => ref
+                  .read(dashboardListModeProvider.notifier)
+                  .state = !ref.read(dashboardListModeProvider),
+            ),
           ..._actionsForTab(context, ref, navigationShell.currentIndex),
+          // Calendar: month ↔ list view
           if (navigationShell.currentIndex == 2)
             IconButton(
               icon: Icon(

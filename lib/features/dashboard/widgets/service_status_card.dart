@@ -18,6 +18,10 @@ import '../../../features/romm/providers/romm_providers.dart';
 import '../models/health_result.dart';
 import '../providers/health_check_provider.dart';
 
+// ---------------------------------------------------------------------------
+// Grid card (compact 2-col mode)
+// ---------------------------------------------------------------------------
+
 class ServiceStatusCard extends ConsumerWidget {
   const ServiceStatusCard({super.key, required this.instance});
 
@@ -26,15 +30,15 @@ class ServiceStatusCard extends ConsumerWidget {
   void _onTap(BuildContext context) {
     final type = ServiceType.values.byName(instance.serviceType);
     final route = switch (type) {
-      ServiceType.radarr => '/radarr/${instance.id}',
-      ServiceType.sonarr => '/sonarr/${instance.id}',
-      ServiceType.seer => '/seer/${instance.id}',
+      ServiceType.radarr   => '/radarr/${instance.id}',
+      ServiceType.sonarr   => '/sonarr/${instance.id}',
+      ServiceType.seer     => '/seer/${instance.id}',
       ServiceType.rtorrent => '/rtorrent/${instance.id}',
-      ServiceType.sabnzbd => '/sabnzbd/${instance.id}',
+      ServiceType.sabnzbd  => '/sabnzbd/${instance.id}',
       ServiceType.prowlarr => '/prowlarr/${instance.id}',
-      ServiceType.lidarr => '/lidarr/${instance.id}',
+      ServiceType.lidarr   => '/lidarr/${instance.id}',
       ServiceType.tautulli => '/tautulli/${instance.id}',
-      ServiceType.romm => '/romm/${instance.id}',
+      ServiceType.romm     => '/romm/${instance.id}',
       _ => null,
     };
 
@@ -79,10 +83,10 @@ class ServiceStatusCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Row 1: icon + name + status chip
+              // Row 1: brand avatar + name + status pill
               Row(
                 children: [
-                  _ServiceAvatar(type: type),
+                  _ServiceAvatar(type: type, size: 40),
                   const SizedBox(width: Spacing.s8),
                   Expanded(
                     child: Text(
@@ -94,7 +98,8 @@ class ServiceStatusCard extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  _StatusDot(healthAsync: healthAsync),
+                  const SizedBox(width: Spacing.s4),
+                  _StatusPill(healthAsync: healthAsync),
                 ],
               ),
               const SizedBox(height: Spacing.s8),
@@ -108,9 +113,9 @@ class ServiceStatusCard extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: Spacing.s12),
-              // Row 2: version / latency / error
+              // Version / latency
               _HealthDetail(healthAsync: healthAsync),
-              // Summary stats (service-specific metrics)
+              // Service-specific metrics
               _ServiceSummary(instance: instance, type: type),
             ],
           ),
@@ -121,7 +126,218 @@ class ServiceStatusCard extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Service summary — per-type actionable metrics
+// List tile (rows mode — full-width horizontal card)
+// ---------------------------------------------------------------------------
+
+class ServiceStatusListTile extends ConsumerWidget {
+  const ServiceStatusListTile({super.key, required this.instance});
+
+  final Instance instance;
+
+  void _onTap(BuildContext context) {
+    final type = ServiceType.values.byName(instance.serviceType);
+    final route = switch (type) {
+      ServiceType.radarr   => '/radarr/${instance.id}',
+      ServiceType.sonarr   => '/sonarr/${instance.id}',
+      ServiceType.seer     => '/seer/${instance.id}',
+      ServiceType.rtorrent => '/rtorrent/${instance.id}',
+      ServiceType.sabnzbd  => '/sabnzbd/${instance.id}',
+      ServiceType.prowlarr => '/prowlarr/${instance.id}',
+      ServiceType.lidarr   => '/lidarr/${instance.id}',
+      ServiceType.tautulli => '/tautulli/${instance.id}',
+      ServiceType.romm     => '/romm/${instance.id}',
+      _ => null,
+    };
+    if (route != null) {
+      context.push(route);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${type.displayName} module coming soon'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final healthAsync = ref.watch(healthCheckProvider(instance));
+    final type = ServiceType.values.byName(instance.serviceType);
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: theme.colorScheme.surface,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        splashColor: AppColors.tealPrimary.withAlpha(20),
+        onTap: () => _onTap(context),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: theme.shadowColor.withAlpha(20),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+          child: Row(
+            children: [
+              // Brand avatar — slightly larger in list mode
+              _ServiceAvatar(type: type, size: 44),
+              const SizedBox(width: Spacing.s12),
+              // Text column
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Service name + status pill
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            type.displayName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: Spacing.s8),
+                        _StatusPill(healthAsync: healthAsync),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    // Instance name in mono
+                    Text(
+                      instance.name,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    // Stats row
+                    _ServiceSummary(instance: instance, type: type),
+                  ],
+                ),
+              ),
+              // Chevron
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant.withAlpha(140),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared: service avatar with brand color
+// ---------------------------------------------------------------------------
+
+class _ServiceAvatar extends StatelessWidget {
+  const _ServiceAvatar({required this.type, this.size = 40});
+
+  final ServiceType type;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = type.brandColor;
+    final fg = type.brandColorNeedsDarkText
+        ? AppColors.textPrimary
+        : Colors.white;
+    final fontSize = (size * 0.45).roundToDouble();
+    final radius = size * 0.25;
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        type.displayName[0],
+        style: TextStyle(
+          color: fg,
+          fontWeight: FontWeight.w700,
+          fontSize: fontSize,
+          fontFamily: 'Inter',
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared: status pill (spec § 8 — radius 4, tinted bg + border, 11sp)
+// ---------------------------------------------------------------------------
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.healthAsync});
+
+  final AsyncValue<HealthResult> healthAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return healthAsync.when(
+      loading: () => const SizedBox(
+        width: 14,
+        height: 14,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppColors.statusUnknown,
+        ),
+      ),
+      error: (e, _) =>_pill(AppColors.statusOffline, 'Offline'),
+      data: (r) => _pill(
+        r.online ? AppColors.statusOnline : AppColors.statusOffline,
+        r.online ? 'Online' : 'Offline',
+      ),
+    );
+  }
+
+  Widget _pill(Color color, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withAlpha(30),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withAlpha(100)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          height: 1.3,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared: service-specific summary metrics
 // ---------------------------------------------------------------------------
 
 class _ServiceSummary extends ConsumerWidget {
@@ -134,164 +350,101 @@ class _ServiceSummary extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final row = _buildRow(context, ref);
     if (row == null) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: Spacing.s8),
-        const Divider(height: 1, thickness: 0.5),
-        const SizedBox(height: 6),
-        row,
-      ],
-    );
+    return row;
   }
 
   Widget? _buildRow(BuildContext context, WidgetRef ref) {
     if (type == ServiceType.radarr) {
       final q = ref.watch(radarrQueueProvider(instance));
       return _StatsRow(stats: [
-        _Stat(
-          Icons.download_outlined,
-          q.when(
-            data: (q) => '${q.totalRecords} queued',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
+        _Stat(Icons.download_outlined, q.when(
+          data: (q) => '${q.totalRecords} queued',
+          loading: () => '…', error: (e, _) =>'—',
+        )),
       ]);
     }
-
     if (type == ServiceType.sonarr) {
       final q = ref.watch(sonarrQueueProvider(instance));
       return _StatsRow(stats: [
-        _Stat(
-          Icons.download_outlined,
-          q.when(
-            data: (q) => '${q.totalRecords} queued',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
+        _Stat(Icons.download_outlined, q.when(
+          data: (q) => '${q.totalRecords} queued',
+          loading: () => '…', error: (e, _) =>'—',
+        )),
       ]);
     }
-
     if (type == ServiceType.lidarr) {
       final q = ref.watch(lidarrQueueProvider(instance));
       return _StatsRow(stats: [
-        _Stat(
-          Icons.download_outlined,
-          q.when(
-            data: (q) => '${q.totalRecords} queued',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
+        _Stat(Icons.download_outlined, q.when(
+          data: (q) => '${q.totalRecords} queued',
+          loading: () => '…', error: (e, _) =>'—',
+        )),
       ]);
     }
-
     if (type == ServiceType.tautulli) {
       final a = ref.watch(tautulliActivityProvider(instance));
       return _StatsRow(stats: [
-        _Stat(
-          Icons.play_circle_outline,
-          a.when(
-            data: (a) => '${a.streamCount} streaming',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
+        _Stat(Icons.play_circle_outline, a.when(
+          data: (a) => '${a.streamCount} streaming',
+          loading: () => '…', error: (e, _) =>'—',
+        )),
       ]);
     }
-
     if (type == ServiceType.seer) {
       final r = ref.watch(seerRequestsProvider(instance));
       return _StatsRow(stats: [
-        _Stat(
-          Icons.pending_outlined,
-          r.when(
-            data: (reqs) =>
-                '${reqs.where((r) => r.status == 1).length} pending',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
+        _Stat(Icons.pending_outlined, r.when(
+          data: (reqs) => '${reqs.where((r) => r.status == 1).length} pending',
+          loading: () => '…', error: (e, _) =>'—',
+        )),
       ]);
     }
-
     if (type == ServiceType.rtorrent) {
       final t = ref.watch(rtorrentTorrentsProvider(instance));
       return _StatsRow(stats: [
-        _Stat(
-          Icons.downloading_outlined,
-          t.when(
-            data: (list) =>
-                '${list.where((t) => t.isActive).length} active',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
+        _Stat(Icons.downloading_outlined, t.when(
+          data: (list) => '${list.where((t) => t.isActive).length} active',
+          loading: () => '…', error: (e, _) =>'—',
+        )),
       ]);
     }
-
     if (type == ServiceType.sabnzbd) {
       final q = ref.watch(sabnzbdQueueProvider(instance));
       return _StatsRow(stats: [
-        _Stat(
-          Icons.download_outlined,
-          q.when(
-            data: (q) =>
-                '${q.items.length} item${q.items.length == 1 ? '' : 's'}',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
-        _Stat(
-          Icons.speed_outlined,
-          q.when(
-            data: (q) {
-              final s = q.speed.trim();
-              return s.isEmpty || s == '0' ? 'idle' : '$s KB/s';
-            },
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
+        _Stat(Icons.download_outlined, q.when(
+          data: (q) => '${q.items.length} item${q.items.length == 1 ? '' : 's'}',
+          loading: () => '…', error: (e, _) =>'—',
+        )),
+        _Stat(Icons.speed_outlined, q.when(
+          data: (q) {
+            final s = q.speed.trim();
+            return s.isEmpty || s == '0' ? 'idle' : '$s KB/s';
+          },
+          loading: () => '…', error: (e, _) =>'—',
+        )),
       ]);
     }
-
     if (type == ServiceType.nzbget) {
       final q = ref.watch(nzbgetQueueProvider(instance));
       return _StatsRow(stats: [
-        _Stat(
-          Icons.download_outlined,
-          q.when(
-            data: (q) => '${q.items.length} queued',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
+        _Stat(Icons.download_outlined, q.when(
+          data: (q) => '${q.items.length} queued',
+          loading: () => '…', error: (e, _) =>'—',
+        )),
       ]);
     }
-
     if (type == ServiceType.romm) {
       final p = ref.watch(rommPlatformsProvider(instance));
       return _StatsRow(stats: [
-        _Stat(
-          Icons.videogame_asset_outlined,
-          p.when(
-            data: (list) => '${list.length} platforms',
-            loading: () => '…',
-            error: (e, _) => '—',
-          ),
-        ),
+        _Stat(Icons.videogame_asset_outlined, p.when(
+          data: (list) => '${list.length} platforms',
+          loading: () => '…', error: (e, _) =>'—',
+        )),
       ]);
     }
-
-    // Prowlarr — no applicable summary metrics
-    return null;
+    return null; // Prowlarr
   }
 }
-
 
 class _Stat {
   const _Stat(this.icon, this.label);
@@ -318,8 +471,7 @@ class _StatsRow extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(s.icon, size: 11,
-                  color: theme.colorScheme.onSurfaceVariant),
+              Icon(s.icon, size: 11, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 3),
               Text(s.label, style: style),
             ],
@@ -330,72 +482,8 @@ class _StatsRow extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Existing helper widgets (unchanged)
+// Shared: health detail (version + latency)
 // ---------------------------------------------------------------------------
-
-class _ServiceAvatar extends StatelessWidget {
-  const _ServiceAvatar({required this.type});
-  final ServiceType type;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: AppColors.tealPrimary.withAlpha(20),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        type.displayName[0],
-        style: const TextStyle(
-          color: AppColors.tealPrimary,
-          fontWeight: FontWeight.w700,
-          fontSize: 18,
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.healthAsync});
-  final AsyncValue<HealthResult> healthAsync;
-
-  @override
-  Widget build(BuildContext context) {
-    return healthAsync.when(
-      loading: () => const SizedBox(
-        width: 12,
-        height: 12,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: AppColors.statusUnknown,
-        ),
-      ),
-      error: (e, s) =>
-          const _StatusIndicatorDot(color: AppColors.statusOffline),
-      data: (result) => _StatusIndicatorDot(
-        color: result.online
-            ? AppColors.statusOnline
-            : AppColors.statusOffline,
-      ),
-    );
-  }
-}
-
-class _StatusIndicatorDot extends StatelessWidget {
-  const _StatusIndicatorDot({required this.color});
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: 10,
-        height: 10,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      );
-}
 
 class _HealthDetail extends StatelessWidget {
   const _HealthDetail({required this.healthAsync});
@@ -410,18 +498,14 @@ class _HealthDetail extends StatelessWidget {
 
     return healthAsync.when(
       loading: () => Text('Checking…', style: style),
-      error: (e, _) =>
-          Text('Error: ${e.toString()}', style: style, maxLines: 2),
+      error: (e, _) => Text('Error: ${e.toString()}', style: style, maxLines: 2),
       data: (result) {
         if (!result.online) {
           return Row(
             children: [
-              const Icon(Icons.cloud_off,
-                  size: 12, color: AppColors.statusOffline),
+              const Icon(Icons.cloud_off, size: 12, color: AppColors.statusOffline),
               const SizedBox(width: 4),
-              Text('Unreachable',
-                  style: style?.copyWith(
-                      color: AppColors.statusOffline)),
+              Text('Unreachable', style: style?.copyWith(color: AppColors.statusOffline)),
             ],
           );
         }
@@ -431,9 +515,7 @@ class _HealthDetail extends StatelessWidget {
             if (result.version != null)
               Row(
                 children: [
-                  Icon(Icons.tag,
-                      size: 12,
-                      color: theme.colorScheme.onSurfaceVariant),
+                  Icon(Icons.tag, size: 12, color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text('v${result.version}', style: style),
                 ],
@@ -442,9 +524,7 @@ class _HealthDetail extends StatelessWidget {
               const SizedBox(height: 2),
               Row(
                 children: [
-                  Icon(Icons.speed,
-                      size: 12,
-                      color: theme.colorScheme.onSurfaceVariant),
+                  Icon(Icons.speed, size: 12, color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text('${result.responseMs}ms', style: style),
                 ],

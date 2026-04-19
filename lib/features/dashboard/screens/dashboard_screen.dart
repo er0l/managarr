@@ -9,12 +9,17 @@ import '../models/health_result.dart';
 import '../providers/health_check_provider.dart';
 import '../widgets/service_status_card.dart';
 
+/// Persists the user's choice between compact grid and full-width list layout.
+/// false = compact grid (2-col), true = rows list (1-col full-width).
+final dashboardListModeProvider = StateProvider<bool>((ref) => false);
+
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final instancesAsync = ref.watch(instancesProvider);
+    final listMode = ref.watch(dashboardListModeProvider);
 
     return instancesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -27,7 +32,6 @@ class DashboardScreen extends ConsumerWidget {
             for (final i in enabled) {
               ref.invalidate(healthCheckProvider(i));
             }
-            // Wait for all health checks to settle
             await Future.wait(
               enabled.map(
                 (i) => ref
@@ -41,11 +45,34 @@ class DashboardScreen extends ConsumerWidget {
               SliverToBoxAdapter(
                 child: _Header(
                   instanceCount: enabled.length,
+                  onlineCount: enabled.isEmpty ? 0 : null,
                 ),
               ),
               if (enabled.isEmpty)
                 const SliverFillRemaining(child: _NoInstancesHint())
+              else if (listMode)
+                // ── Rows / list mode ──────────────────────────────────────
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Spacing.pageHorizontal,
+                    0,
+                    Spacing.pageHorizontal,
+                    Spacing.s24,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => Padding(
+                        padding: EdgeInsets.only(
+                          bottom: index < enabled.length - 1 ? Spacing.cardGap : 0,
+                        ),
+                        child: ServiceStatusListTile(instance: enabled[index]),
+                      ),
+                      childCount: enabled.length,
+                    ),
+                  ),
+                )
               else
+                // ── Compact / grid mode ───────────────────────────────────
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(
                     Spacing.pageHorizontal,
@@ -79,12 +106,13 @@ class DashboardScreen extends ConsumerWidget {
 
 // ---------------------------------------------------------------------------
 
-class _Header extends StatelessWidget {
-  const _Header({required this.instanceCount});
+class _Header extends ConsumerWidget {
+  const _Header({required this.instanceCount, this.onlineCount});
   final int instanceCount;
+  final int? onlineCount;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
