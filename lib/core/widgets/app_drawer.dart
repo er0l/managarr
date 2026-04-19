@@ -169,21 +169,16 @@ class _ServiceIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = _assetForType(type);
     final color = Theme.of(context).colorScheme.onSurfaceVariant;
-
-    if (asset != null) {
-      return SvgPicture.asset(
-        asset,
-        width: 20,
-        height: 20,
-        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-      );
-    }
-    return Icon(_iconForType(type), size: 20, color: color);
+    return SvgPicture.asset(
+      _assetForType(type),
+      width: 20,
+      height: 20,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+    );
   }
 
-  String? _assetForType(ServiceType type) => switch (type) {
+  String _assetForType(ServiceType type) => switch (type) {
         ServiceType.radarr   => 'assets/brands/radarr.svg',
         ServiceType.sonarr   => 'assets/brands/sonarr.svg',
         ServiceType.lidarr   => 'assets/brands/lidarr.svg',
@@ -192,12 +187,7 @@ class _ServiceIcon extends StatelessWidget {
         ServiceType.nzbget   => 'assets/brands/nzbget.svg',
         ServiceType.tautulli => 'assets/brands/tautulli.svg',
         ServiceType.romm     => 'assets/brands/romm.svg',
-        _                    => null,
-      };
-
-  IconData _iconForType(ServiceType type) => switch (type) {
-        ServiceType.rtorrent  => Icons.cloud_download_outlined,
-        ServiceType.prowlarr  => Icons.search_outlined,
-        _                     => Icons.settings_outlined,
+        ServiceType.rtorrent => 'assets/brands/rtorrent.svg',
+        ServiceType.prowlarr => 'assets/brands/prowlarr.svg',
       };
 }

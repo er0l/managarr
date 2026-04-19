@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 230" fill="none" stroke="black" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Small accent mark upper-left (pen-lift curl) -->
+  <path stroke-width="8"  d="M 15 62 C 13 46 26 32 40 44"/>
+  <!-- Vertical stem -->
+  <path stroke-width="14" d="M 44 46 L 44 215"/>
+  <!-- Large sweeping shoulder arch -->
+  <path stroke-width="14" d="M 44 58 C 44 18 90 2 132 6 C 176 10 196 46 186 88 C 177 124 148 142 112 136"/>
+</svg>

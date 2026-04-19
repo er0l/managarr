@@ -27,11 +27,6 @@ class SettingsScreen extends ConsumerWidget {
           _SectionHeader(label: 'Appearance'),
           _ThemeSelector(),
 
-          // ── Storage ─────────────────────────────────────────────────────
-          _SectionHeader(label: 'Storage'),
-          const _InMemoryCacheTile(),
-          const _TempFilesTile(),
-
           // ── Instances ───────────────────────────────────────────────────
           if (populated.isNotEmpty) _SectionHeader(label: 'Instances'),
           if (populated.isEmpty)
@@ -52,6 +47,11 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
             ],
+
+          // ── Storage ─────────────────────────────────────────────────────
+          _SectionHeader(label: 'Storage'),
+          const _InMemoryCacheTile(),
+          const _TempFilesTile(),
           const SizedBox(height: 80),
         ],
       ),

@@ -258,7 +258,7 @@ class _ServiceAvatar extends StatelessWidget {
   final ServiceType type;
   final double size;
 
-  static String? _assetForType(ServiceType type) => switch (type) {
+  static String _assetForType(ServiceType type) => switch (type) {
         ServiceType.radarr   => 'assets/brands/radarr.svg',
         ServiceType.sonarr   => 'assets/brands/sonarr.svg',
         ServiceType.lidarr   => 'assets/brands/lidarr.svg',
@@ -267,7 +267,8 @@ class _ServiceAvatar extends StatelessWidget {
         ServiceType.nzbget   => 'assets/brands/nzbget.svg',
         ServiceType.tautulli => 'assets/brands/tautulli.svg',
         ServiceType.romm     => 'assets/brands/romm.svg',
-        _                    => null,
+        ServiceType.rtorrent => 'assets/brands/rtorrent.svg',
+        ServiceType.prowlarr => 'assets/brands/prowlarr.svg',
       };
 
   @override
@@ -277,7 +278,6 @@ class _ServiceAvatar extends StatelessWidget {
         ? AppColors.textPrimary
         : Colors.white;
     final radius = size * 0.25;
-    final asset = _assetForType(type);
     final iconSize = size * 0.60;
 
     return Container(
@@ -288,22 +288,12 @@ class _ServiceAvatar extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
       ),
       alignment: Alignment.center,
-      child: asset != null
-          ? SvgPicture.asset(
-              asset,
-              width: iconSize,
-              height: iconSize,
-              colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
-            )
-          : Text(
-              type.displayName[0],
-              style: TextStyle(
-                color: fg,
-                fontWeight: FontWeight.w700,
-                fontSize: (size * 0.45).roundToDouble(),
-                fontFamily: 'Inter',
-              ),
-            ),
+      child: SvgPicture.asset(
+        _assetForType(type),
+        width: iconSize,
+        height: iconSize,
+        colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
+      ),
     );
   }
 }
