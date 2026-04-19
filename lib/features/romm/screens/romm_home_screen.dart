@@ -285,28 +285,23 @@ class _PlatformCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Dark logo header — all platform artwork is designed for
-            //    dark backgrounds; this eliminates visible black outlines.
-            SizedBox(
-              height: 64,
-              width: double.infinity,
-              child: ColoredBox(
-                color: const Color(0xFF12121E),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: _PlatformLogo(
-                    slug: platform.slug,
-                    githubSvgUrl: githubSvgUrl,
-                    fallbackUrl: fallbackUrl,
-                    fallbackHeaders: fallbackHeaders,
-                    platformName: platform.displayName,
-                  ),
+            // ── Logo area — SVGs have transparency and render fine on the
+            //    card's natural (light or dark) background colour.
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: _PlatformLogo(
+                  slug: platform.slug,
+                  githubSvgUrl: githubSvgUrl,
+                  fallbackUrl: fallbackUrl,
+                  fallbackHeaders: fallbackHeaders,
+                  platformName: platform.displayName,
                 ),
               ),
             ),
             // ── Platform name + ROM count ──────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -334,8 +329,7 @@ class _PlatformCard extends StatelessWidget {
   }
 }
 
-/// Platform logo with a three-tier fallback chain (all rendered on the dark
-/// card header — no extra badge needed):
+/// Platform logo with a three-tier fallback chain:
 ///
 ///   1. Bundled local asset  assets/platforms/{slug}.svg
 ///      229 platform SVGs shipped with the app; instant, no network.
@@ -417,7 +411,6 @@ class _PlatformLogoState extends State<_PlatformLogo> {
       future: _svgFuture,
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
-          // Still loading — dark header is already visible, nothing to show.
           return const SizedBox.expand();
         }
 
@@ -444,8 +437,8 @@ class _PlatformLogoState extends State<_PlatformLogo> {
   }
 }
 
-/// Last-resort fallback — shows the first letter of the platform name.
-/// Rendered on the dark card header, so teal text on dark looks clean.
+/// Last-resort fallback — shows the first letter of the platform name inside
+/// a teal circle so it is legible on both light and dark card backgrounds.
 class _LetterBadge extends StatelessWidget {
   const _LetterBadge(this.name);
 
@@ -454,12 +447,21 @@ class _LetterBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(
-        name.isNotEmpty ? name[0].toUpperCase() : '?',
-        style: const TextStyle(
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: const BoxDecoration(
           color: AppColors.tealPrimary,
-          fontWeight: FontWeight.bold,
-          fontSize: 28,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : '?',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
         ),
       ),
     );
