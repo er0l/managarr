@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -158,7 +159,7 @@ class _PlatformsTab extends ConsumerWidget {
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 1.5,
+                    childAspectRatio: 1.4,
                   ),
                   itemCount: platforms.length,
                   itemBuilder: (ctx, i) => _PlatformCard(
@@ -281,66 +282,77 @@ class _PlatformCard extends StatelessWidget {
                 RommPlatformScreen(instance: instance, platform: platform),
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Logo area — tries GitHub SVG first, then IGDB/ROMM, then letter.
-              SizedBox(
-                height: 48,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _PlatformLogo(
-                        githubSvgUrl: githubSvgUrl,
-                        fallbackUrl: fallbackUrl,
-                        fallbackHeaders: fallbackHeaders,
-                        platformName: platform.displayName,
-                      ),
-                    ),
-                  ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Dark logo header — all platform artwork is designed for
+            //    dark backgrounds; this eliminates visible black outlines.
+            SizedBox(
+              height: 64,
+              width: double.infinity,
+              child: ColoredBox(
+                color: const Color(0xFF12121E),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: _PlatformLogo(
+                    slug: platform.slug,
+                    githubSvgUrl: githubSvgUrl,
+                    fallbackUrl: fallbackUrl,
+                    fallbackHeaders: fallbackHeaders,
+                    platformName: platform.displayName,
+                  ),
                 ),
               ),
-              const Spacer(),
-              Text(
-                platform.displayName,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            ),
+            // ── Platform name + ROM count ──────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    platform.displayName,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${platform.romCount} ROMs',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                '${platform.romCount} ROMs',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Platform logo widget with a three-tier fallback chain:
-///   1. GitHub CDN SVG (rommapp/romm, keyed by platform slug)
-///   2. IGDB / ROMM-hosted raster logo (existing urlLogo field)
-///   3. _LetterBadge (first letter of platform name)
+/// Platform logo with a three-tier fallback chain (all rendered on the dark
+/// card header — no extra badge needed):
 ///
-/// SVGs from GitHub are displayed directly on the card background — they are
-/// designed for transparent backgrounds and look great at any size.
-/// Raster IGDB logos (white-on-transparent PNGs) still use the dark badge so
-/// they stay visible on light themes.
+///   1. Bundled local asset  assets/platforms/{slug}.svg
+///      229 platform SVGs shipped with the app; instant, no network.
+///   2. GitHub CDN           rommapp/romm frontend/assets/platforms/{slug}.svg
+///      Catches slugs not yet in the bundled set.
+///   3. IGDB / ROMM raster   platform.urlLogo (http or relative path + auth)
+///   4. _LetterBadge         first letter of the platform name
 class _PlatformLogo extends StatefulWidget {
   const _PlatformLogo({
+    required this.slug,
     required this.githubSvgUrl,
     required this.platformName,
     this.fallbackUrl,
     this.fallbackHeaders,
   });
 
+  final String slug;
   final String githubSvgUrl;
   final String? fallbackUrl;
   final Map<String, String>? fallbackHeaders;
@@ -351,17 +363,33 @@ class _PlatformLogo extends StatefulWidget {
 }
 
 class _PlatformLogoState extends State<_PlatformLogo> {
-  // Cache the future so rebuilds don't re-trigger the fetch.
   late final Future<Uint8List?> _svgFuture;
 
   @override
   void initState() {
     super.initState();
-    _svgFuture = _fetchSvgBytes(widget.githubSvgUrl);
+    _svgFuture = _loadSvg();
   }
 
-  /// Fetches raw SVG bytes from [url].  Returns null on any error (including
-  /// HTTP non-200 responses), so the caller can fall back gracefully.
+  /// Tries local bundled asset first (fast, cached by rootBundle), then falls
+  /// back to a GitHub CDN fetch over the network.
+  Future<Uint8List?> _loadSvg() async {
+    // ── Tier 1: local bundled asset ──────────────────────────────────────────
+    if (widget.slug.isNotEmpty) {
+      try {
+        final data = await rootBundle
+            .load('assets/platforms/${widget.slug}.svg');
+        return data.buffer.asUint8List();
+      } catch (_) {
+        // Asset not bundled for this slug — fall through to network.
+      }
+    }
+
+    // ── Tier 2: GitHub CDN ───────────────────────────────────────────────────
+    return _fetchSvgBytes(widget.githubSvgUrl);
+  }
+
+  /// HTTP GET returning raw bytes, or null on any error / non-200 response.
   static Future<Uint8List?> _fetchSvgBytes(String url) async {
     try {
       final client = HttpClient()
@@ -388,46 +416,36 @@ class _PlatformLogoState extends State<_PlatformLogo> {
     return FutureBuilder<Uint8List?>(
       future: _svgFuture,
       builder: (context, snap) {
-        // While loading — show nothing (card still visible, name shown below).
         if (snap.connectionState != ConnectionState.done) {
+          // Still loading — dark header is already visible, nothing to show.
           return const SizedBox.expand();
         }
 
         final bytes = snap.data;
         if (bytes != null) {
-          // Tier 1: GitHub SVG loaded successfully.
-          return SvgPicture.memory(
-            bytes,
-            fit: BoxFit.contain,
-          );
+          // Tiers 1–2: SVG bytes available (local or CDN).
+          return SvgPicture.memory(bytes, fit: BoxFit.contain);
         }
 
-        // Tier 2: GitHub SVG unavailable — try IGDB / ROMM raster logo.
+        // ── Tier 3: IGDB / ROMM raster logo ─────────────────────────────────
         if (widget.fallbackUrl != null) {
-          return Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Image.network(
-              widget.fallbackUrl!,
-              fit: BoxFit.contain,
-              headers: widget.fallbackHeaders,
-              errorBuilder: (_, _, _) => _LetterBadge(widget.platformName),
-            ),
+          return Image.network(
+            widget.fallbackUrl!,
+            fit: BoxFit.contain,
+            headers: widget.fallbackHeaders,
+            errorBuilder: (_, _, _) => _LetterBadge(widget.platformName),
           );
         }
 
-        // Tier 3: no logo at all — letter badge.
+        // ── Tier 4: letter badge ─────────────────────────────────────────────
         return _LetterBadge(widget.platformName);
       },
     );
   }
 }
 
-/// Fallback when no logo URL is available — shows the first letter of the
-/// platform name on a teal badge.
+/// Last-resort fallback — shows the first letter of the platform name.
+/// Rendered on the dark card header, so teal text on dark looks clean.
 class _LetterBadge extends StatelessWidget {
   const _LetterBadge(this.name);
 
@@ -435,18 +453,13 @@ class _LetterBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.tealPrimary.withAlpha(30),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      alignment: Alignment.center,
+    return Center(
       child: Text(
         name.isNotEmpty ? name[0].toUpperCase() : '?',
         style: const TextStyle(
           color: AppColors.tealPrimary,
           fontWeight: FontWeight.bold,
-          fontSize: 22,
+          fontSize: 28,
         ),
       ),
     );
