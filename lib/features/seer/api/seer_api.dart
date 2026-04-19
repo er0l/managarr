@@ -77,11 +77,11 @@ class SeerApi {
     return requests;
   }
 
-  Future<List<SeerSearchResult>> search(String query) async {
+  Future<List<SeerSearchResult>> search(String query, {int page = 1}) async {
     // Use Uri.encodeComponent (%20 for spaces) instead of Dio's default
     // queryParameters encoding which uses + — some servers/proxies reject +.
     final res = await _dio.get(
-      '/search?query=${Uri.encodeComponent(query)}',
+      '/search?query=${Uri.encodeComponent(query)}&page=$page',
     );
     return (res.data['results'] as List? ?? [])
         .map((j) => SeerSearchResult.fromJson(j as Map<String, dynamic>))

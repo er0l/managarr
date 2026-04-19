@@ -135,23 +135,9 @@ final seerDiscoverSortProvider =
     StateProvider.family<SeerDiscoverSort, int>(
         (ref, instanceId) => SeerDiscoverSort.popularityDesc);
 
-typedef SeerDiscoverKey = ({Instance instance, String sortBy});
-
-final seerDiscoverMoviesProvider =
-    FutureProvider.autoDispose.family<List<SeerSearchResult>, SeerDiscoverKey>(
-        (ref, key) async {
-  final api = ref.read(seerApiProvider(key.instance));
-  return api.getDiscoverMovies(sortBy: key.sortBy);
-});
-
-final seerDiscoverTvProvider =
-    FutureProvider.autoDispose.family<List<SeerSearchResult>, SeerDiscoverKey>(
-        (ref, key) async {
-  final api = ref.read(seerApiProvider(key.instance));
-  return api.getDiscoverTv(sortBy: key.sortBy);
-});
-
 // ─── Search provider ─────────────────────────────────────────────────────────
+// Kept for use by SeerSearchScreen (not Discover — Discover now uses local
+// pagination state directly via SeerApi).
 
 typedef SeerSearchKey = ({Instance instance, String query});
 
@@ -162,67 +148,6 @@ final seerSearchProvider = FutureProvider.autoDispose
   final api = ref.read(seerApiProvider(key.instance));
   return api.search(key.query);
 });
-
-// ─── Filtered discover providers ─────────────────────────────────────────────
-// Discover mode  → server-side sort via sortBy query parameter.
-// Search mode    → client-side sort on available fields; popularity falls
-//                  back to relevance order (not returned by /search).
-
-final seerFilteredDiscoverMoviesProvider = Provider.autoDispose
-    .family<AsyncValue<List<SeerSearchResult>>, Instance>((ref, instance) {
-  final query = ref.watch(seerDiscoverSearchQueryProvider(instance.id)).trim();
-  final sort = ref.watch(seerDiscoverSortProvider(instance.id));
-
-  if (query.isEmpty) {
-    return ref.watch(
-        seerDiscoverMoviesProvider((instance: instance, sortBy: sort.movieSort)));
-  }
-  return ref
-      .watch(seerSearchProvider((instance: instance, query: query)))
-      .whenData((r) =>
-          _sortSearchResults(r.where((x) => x.mediaType == 'movie').toList(), sort));
-});
-
-final seerFilteredDiscoverTvProvider = Provider.autoDispose
-    .family<AsyncValue<List<SeerSearchResult>>, Instance>((ref, instance) {
-  final query = ref.watch(seerDiscoverSearchQueryProvider(instance.id)).trim();
-  final sort = ref.watch(seerDiscoverSortProvider(instance.id));
-
-  if (query.isEmpty) {
-    return ref.watch(
-        seerDiscoverTvProvider((instance: instance, sortBy: sort.tvSort)));
-  }
-  return ref
-      .watch(seerSearchProvider((instance: instance, query: query)))
-      .whenData((r) =>
-          _sortSearchResults(r.where((x) => x.mediaType == 'tv').toList(), sort));
-});
-
-/// Client-side sort applied to search results.
-/// Popularity is not returned by the search endpoint — those two cases
-/// keep the original relevance order.
-List<SeerSearchResult> _sortSearchResults(
-    List<SeerSearchResult> list, SeerDiscoverSort sort) {
-  final sorted = List.of(list);
-  switch (sort) {
-    case SeerDiscoverSort.popularityDesc:
-    case SeerDiscoverSort.popularityAsc:
-      break; // no popularity field in search results — keep relevance order
-    case SeerDiscoverSort.releaseDateDesc:
-      sorted.sort((a, b) => b.releaseDate.compareTo(a.releaseDate));
-    case SeerDiscoverSort.releaseDateAsc:
-      sorted.sort((a, b) => a.releaseDate.compareTo(b.releaseDate));
-    case SeerDiscoverSort.ratingDesc:
-      sorted.sort((a, b) => b.voteAverage.compareTo(a.voteAverage));
-    case SeerDiscoverSort.ratingAsc:
-      sorted.sort((a, b) => a.voteAverage.compareTo(b.voteAverage));
-    case SeerDiscoverSort.titleAz:
-      sorted.sort((a, b) => a.title.compareTo(b.title));
-    case SeerDiscoverSort.titleZa:
-      sorted.sort((a, b) => b.title.compareTo(a.title));
-  }
-  return sorted;
-}
 
 // ─── Issues providers ────────────────────────────────────────────────────────
 
