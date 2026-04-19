@@ -191,6 +191,7 @@ class _ServiceIcon extends StatelessWidget {
         ServiceType.sabnzbd  => 'assets/brands/sabnzbd.svg',
         ServiceType.nzbget   => 'assets/brands/nzbget.svg',
         ServiceType.tautulli => 'assets/brands/tautulli.svg',
+        ServiceType.romm     => 'assets/brands/romm.svg',
         _                    => null,
       };
 

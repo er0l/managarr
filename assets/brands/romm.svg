@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2000" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Outer circle -->
+  <circle cx="1000" cy="1000" r="900" stroke-width="82"/>
+  <!-- Top-left internal face boundary (two lines meeting at corner) -->
+  <polyline points="1240,130 550,425 200,588" stroke-width="76"/>
+  <!-- Bottom-left grip edge -->
+  <line x1="364" y1="1636" x2="600" y2="1806" stroke-width="76"/>
+  <!-- Bottom-right grip edge -->
+  <line x1="1380" y1="1816" x2="1820" y2="1371" stroke-width="76"/>
+  <!-- Face buttons — exact coordinates from ROMM isotipo (rommapp/romm) -->
+  <circle cx="1073" cy="493" r="123" stroke-width="76"/>
+  <circle cx="843"  cy="722" r="123" stroke-width="76"/>
+  <circle cx="1308" cy="718" r="123" stroke-width="76"/>
+  <circle cx="1073" cy="955" r="123" stroke-width="76"/>
+</svg>

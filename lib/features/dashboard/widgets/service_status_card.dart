@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/database/app_database.dart';
@@ -257,14 +258,27 @@ class _ServiceAvatar extends StatelessWidget {
   final ServiceType type;
   final double size;
 
+  static String? _assetForType(ServiceType type) => switch (type) {
+        ServiceType.radarr   => 'assets/brands/radarr.svg',
+        ServiceType.sonarr   => 'assets/brands/sonarr.svg',
+        ServiceType.lidarr   => 'assets/brands/lidarr.svg',
+        ServiceType.seer     => 'assets/brands/overseerr.svg',
+        ServiceType.sabnzbd  => 'assets/brands/sabnzbd.svg',
+        ServiceType.nzbget   => 'assets/brands/nzbget.svg',
+        ServiceType.tautulli => 'assets/brands/tautulli.svg',
+        ServiceType.romm     => 'assets/brands/romm.svg',
+        _                    => null,
+      };
+
   @override
   Widget build(BuildContext context) {
     final bg = type.brandColor;
     final fg = type.brandColorNeedsDarkText
         ? AppColors.textPrimary
         : Colors.white;
-    final fontSize = (size * 0.45).roundToDouble();
     final radius = size * 0.25;
+    final asset = _assetForType(type);
+    final iconSize = size * 0.60;
 
     return Container(
       width: size,
@@ -274,15 +288,22 @@ class _ServiceAvatar extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
       ),
       alignment: Alignment.center,
-      child: Text(
-        type.displayName[0],
-        style: TextStyle(
-          color: fg,
-          fontWeight: FontWeight.w700,
-          fontSize: fontSize,
-          fontFamily: 'Inter',
-        ),
-      ),
+      child: asset != null
+          ? SvgPicture.asset(
+              asset,
+              width: iconSize,
+              height: iconSize,
+              colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
+            )
+          : Text(
+              type.displayName[0],
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.w700,
+                fontSize: (size * 0.45).roundToDouble(),
+                fontFamily: 'Inter',
+              ),
+            ),
     );
   }
 }
