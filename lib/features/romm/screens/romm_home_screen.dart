@@ -417,14 +417,9 @@ class _PlatformLogoState extends State<_PlatformLogo> {
         final bytes = snap.data;
         if (bytes != null) {
           // Tiers 1–2: SVG bytes available (local or CDN).
-          return SvgPicture.memory(
-            bytes,
-            fit: BoxFit.contain,
-            colorFilter: const ColorFilter.mode(
-              AppColors.tealPrimary,
-              BlendMode.srcIn,
-            ),
-          );
+          // No colorFilter — SVGs use inline fill/style attributes and
+          // render with their original colours.
+          return SvgPicture.memory(bytes, fit: BoxFit.contain);
         }
 
         // ── Tier 3: IGDB / ROMM raster logo ─────────────────────────────────
