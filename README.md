@@ -35,7 +35,22 @@ A Flutter mobile client for managing your self-hosted media automation stack. Co
 
 ## Screenshots
 
-_Coming soon._
+<p>
+  <img src="screenshots/dashboard.png" width="180" alt="Dashboard (light)">
+  <img src="screenshots/dark_dashboard.png" width="180" alt="Dashboard (dark)">
+  <img src="screenshots/calendar.png" width="180" alt="Calendar">
+  <img src="screenshots/search.png" width="180" alt="Global Search">
+</p>
+<p>
+  <img src="screenshots/radarr.png" width="180" alt="Radarr">
+  <img src="screenshots/sonarr.png" width="180" alt="Sonarr">
+  <img src="screenshots/lidarr.png" width="180" alt="Lidarr">
+</p>
+<p>
+  <img src="screenshots/seer_movie.png" width="180" alt="Overseerr – Movies">
+  <img src="screenshots/seer_tv.png" width="180" alt="Overseerr – TV">
+  <img src="screenshots/romm.png" width="180" alt="ROMM">
+</p>
 
 ## Getting Started
 
