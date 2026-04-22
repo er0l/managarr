@@ -45,12 +45,16 @@ A Flutter mobile client for managing your self-hosted media automation stack. Co
   <img src="screenshots/radarr.png" width="180" alt="Radarr">
   <img src="screenshots/sonarr.png" width="180" alt="Sonarr">
   <img src="screenshots/lidarr.png" width="180" alt="Lidarr">
+  <img src="screenshots/seer_movie.png" width="180" alt="Overseerr – Movies">
 </p>
 <p>
-  <img src="screenshots/seer_movie.png" width="180" alt="Overseerr – Movies">
   <img src="screenshots/seer_tv.png" width="180" alt="Overseerr – TV">
-  <img src="screenshots/romm.png" width="180" alt="ROMM">
+  <img src="screenshots/rtorrent.png" width="180" alt="rTorrent">
+  <img src="screenshots/romm_platform_list.png" width="180" alt="ROMM – Platforms">
+  <img src="screenshots/romm.png" width="180" alt="ROMM – ROM detail">
 </p>
+
+> **Disclaimer:** Movie, TV show, and game artwork visible in the screenshots is the property of their respective copyright holders. All artwork is retrieved from third-party metadata providers (TMDB, TVDB, IGDB) via the connected services and is displayed solely for illustrative purposes.
 
 ## Getting Started
 
