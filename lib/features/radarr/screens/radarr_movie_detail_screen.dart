@@ -6,6 +6,7 @@ import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/external_link_chips.dart';
+import '../../../core/widgets/quality_badge.dart';
 import '../api/models/movie.dart';
 import '../providers/radarr_providers.dart';
 import 'radarr_edit_movie_screen.dart';
@@ -590,7 +591,7 @@ class _FilesTab extends ConsumerWidget {
                         spacing: Spacing.s8,
                         runSpacing: Spacing.s4,
                         children: [
-                          _MiniTag(label: file.qualityName),
+                          QualityBadge(quality: file.qualityName),
                           if (file.size != null && file.size! > 0)
                             _MiniTag(label: _formatBytes(file.size!)),
                           if (file.resolution.isNotEmpty)

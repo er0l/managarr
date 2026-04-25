@@ -175,21 +175,11 @@ class ServiceStatusListTile extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         splashColor: AppColors.tealPrimary.withAlpha(20),
         onTap: () => _onTap(context),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withAlpha(20),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
           child: Row(
             children: [
-              // Brand avatar — slightly larger in list mode
+              // Brand avatar
               _ServiceAvatar(type: type, size: 44),
               const SizedBox(width: Spacing.s12),
               // Text column
@@ -198,7 +188,7 @@ class ServiceStatusListTile extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Service name + status pill
+                    // Service name + status dot
                     Row(
                       children: [
                         Expanded(
@@ -207,13 +197,14 @@ class ServiceStatusListTile extends ConsumerWidget {
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
+                              letterSpacing: -0.1,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: Spacing.s8),
-                        _StatusPill(healthAsync: healthAsync),
+                        const SizedBox(width: 8),
+                        _StatusDot(healthAsync: healthAsync),
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -228,7 +219,7 @@ class ServiceStatusListTile extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5),
                     // Stats row
                     _ServiceSummary(instance: instance, type: type),
                   ],
@@ -236,9 +227,9 @@ class ServiceStatusListTile extends ConsumerWidget {
               ),
               // Chevron
               Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant.withAlpha(140),
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant.withAlpha(100),
               ),
             ],
           ),
@@ -342,6 +333,49 @@ class _StatusPill extends StatelessWidget {
           fontWeight: FontWeight.w500,
           height: 1.3,
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Status dot — glowing circle used in the list tile layout.
+// ---------------------------------------------------------------------------
+
+class _StatusDot extends StatelessWidget {
+  const _StatusDot({required this.healthAsync});
+
+  final AsyncValue<HealthResult> healthAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return healthAsync.when(
+      loading: () => const SizedBox(
+        width: 8,
+        height: 8,
+        child: CircularProgressIndicator(
+          strokeWidth: 1.5,
+          color: AppColors.statusUnknown,
+        ),
+      ),
+      error: (e, st) => _dot(AppColors.statusOffline, AppColors.statusOfflineGlow),
+      data: (r) => _dot(
+        r.online ? AppColors.statusOnline : AppColors.statusOffline,
+        r.online ? AppColors.statusOnlineGlow : AppColors.statusOfflineGlow,
+      ),
+    );
+  }
+
+  Widget _dot(Color color, Color glow) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [
+          BoxShadow(color: glow, blurRadius: 6, spreadRadius: 1),
+        ],
       ),
     );
   }

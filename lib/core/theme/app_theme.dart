@@ -72,7 +72,8 @@ abstract final class AppTheme {
     inputDecoratorRadius:                   8.0,
     elevatedButtonRadius:                   100.0,
     filledButtonRadius:                     100.0,
-    navigationBarIndicatorSchemeColor:      SchemeColor.primary,
+    // Active nav indicator uses secondary (orange) instead of primary (teal).
+    navigationBarIndicatorSchemeColor:      SchemeColor.secondary,
     inputDecoratorBorderType:               FlexInputBorderType.outline,
     inputDecoratorUnfocusedBorderIsColored: false,
   );
@@ -99,5 +100,22 @@ abstract final class AppTheme {
             GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
         appBarElevation: 0,
         useMaterial3: true,
+        // Apply v2 cinematic dark surface palette.
+      ).copyWith(
+        scaffoldBackgroundColor: AppColors.backgroundDark,
+        cardColor: AppColors.surfaceCardDark,
+        dividerColor: AppColors.borderDark,
+        colorScheme: FlexThemeData.dark(
+          colors: _colors,
+          blendLevel: 8,
+          useMaterial3: true,
+        ).colorScheme.copyWith(
+          surface:          AppColors.surfaceCardDark,
+          surfaceContainerHighest: AppColors.surfaceElevatedDark,
+          surfaceContainer: AppColors.surfaceElevatedDark,
+          outlineVariant:   AppColors.borderDark,
+          secondary:        AppColors.orangeAccent,
+          secondaryContainer: AppColors.orangeAccent.withAlpha(45),
+        ),
       );
 }
