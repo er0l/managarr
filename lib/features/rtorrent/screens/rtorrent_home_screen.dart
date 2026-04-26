@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/service_detail_shell.dart';
 import '../api/rtorrent_api.dart';
 import '../providers/rtorrent_providers.dart';
 import '../widgets/torrent_tile.dart';
@@ -52,114 +53,118 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
       error: (e, s) => <String>[],
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        title: Text(
-          widget.instance.name,
-          style: const TextStyle(
-            color: AppColors.textOnPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.orangeAccent,
-        onPressed: () => _showAddOptions(context),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: Column(
-        children: [
-          _GlobalStatsHeader(stats: stats),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search torrents…',
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      suffixIcon: ref.watch(rtorrentSearchQueryProvider(widget.instance.id)).isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, size: 18),
-                              onPressed: () {
-                                _searchController.clear();
-                                ref.read(rtorrentSearchQueryProvider(widget.instance.id).notifier).state = '';
-                              },
-                            )
-                          : null,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                    onChanged: (v) => ref
-                        .read(rtorrentSearchQueryProvider(widget.instance.id).notifier)
-                        .state = v,
+    final body = Column(
+      children: [
+        _GlobalStatsHeader(stats: stats),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search torrents…',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: ref
+                            .watch(rtorrentSearchQueryProvider(
+                                widget.instance.id))
+                            .isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              ref
+                                  .read(rtorrentSearchQueryProvider(
+                                          widget.instance.id)
+                                      .notifier)
+                                  .state = '';
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 10),
                   ),
-                ),
-                const SizedBox(width: 8),
-                _ControlButton(
-                  icon: Icons.filter_list,
-                  onTap: () => _showFilterSheet(context, labels),
-                ),
-                const SizedBox(width: 4),
-                _ControlButton(
-                  icon: Icons.sort,
-                  onTap: () => _showSortSheet(context),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: torrentsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 12),
-                    Text('$e'),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () => ref.invalidate(
-                          rtorrentTorrentsProvider(widget.instance)),
-                      child: const Text('Retry'),
-                    ),
-                  ],
+                  onChanged: (v) => ref
+                      .read(rtorrentSearchQueryProvider(widget.instance.id)
+                          .notifier)
+                      .state = v,
                 ),
               ),
-              data: (_) {
-                if (filtered.isEmpty) {
-                  return const Center(child: Text('No torrents'));
-                }
-                return RefreshIndicator(
-                  onRefresh: () async =>
-                      ref.invalidate(rtorrentTorrentsProvider(widget.instance)),
-                  child: ListView.separated(
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, i) => const Divider(height: 1),
-                    itemBuilder: (ctx, i) => TorrentTile(
-                      torrent: filtered[i],
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => RTorrentTorrentDetailScreen(
-                            instance: widget.instance,
-                            torrent: filtered[i],
-                            onRefresh: () async => ref.invalidate(
-                                rtorrentTorrentsProvider(widget.instance)),
-                          ),
+              const SizedBox(width: 8),
+              _ControlButton(
+                icon: Icons.filter_list,
+                onTap: () => _showFilterSheet(context, labels),
+              ),
+              const SizedBox(width: 4),
+              _ControlButton(
+                icon: Icons.sort,
+                onTap: () => _showSortSheet(context),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: torrentsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, s) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline,
+                      size: 48, color: Colors.red),
+                  const SizedBox(height: 12),
+                  Text('$e'),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => ref
+                        .invalidate(rtorrentTorrentsProvider(widget.instance)),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+            data: (_) {
+              if (filtered.isEmpty) {
+                return const Center(child: Text('No torrents'));
+              }
+              return RefreshIndicator(
+                onRefresh: () async =>
+                    ref.invalidate(rtorrentTorrentsProvider(widget.instance)),
+                child: ListView.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, i) => const Divider(height: 1),
+                  itemBuilder: (ctx, i) => TorrentTile(
+                    torrent: filtered[i],
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => RTorrentTorrentDetailScreen(
+                          instance: widget.instance,
+                          torrent: filtered[i],
+                          onRefresh: () async => ref.invalidate(
+                              rtorrentTorrentsProvider(widget.instance)),
                         ),
                       ),
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-        ],
+        ),
+      ],
+    );
+
+    return ServiceDetailShell(
+      instance: widget.instance,
+      serviceName: 'rTorrent',
+      tabs: const [],
+      tabViews: [body],
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.orangeAccent,
+        onPressed: () => _showAddOptions(context),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

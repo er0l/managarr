@@ -7,11 +7,11 @@ import '../theme/app_colors.dart';
 import 'app_drawer.dart';
 
 /// A shared scaffold for service detail modules (Radarr, Sonarr, etc.)
-/// that provides a consistent AppBar with a brand-gradient background,
-/// service icon, instance name, and optional tabs.
+/// that provides a consistent AppBar with the app's teal background,
+/// a brand-colour icon avatar, the service name, and the instance name.
 ///
-/// The AppBar gradient is derived automatically from the instance's service
-/// type — no extra parameters needed for callers.
+/// All service home screens use this widget so the chrome matches the rest
+/// of the app shell (Dashboard, Search, Settings).
 class ServiceDetailShell extends StatelessWidget {
   const ServiceDetailShell({
     super.key,
@@ -62,45 +62,32 @@ class ServiceDetailShell extends StatelessWidget {
       throw ArgumentError('tabs and tabViews must have the same length');
     }
 
-    final type = _serviceType;
+    final type      = _serviceType;
     final brandColor = _brandColor;
-    final iconAsset = _iconAsset(type);
-    final needsDarkFg = type?.brandColorNeedsDarkText ?? false;
-    final fgColor = needsDarkFg ? AppColors.textPrimary : Colors.white;
-    final fgColorMuted = needsDarkFg
-        ? AppColors.textPrimary.withAlpha(160)
-        : Colors.white.withAlpha(160);
+    final iconAsset  = _iconAsset(type);
+
+    // All service AppBars use the app teal — white text is always legible.
+    const fgColor      = Colors.white;
+    const fgColorMuted = Color(0xA0FFFFFF); // white @ ~63 % opacity
 
     final scaffold = Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.tealPrimary,
         elevation: 0,
         toolbarHeight: 60,
         automaticallyImplyLeading: false,
-        // Brand-color → tealDark gradient fills the AppBar background.
-        flexibleSpace: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color.alphaBlend(brandColor.withAlpha(200), AppColors.tealDark),
-                AppColors.tealDark,
-              ],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-          ),
-        ),
         leading: Builder(
           builder: (ctx) => IconButton(
-            icon: Icon(Icons.menu, color: fgColor),
+            icon: const Icon(Icons.menu, color: fgColor),
             onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
-        iconTheme: IconThemeData(color: fgColor),
+        iconTheme: const IconThemeData(color: fgColor),
         title: Row(
           children: [
-            // Brand icon avatar with subtle glow.
+            // Brand-colour icon avatar — gives each service its own identity
+            // while keeping the overall chrome consistent.
             Container(
               width: 34,
               height: 34,
@@ -121,11 +108,14 @@ class ServiceDetailShell extends StatelessWidget {
                       iconAsset,
                       width: 20,
                       height: 20,
-                      colorFilter: ColorFilter.mode(fgColor, BlendMode.srcIn),
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
                     )
                   : Text(
                       serviceName[0],
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: fgColor,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -140,7 +130,7 @@ class ServiceDetailShell extends StatelessWidget {
                 children: [
                   Text(
                     serviceName,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: fgColor,
                       fontWeight: FontWeight.w600,
                       fontSize: 17,
@@ -149,7 +139,7 @@ class ServiceDetailShell extends StatelessWidget {
                   ),
                   Text(
                     instance.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: fgColorMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.w400,
@@ -188,7 +178,7 @@ class ServiceDetailShell extends StatelessWidget {
       floatingActionButton: floatingActionButton,
     );
 
-    // If tabs are present but no controller is provided, wrap in DefaultTabController.
+    // If tabs are present but no external controller, wrap in DefaultTabController.
     if (tabController == null && tabs.isNotEmpty) {
       return DefaultTabController(
         length: tabs.length,
