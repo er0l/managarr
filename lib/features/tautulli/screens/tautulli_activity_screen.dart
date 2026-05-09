@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,17 +8,42 @@ import '../../../core/theme/app_colors.dart';
 import '../providers/tautulli_providers.dart';
 import 'tautulli_activity_detail_screen.dart';
 
-class TautulliActivityScreen extends ConsumerWidget {
+class TautulliActivityScreen extends ConsumerStatefulWidget {
   const TautulliActivityScreen({super.key, required this.instance});
 
   final Instance instance;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final activityAsync = ref.watch(tautulliActivityProvider(instance));
-    final api = ref.read(tautulliApiProvider(instance));
+  ConsumerState<TautulliActivityScreen> createState() =>
+      _TautulliActivityScreenState();
+}
+
+class _TautulliActivityScreenState
+    extends ConsumerState<TautulliActivityScreen> {
+  static const _refreshInterval = Duration(seconds: 10);
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(_refreshInterval, (_) {
+      ref.invalidate(tautulliActivityProvider(widget.instance));
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activityAsync = ref.watch(tautulliActivityProvider(widget.instance));
+    final api = ref.read(tautulliApiProvider(widget.instance));
 
     return activityAsync.when(
+      skipLoadingOnReload: true,
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, s) => Center(child: Text('Error: $e')),
       data: (activity) {
@@ -27,7 +54,7 @@ class TautulliActivityScreen extends ConsumerWidget {
         return RefreshIndicator(
           color: AppColors.tealPrimary,
           onRefresh: () async =>
-              ref.invalidate(tautulliActivityProvider(instance)),
+              ref.invalidate(tautulliActivityProvider(widget.instance)),
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: activity.sessions.length,
@@ -49,7 +76,7 @@ class TautulliActivityScreen extends ConsumerWidget {
                     builder: (_) => TautulliActivityDetailScreen(
                       session: session,
                       thumbUrl: thumbUrl,
-                      instance: instance,
+                      instance: widget.instance,
                     ),
                   ),
                 ),
