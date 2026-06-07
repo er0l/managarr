@@ -664,27 +664,30 @@ class _SeriesTile extends StatelessWidget {
                   child: Row(
                     children: [
                       // Poster
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: SizedBox(
-                          width: 62,
-                          height: 92,
-                          child: posterUrl != null
-                              ? Image.network(posterUrl, fit: BoxFit.cover)
-                              : Container(
-                                  color: AppColors.tealDark,
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    series.title.isNotEmpty
-                                        ? series.title[0]
-                                        : 'S',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 22,
+                      Hero(
+                        tag: 'sonarr-poster-${series.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 62,
+                            height: 92,
+                            child: posterUrl != null
+                                ? Image.network(posterUrl, fit: BoxFit.cover)
+                                : Container(
+                                    color: AppColors.tealDark,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      series.title.isNotEmpty
+                                          ? series.title[0]
+                                          : 'S',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 22,
+                                      ),
                                     ),
                                   ),
-                                ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/byte_formatter.dart';
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/database/models/service_type.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/external_link_chips.dart';
 import '../api/models/series.dart';
@@ -265,13 +267,13 @@ class _SonarrSeriesDetailScreenState
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 260,
+            expandedHeight: 290,
             pinned: true,
             backgroundColor: AppColors.tealPrimary,
             iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
             flexibleSpace: FlexibleSpaceBar(
               background: _BackdropHeader(series: _series),
-              titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 14),
+              titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 56),
               title: Text(
                 _series.title,
                 style: const TextStyle(
@@ -542,9 +544,26 @@ class _BackdropHeader extends StatelessWidget {
     final fanart = series.fanartUrl;
     final poster = series.posterUrl;
 
+    final statusColor = switch (series.status) {
+      'continuing' => AppColors.statusOnline,
+      'ended' => AppColors.statusOffline,
+      _ => AppColors.statusUnknown,
+    };
+    final statusLabel = switch (series.status) {
+      'continuing' => 'Continuing',
+      'ended' => 'Ended',
+      _ => 'Unknown',
+    };
+
+    final episodeFileCount = series.statistics?.episodeFileCount ?? 0;
+    final episodeCount = series.statistics?.episodeCount ?? 0;
+    final sizeOnDisk = series.statistics?.sizeOnDisk ?? 0;
+    final accentColor = ServiceType.sonarr.brandColor;
+
     return Stack(
       fit: StackFit.expand,
       children: [
+        // Fanart background
         if (fanart != null)
           Image.network(
             fanart,
@@ -553,30 +572,141 @@ class _BackdropHeader extends StatelessWidget {
           )
         else
           _ColoredFallback(series: series),
+        // Stronger bottom-fade gradient
         const DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [Colors.transparent, Colors.black87],
-              stops: [0.4, 1.0],
+              stops: [0.25, 1.0],
             ),
           ),
         ),
+        // Info panel — above the FlexibleSpaceBar title area
         Positioned(
-          bottom: 52,
+          bottom: 78,
           left: 16,
-          child: Container(
-            width: 60,
-            height: 90,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 8)],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: poster != null
-                ? Image.network(poster, fit: BoxFit.cover)
-                : Container(color: AppColors.tealDark),
+          right: 16,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Larger poster with Hero tag
+              Hero(
+                tag: 'sonarr-poster-${series.id}',
+                child: Container(
+                  width: 80,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black54,
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: poster != null
+                      ? Image.network(poster, fit: BoxFit.cover)
+                      : Container(color: AppColors.tealDark),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Metadata column
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Year · Seasons · Network
+                      Text(
+                        [
+                          if (series.year != null && series.year! > 0)
+                            '${series.year}',
+                          if (series.seasonCount != null)
+                            '${series.seasonCount} season${series.seasonCount == 1 ? '' : 's'}',
+                          if (series.network != null &&
+                              series.network!.isNotEmpty)
+                            series.network!,
+                        ].join(' · '),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      // Status dot + label
+                      Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: statusColor,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: statusColor.withAlpha(120),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Episode progress bar
+                      if (episodeCount > 0) ...[
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: episodeFileCount / episodeCount,
+                            minHeight: 4,
+                            backgroundColor: Colors.white24,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(accentColor),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$episodeFileCount / $episodeCount episodes',
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                      if (sizeOnDisk > 0) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          ByteFormatter.format(sizeOnDisk),
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

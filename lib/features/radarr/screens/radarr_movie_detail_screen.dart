@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/config/byte_formatter.dart';
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/database/models/service_type.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/external_link_chips.dart';
 import '../../../core/widgets/quality_badge.dart';
@@ -222,7 +224,7 @@ class _RadarrMovieDetailScreenState
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            expandedHeight: 260,
+            expandedHeight: 300,
             pinned: true,
             backgroundColor: AppColors.tealPrimary,
             iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
@@ -337,7 +339,7 @@ class _RadarrMovieDetailScreenState
             ],
             bottom: TabBar(
               controller: _tabController,
-              indicatorColor: AppColors.orangeAccent,
+              indicatorColor: ServiceType.radarr.brandColor,
               indicatorWeight: 3,
               labelColor: AppColors.textOnPrimary,
               unselectedLabelColor: AppColors.textOnPrimary.withAlpha(160),
@@ -787,45 +789,69 @@ class _BackdropHeader extends StatelessWidget {
     final fanart = movie.fanartUrl;
     final poster = movie.posterUrl;
 
+    final statusColor = movie.hasFile
+        ? AppColors.statusOnline
+        : movie.monitored
+            ? AppColors.statusWarning
+            : AppColors.statusUnknown;
+    final statusLabel = movie.hasFile
+        ? 'Downloaded'
+        : movie.monitored
+            ? 'Missing'
+            : 'Unmonitored';
+
     return Stack(
       fit: StackFit.expand,
       children: [
+        // Fanart background
         if (fanart != null)
           GestureDetector(
             onTap: () => _showFullscreenImage(context, fanart),
-            child: Image.network(fanart, fit: BoxFit.cover,
-                errorBuilder: (_, e, s) => _ColoredFallback(movie: movie)),
+            child: Image.network(
+              fanart,
+              fit: BoxFit.cover,
+              errorBuilder: (_, e, s) => _ColoredFallback(movie: movie),
+            ),
           )
         else
           _ColoredFallback(movie: movie),
+        // Stronger bottom-fade for legibility
         const DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [Colors.transparent, Colors.black87],
-              stops: [0.4, 1.0],
+              stops: [0.25, 1.0],
             ),
           ),
         ),
+        // Info panel — sits above tab bar + FlexibleSpaceBar title
         Positioned(
-          bottom: 92,
+          bottom: 104,
           left: 16,
-          child: GestureDetector(
-            onTap: poster != null
-                ? () => _showFullscreenImage(context, poster)
-                : null,
-            child: Stack(
-              children: [
-                Hero(
+          right: 16,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Larger poster with Hero
+              GestureDetector(
+                onTap: poster != null
+                    ? () => _showFullscreenImage(context, poster)
+                    : null,
+                child: Hero(
                   tag: 'radarr-poster-${movie.id}',
                   child: Container(
-                    width: 60,
-                    height: 90,
+                    width: 80,
+                    height: 120,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                       boxShadow: const [
-                        BoxShadow(color: Colors.black54, blurRadius: 8)
+                        BoxShadow(
+                          color: Colors.black54,
+                          blurRadius: 12,
+                          offset: Offset(0, 4),
+                        ),
                       ],
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -834,25 +860,91 @@ class _BackdropHeader extends StatelessWidget {
                         : Container(color: AppColors.tealDark),
                   ),
                 ),
-                if (poster != null)
-                  Positioned(
-                    right: 2,
-                    bottom: 2,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(4),
+              ),
+              const SizedBox(width: 12),
+              // Metadata column
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Year · Runtime · Cert
+                      Text(
+                        [
+                          if (movie.year > 0) '${movie.year}',
+                          if (movie.runtime != null && movie.runtime! > 0)
+                            '${movie.runtime} min',
+                          if (movie.certification != null &&
+                              movie.certification!.isNotEmpty)
+                            movie.certification!,
+                        ].join(' · '),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.zoom_in,
-                        color: Colors.white70,
-                        size: 12,
+                      const SizedBox(height: 6),
+                      // Status dot + label
+                      Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: statusColor,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: statusColor.withAlpha(120),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      if (movie.hasFile &&
+                          movie.sizeOnDisk != null &&
+                          movie.sizeOnDisk! > 0) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          ByteFormatter.format(movie.sizeOnDisk!),
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                      if (movie.studio != null &&
+                          movie.studio!.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          movie.studio!,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
                   ),
-              ],
-            ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
