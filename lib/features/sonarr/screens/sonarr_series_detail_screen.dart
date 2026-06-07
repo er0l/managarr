@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/config/byte_formatter.dart';
 import '../../../core/config/spacing.dart';
@@ -670,6 +671,11 @@ class _BackdropHeader extends StatelessWidget {
                           ),
                         ],
                       ),
+                      // Rating pill
+                      if (series.tmdbRating != null) ...[
+                        const SizedBox(height: 6),
+                        _SonarrRatingPill(rating: series.tmdbRating!),
+                      ],
                       // Episode progress bar
                       if (episodeCount > 0) ...[
                         const SizedBox(height: 8),
@@ -700,6 +706,27 @@ class _BackdropHeader extends StatelessWidget {
                             color: Colors.white54,
                             fontSize: 11,
                           ),
+                        ),
+                      ],
+                      // Next airing
+                      if (series.nextAiring != null) ...[
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.schedule_outlined,
+                              color: Colors.white54,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Next: ${DateFormat('MMM d').format(series.nextAiring!)}',
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -901,6 +928,32 @@ class _Chip extends StatelessWidget {
                 TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w500),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SonarrRatingPill extends StatelessWidget {
+  const _SonarrRatingPill({required this.rating});
+  final double rating;
+
+  @override
+  Widget build(BuildContext context) {
+    const cyan = Color(0xFF00D4EE);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: cyan.withAlpha(30),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cyan.withAlpha(90), width: 0.8),
+      ),
+      child: Text(
+        '★ ${rating.toStringAsFixed(1)}',
+        style: const TextStyle(
+          color: cyan,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

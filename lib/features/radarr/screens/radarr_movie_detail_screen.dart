@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/byte_formatter.dart';
 import '../../../core/config/spacing.dart';
@@ -442,6 +443,13 @@ class _OverviewTab extends StatelessWidget {
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: AppColors.textSecondary, fontFamily: 'monospace')),
         ],
+        // Release dates
+        if (movie.inCinemas != null ||
+            movie.digitalRelease != null ||
+            movie.physicalRelease != null) ...[
+          const SizedBox(height: Spacing.s16),
+          _ReleaseDatesCard(movie: movie),
+        ],
         const SizedBox(height: Spacing.s16),
         if (movie.overview != null && movie.overview!.isNotEmpty) ...[
           Text('Overview',
@@ -826,6 +834,40 @@ class _BackdropHeader extends StatelessWidget {
             ),
           ),
         ),
+        // Trailer play button — centered above info panel
+        if (movie.youtubeTrailerId != null &&
+            movie.youtubeTrailerId!.isNotEmpty)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 108,
+            child: Center(
+              child: GestureDetector(
+                onTap: () async {
+                  final url = Uri.parse(
+                      'https://www.youtube.com/watch?v=${movie.youtubeTrailerId}');
+                  if (await canLaunchUrl(url)) {
+                    launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white38, width: 1.5),
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+              ),
+            ),
+          ),
         // Info panel — sits above tab bar + FlexibleSpaceBar title
         Positioned(
           bottom: 104,
@@ -875,7 +917,7 @@ class _BackdropHeader extends StatelessWidget {
                         [
                           if (movie.year > 0) '${movie.year}',
                           if (movie.runtime != null && movie.runtime! > 0)
-                            '${movie.runtime} min',
+                            _formatRuntime(movie.runtime!),
                           if (movie.certification != null &&
                               movie.certification!.isNotEmpty)
                             movie.certification!,
@@ -915,6 +957,11 @@ class _BackdropHeader extends StatelessWidget {
                           ),
                         ],
                       ),
+                      // Rating pill
+                      if (movie.tmdbRating != null) ...[
+                        const SizedBox(height: 6),
+                        _RatingPill(rating: movie.tmdbRating!),
+                      ],
                       if (movie.hasFile &&
                           movie.sizeOnDisk != null &&
                           movie.sizeOnDisk! > 0) ...[
@@ -965,6 +1012,107 @@ class _ColoredFallback extends StatelessWidget {
         movie.title.isNotEmpty ? movie.title[0] : 'R',
         style: const TextStyle(
             color: Colors.white30, fontSize: 96, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+String _formatRuntime(int minutes) {
+  if (minutes <= 0) return '';
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h == 0) return '${m}m';
+  if (m == 0) return '${h}h';
+  return '${h}h ${m}m';
+}
+
+// ---------------------------------------------------------------------------
+// Shared UI widgets
+// ---------------------------------------------------------------------------
+
+class _RatingPill extends StatelessWidget {
+  const _RatingPill({required this.rating});
+  final double rating;
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFFFB800);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: gold.withAlpha(30),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: gold.withAlpha(90), width: 0.8),
+      ),
+      child: Text(
+        '★ ${rating.toStringAsFixed(1)}',
+        style: const TextStyle(
+          color: gold,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReleaseDatesCard extends StatelessWidget {
+  const _ReleaseDatesCard({required this.movie});
+  final RadarrMovie movie;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fmt = DateFormat('MMM d, y');
+    const gold = Color(0xFFFFB800);
+
+    Widget dateCol(String label, DateTime? date) {
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+                fontSize: 10,
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              date != null ? fmt.format(date) : '—',
+              style: TextStyle(
+                color: date != null ? gold : AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: gold.withAlpha(12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: gold.withAlpha(40)),
+      ),
+      child: Row(
+        children: [
+          dateCol('CINEMAS', movie.inCinemas),
+          const SizedBox(width: 8),
+          dateCol('DIGITAL', movie.digitalRelease),
+          const SizedBox(width: 8),
+          dateCol('PHYSICAL', movie.physicalRelease),
+        ],
       ),
     );
   }
