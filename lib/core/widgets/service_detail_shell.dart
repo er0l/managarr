@@ -156,7 +156,7 @@ class ServiceDetailShell extends StatelessWidget {
         bottom: tabs.isNotEmpty
             ? TabBar(
                 controller: tabController,
-                indicatorColor: AppColors.orangeAccent,
+                indicatorColor: brandColor,
                 indicatorWeight: 3,
                 dividerColor: Colors.transparent,
                 labelColor: fgColor,

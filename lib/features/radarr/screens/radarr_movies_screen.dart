@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/byte_formatter.dart';
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/movie.dart';
@@ -326,7 +328,10 @@ class _MovieTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final posterUrl = movie.posterUrl;
+    final fanartUrl = movie.fanartUrl;
+    final accentColor = ServiceType.radarr.brandColor;
 
     final statusColor = movie.hasFile
         ? AppColors.statusOnline
@@ -334,71 +339,211 @@ class _MovieTile extends StatelessWidget {
             ? AppColors.statusWarning
             : AppColors.statusUnknown;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
+    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
         horizontal: Spacing.pageHorizontal,
         vertical: 4,
       ),
-      leading: Hero(
-        tag: 'radarr-poster-${movie.id}',
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
+      child: Material(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
           child: SizedBox(
-            width: 44,
-            height: 64,
-            child: posterUrl != null
-                ? Image.network(posterUrl, fit: BoxFit.cover)
-                : Container(
-                    color: AppColors.tealDark,
-                    alignment: Alignment.center,
-                    child: Text(
-                      movie.title.isNotEmpty ? movie.title[0] : 'M',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
+            height: 112,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Fanart backdrop bleed at low opacity
+                if (fanartUrl != null)
+                  Positioned.fill(
+                    child: Image.network(
+                      fanartUrl,
+                      fit: BoxFit.cover,
+                      color: Colors.black.withAlpha(isDark ? 184 : 210),
+                      colorBlendMode: BlendMode.darken,
+                      errorBuilder: (context, e, st) => const SizedBox.shrink(),
+                    ),
+                  ),
+                // Gradient overlay so text is readable regardless of fanart
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          cardBg,
+                          cardBg.withAlpha(isDark ? 200 : 230),
+                          cardBg.withAlpha(isDark ? 120 : 160),
+                        ],
+                        stops: const [0, 0.55, 1],
                       ),
                     ),
                   ),
-          ),
-        ),
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              movie.title,
-              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: statusColor,
-              boxShadow: [
-                BoxShadow(color: statusColor.withAlpha(90), blurRadius: 4),
+                ),
+                // Foreground content
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      // Poster
+                      Hero(
+                        tag: 'radarr-poster-${movie.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 62,
+                            height: 92,
+                            child: posterUrl != null
+                                ? Image.network(posterUrl, fit: BoxFit.cover)
+                                : Container(
+                                    color: AppColors.tealDark,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      movie.title.isNotEmpty ? movie.title[0] : 'M',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Text content
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Title + status dot
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  margin: const EdgeInsets.only(right: 6, top: 1),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: statusColor,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: statusColor.withAlpha(100),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    movie.title,
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.2,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 5),
+                            // Year · Runtime · Cert
+                            Text(
+                              [
+                                '${movie.year}',
+                                if (movie.runtime != null && movie.runtime! > 0)
+                                  '${movie.runtime} min',
+                                if (movie.certification != null &&
+                                    movie.certification!.isNotEmpty)
+                                  movie.certification!,
+                              ].join(' · '),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Bottom chips row
+                            Row(
+                              children: [
+                                // File size chip
+                                if (movie.hasFile &&
+                                    movie.sizeOnDisk != null &&
+                                    movie.sizeOnDisk! > 0) ...[
+                                  _Chip(
+                                    label: ByteFormatter.format(movie.sizeOnDisk!),
+                                    color: AppColors.statusOnline,
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                // Quality badge
+                                if (movie.qualityName != null &&
+                                    movie.qualityName!.isNotEmpty)
+                                  _Chip(
+                                    label: movie.qualityName!,
+                                    color: accentColor,
+                                  ),
+                                // Monitor icon (right-aligned)
+                                const Spacer(),
+                                Icon(
+                                  movie.monitored
+                                      ? Icons.bookmark
+                                      : Icons.bookmark_border,
+                                  size: 16,
+                                  color: movie.monitored
+                                      ? accentColor
+                                      : AppColors.textSecondary,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-        ],
+        ),
       ),
-      subtitle: Text(
-        [
-          '${movie.year}',
-          if (movie.runtime != null) '${movie.runtime} min',
-          if (movie.certification != null) movie.certification,
-        ].join(' · '),
-        style:
-            theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(28),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withAlpha(70), width: 0.8),
       ),
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w600,
+          color: color,
+          letterSpacing: 0.1,
+        ),
+      ),
     );
   }
 }

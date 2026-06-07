@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/service_detail_shell.dart';
@@ -163,8 +164,8 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
         ),
       ],
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.orangeAccent,
-        foregroundColor: Colors.white,
+        backgroundColor: ServiceType.radarr.brandColor,
+        foregroundColor: Colors.black,
         tooltip: 'Add Movie',
         onPressed: () => Navigator.push(
           context,
