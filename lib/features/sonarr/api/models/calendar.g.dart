@@ -27,9 +27,7 @@ SonarrCalendar _$SonarrCalendarFromJson(Map<String, dynamic> json) =>
       images: (json['images'] as List<dynamic>?)
           ?.map((e) => SonarrImage.fromJson(e as Map<String, dynamic>))
           .toList(),
-      qualityName: (((json['episodeFile'] as Map<String, dynamic>?)?['quality']
-            as Map<String, dynamic>?)?['quality']
-            as Map<String, dynamic>?)?['name'] as String?,
+      qualityName: json['qualityName'] as String?,
     );
 
 Map<String, dynamic> _$SonarrCalendarToJson(SonarrCalendar instance) =>

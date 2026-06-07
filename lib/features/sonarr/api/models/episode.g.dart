@@ -23,7 +23,8 @@ SonarrEpisode _$SonarrEpisodeFromJson(Map<String, dynamic> json) =>
       episodeFile: json['episodeFile'] == null
           ? null
           : SonarrEpisodeFile.fromJson(
-              json['episodeFile'] as Map<String, dynamic>),
+              json['episodeFile'] as Map<String, dynamic>,
+            ),
     );
 
 SonarrEpisodeFile _$SonarrEpisodeFileFromJson(Map<String, dynamic> json) =>

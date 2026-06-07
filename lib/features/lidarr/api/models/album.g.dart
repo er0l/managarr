@@ -11,7 +11,9 @@ LidarrAlbum _$LidarrAlbumFromJson(Map<String, dynamic> json) => LidarrAlbum(
   title: json['title'] as String,
   monitored: json['monitored'] as bool,
   artistId: (json['artistId'] as num?)?.toInt(),
-  releaseDate: DateTime.tryParse(json['releaseDate']?.toString() ?? ''),
+  releaseDate: json['releaseDate'] == null
+      ? null
+      : DateTime.parse(json['releaseDate'] as String),
   statistics: json['statistics'] == null
       ? null
       : LidarrAlbumStatistics.fromJson(

@@ -159,7 +159,9 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search movies…',
+                    hintText: moviesAsync.value?.length != null
+                        ? 'Search ${moviesAsync.value!.length} movies…'
+                        : 'Search movies…',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: query.isNotEmpty
                         ? IconButton(
@@ -320,6 +322,15 @@ class _MovieList extends StatelessWidget {
   }
 }
 
+String _formatRuntime(int minutes) {
+  if (minutes <= 0) return '';
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h == 0) return '${m}m';
+  if (m == 0) return '${h}h';
+  return '${h}h ${m}m';
+}
+
 class _MovieTile extends StatelessWidget {
   const _MovieTile({required this.movie, required this.onTap});
   final RadarrMovie movie;
@@ -458,15 +469,17 @@ class _MovieTile extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 5),
-                            // Year · Runtime · Cert
+                            // Year · Runtime · Cert · Rating
                             Text(
                               [
                                 '${movie.year}',
                                 if (movie.runtime != null && movie.runtime! > 0)
-                                  '${movie.runtime} min',
+                                  _formatRuntime(movie.runtime!),
                                 if (movie.certification != null &&
                                     movie.certification!.isNotEmpty)
                                   movie.certification!,
+                                if (movie.tmdbRating != null)
+                                  '★ ${movie.tmdbRating!.toStringAsFixed(1)}',
                               ].join(' · '),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: AppColors.textSecondary,

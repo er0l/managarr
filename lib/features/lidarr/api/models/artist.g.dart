@@ -24,7 +24,9 @@ LidarrArtist _$LidarrArtistFromJson(Map<String, dynamic> json) => LidarrArtist(
       .toList(),
   added: json['added'] == null ? null : DateTime.parse(json['added'] as String),
   foreignArtistId: json['foreignArtistId'] as String?,
-  tags: (json['tags'] as List<dynamic>?)?.map((e) => (e as num).toInt()).toList(),
+  tags: (json['tags'] as List<dynamic>?)
+      ?.map((e) => (e as num).toInt())
+      .toList(),
 );
 
 Map<String, dynamic> _$LidarrArtistToJson(LidarrArtist instance) =>

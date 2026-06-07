@@ -6,13 +6,10 @@ part of 'tag.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-SonarrTag _$SonarrTagFromJson(Map<String, dynamic> json) => SonarrTag(
-      id: (json['id'] as num).toInt(),
-      label: json['label'] as String,
-    );
+SonarrTag _$SonarrTagFromJson(Map<String, dynamic> json) =>
+    SonarrTag(id: (json['id'] as num).toInt(), label: json['label'] as String);
 
-Map<String, dynamic> _$SonarrTagToJson(SonarrTag instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'label': instance.label,
-    };
+Map<String, dynamic> _$SonarrTagToJson(SonarrTag instance) => <String, dynamic>{
+  'id': instance.id,
+  'label': instance.label,
+};

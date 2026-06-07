@@ -41,7 +41,10 @@ SonarrSeries _$SonarrSeriesFromJson(Map<String, dynamic> json) => SonarrSeries(
   tmdbId: (json['tmdbId'] as num?)?.toInt(),
   path: json['path'] as String?,
   rootFolderPath: json['rootFolderPath'] as String?,
-  tags: (json['tags'] as List<dynamic>?)?.map((e) => (e as num).toInt()).toList(),
+  tags: (json['tags'] as List<dynamic>?)
+      ?.map((e) => (e as num).toInt())
+      .toList(),
+  tmdbRating: _tmdbRatingFromJson(json['ratings']),
 );
 
 Map<String, dynamic> _$SonarrSeriesToJson(SonarrSeries instance) =>

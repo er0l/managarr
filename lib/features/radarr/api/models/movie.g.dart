@@ -42,9 +42,8 @@ RadarrMovie _$RadarrMovieFromJson(Map<String, dynamic> json) => RadarrMovie(
   images: (json['images'] as List<dynamic>?)
       ?.map((e) => RadarrImage.fromJson(e as Map<String, dynamic>))
       .toList(),
-  qualityName: (((json['movieFile'] as Map<String, dynamic>?)?['quality']
-        as Map<String, dynamic>?)?['quality']
-        as Map<String, dynamic>?)?['name'] as String?,
+  qualityName: json['qualityName'] as String?,
+  tmdbRating: _tmdbRatingFromJson(json['ratings']),
 );
 
 Map<String, dynamic> _$RadarrMovieToJson(RadarrMovie instance) =>

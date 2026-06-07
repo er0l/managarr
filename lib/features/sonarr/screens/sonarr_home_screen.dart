@@ -343,7 +343,9 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search series…',
+                    hintText: seriesAsync.value?.length != null
+                        ? 'Search ${seriesAsync.value!.length} series…'
+                        : 'Search series…',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: query.isNotEmpty
                         ? IconButton(
@@ -731,7 +733,7 @@ class _SeriesTile extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 5),
-                            // Year · Seasons · Network
+                            // Year · Seasons · Network · Rating
                             Text(
                               [
                                 if (series.year != null && series.year! > 0)
@@ -741,6 +743,8 @@ class _SeriesTile extends StatelessWidget {
                                 if (series.network != null &&
                                     series.network!.isNotEmpty)
                                   series.network!,
+                                if (series.tmdbRating != null)
+                                  '★ ${series.tmdbRating!.toStringAsFixed(1)}',
                               ].join(' · '),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: AppColors.textSecondary,

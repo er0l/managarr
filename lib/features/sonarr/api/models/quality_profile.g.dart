@@ -7,15 +7,12 @@ part of 'quality_profile.dart';
 // **************************************************************************
 
 SonarrQualityProfile _$SonarrQualityProfileFromJson(
-        Map<String, dynamic> json) =>
-    SonarrQualityProfile(
-      id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
-    );
+  Map<String, dynamic> json,
+) => SonarrQualityProfile(
+  id: (json['id'] as num).toInt(),
+  name: json['name'] as String,
+);
 
 Map<String, dynamic> _$SonarrQualityProfileToJson(
-        SonarrQualityProfile instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-    };
+  SonarrQualityProfile instance,
+) => <String, dynamic>{'id': instance.id, 'name': instance.name};

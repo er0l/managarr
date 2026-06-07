@@ -30,6 +30,7 @@ class SonarrSeries {
     this.path,
     this.rootFolderPath,
     this.tags,
+    this.tmdbRating,
   });
 
   @JsonKey(defaultValue: 0)
@@ -65,6 +66,12 @@ class SonarrSeries {
   final String? rootFolderPath;
   final List<int>? tags;
 
+  /// TMDB audience rating (0–10 scale), extracted from the nested
+  /// `ratings.tmdb.value` field in the Sonarr API response.
+  /// Excluded from toJson so it is never sent back to the API.
+  @JsonKey(name: 'ratings', fromJson: _tmdbRatingFromJson, includeToJson: false)
+  final double? tmdbRating;
+
   String? get posterUrl => images
       ?.where((i) => i.coverType == 'poster')
       .map((i) => i.remoteUrl)
@@ -84,6 +91,14 @@ class SonarrSeries {
       _$SonarrSeriesFromJson(json);
 
   Map<String, dynamic> toJson() => _$SonarrSeriesToJson(this);
+}
+
+/// Extracts `ratings.tmdb.value` from the raw Sonarr ratings map.
+double? _tmdbRatingFromJson(dynamic json) {
+  if (json is! Map) return null;
+  final tmdb = json['tmdb'];
+  if (tmdb is! Map) return null;
+  return (tmdb['value'] as num?)?.toDouble();
 }
 
 @JsonSerializable(explicitToJson: true)
