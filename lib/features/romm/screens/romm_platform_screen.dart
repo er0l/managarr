@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/romm_platform.dart';
@@ -326,10 +327,10 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
   }
 
   Widget _buildListView(RommApi api) {
-    return ListView.separated(
+    return ListView.builder(
       controller: _scrollController,
+      padding: const EdgeInsets.only(top: 4, bottom: 24),
       itemCount: _roms.length + (_isLoadingMore ? 1 : 0),
-      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (ctx, i) {
         if (i == _roms.length) {
           return const Padding(
@@ -374,7 +375,7 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// ROM list tile
+// ROM list tile — backdrop bleed card
 // ---------------------------------------------------------------------------
 
 class _RomListTile extends StatelessWidget {
@@ -390,50 +391,140 @@ class _RomListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final coverUrl = api.coverUrl(rom);
     final isExternal = rom.urlCover != null && rom.urlCover!.isNotEmpty;
+    final authHeaders = isExternal ? null : {'Authorization': api.authHeader};
+    final accentColor = ServiceType.romm.brandColor;
+    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
 
-    Widget cover;
-    if (coverUrl != null) {
-      cover = Image.network(
-        coverUrl,
-        width: 48,
-        height: 64,
-        fit: BoxFit.cover,
-        headers: isExternal ? null : {'Authorization': api.authHeader},
-        errorBuilder: (_, _, _) => _placeholder(),
-      );
-    } else {
-      cover = _placeholder();
-    }
-
-    return ListTile(
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: SizedBox(width: 48, height: 64, child: cover),
-      ),
-      title: Text(
-        rom.name,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        [
-          if (rom.releaseYear != null) rom.releaseYear.toString(),
-          if (rom.formattedSize.isNotEmpty) rom.formattedSize,
-          if (rom.averageRating != null && rom.averageRating! > 0)
-            '★ ${rom.averageRating!.toStringAsFixed(1)}',
-        ].join(' · '),
-        style: const TextStyle(color: AppColors.textSecondary),
-      ),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RommRomDetailScreen(
-            instance: instance,
-            romId: rom.id,
-            romName: rom.name,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Material(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RommRomDetailScreen(
+                instance: instance,
+                romId: rom.id,
+                romName: rom.name,
+              ),
+            ),
+          ),
+          child: SizedBox(
+            height: 104,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Cover art bleeds in from the right at low opacity
+                if (coverUrl != null)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 160,
+                    child: Image.network(
+                      coverUrl,
+                      fit: BoxFit.cover,
+                      headers: authHeaders,
+                      color: Colors.black.withAlpha(isDark ? 178 : 210),
+                      colorBlendMode: BlendMode.darken,
+                      errorBuilder: (e, st, tr) =>
+                          const SizedBox.shrink(),
+                    ),
+                  ),
+                // Horizontal gradient: solid on left, transparent on right
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          cardBg,
+                          cardBg.withAlpha(isDark ? 210 : 235),
+                          cardBg.withAlpha(isDark ? 100 : 130),
+                        ],
+                        stops: const [0, 0.6, 1],
+                      ),
+                    ),
+                  ),
+                ),
+                // Foreground content
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      // Cover thumbnail
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 62,
+                          height: 84,
+                          child: coverUrl != null
+                              ? Image.network(
+                                  coverUrl,
+                                  fit: BoxFit.cover,
+                                  headers: authHeaders,
+                                  errorBuilder: (e, st, tr) =>
+                                      _placeholder(),
+                                )
+                              : _placeholder(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Text content
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Title
+                            Text(
+                              rom.name,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 5),
+                            // Year · Size · Rating
+                            Text(
+                              [
+                                if (rom.releaseYear != null)
+                                  '${rom.releaseYear}',
+                                if (rom.formattedSize.isNotEmpty)
+                                  rom.formattedSize,
+                                if (rom.averageRating != null &&
+                                    rom.averageRating! > 0)
+                                  '★ ${rom.averageRating!.toStringAsFixed(1)}',
+                              ].join(' · '),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Platform chip
+                            if (rom.platformDisplayName.isNotEmpty)
+                              _RomChip(
+                                label: rom.platformDisplayName,
+                                color: accentColor,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -450,7 +541,7 @@ class _RomListTile extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// ROM grid card
+// ROM grid card — cover + platform chip overlay
 // ---------------------------------------------------------------------------
 
 class _RomGridCard extends StatelessWidget {
@@ -468,14 +559,16 @@ class _RomGridCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final coverUrl = api.coverUrl(rom);
     final isExternal = rom.urlCover != null && rom.urlCover!.isNotEmpty;
+    final authHeaders = isExternal ? null : {'Authorization': api.authHeader};
+    final accentColor = ServiceType.romm.brandColor;
 
     Widget cover;
     if (coverUrl != null) {
       cover = Image.network(
         coverUrl,
         fit: BoxFit.cover,
-        headers: isExternal ? null : {'Authorization': api.authHeader},
-        errorBuilder: (_, _, _) => _placeholder(),
+        headers: authHeaders,
+        errorBuilder: (e, st, tr) => _placeholder(),
       );
     } else {
       cover = _placeholder();
@@ -498,7 +591,37 @@ class _RomGridCard extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: cover,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  cover,
+                  // Bottom gradient + platform chip
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black87],
+                          stops: [0.45, 1.0],
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(6, 16, 6, 6),
+                        child: rom.platformDisplayName.isNotEmpty
+                            ? _RomChip(
+                                label: rom.platformDisplayName,
+                                color: accentColor,
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -506,8 +629,7 @@ class _RomGridCard extends StatelessWidget {
             rom.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
           ),
           if (rom.releaseYear != null)
             Text(
@@ -526,6 +648,39 @@ class _RomGridCard extends StatelessWidget {
       child: const Center(
         child: Icon(Icons.videogame_asset_outlined,
             color: AppColors.tealPrimary, size: 32),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared chip widget
+// ---------------------------------------------------------------------------
+
+class _RomChip extends StatelessWidget {
+  const _RomChip({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(28),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withAlpha(70), width: 0.8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w600,
+          color: color,
+          letterSpacing: 0.1,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
