@@ -4,14 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/romm_platform.dart';
 import '../api/models/romm_rom.dart';
 import '../api/romm_api.dart';
 import '../providers/romm_providers.dart';
 import 'romm_rom_detail_screen.dart';
-
-enum _ViewMode { list, grid }
 
 class RommPlatformScreen extends ConsumerStatefulWidget {
   const RommPlatformScreen({
@@ -35,7 +34,6 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
   Timer? _debounceTimer;
 
   String _searchTerm = '';
-  _ViewMode _viewMode = _ViewMode.list;
   String _orderBy = 'name';
   String _orderDir = 'asc';
 
@@ -165,6 +163,7 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
   @override
   Widget build(BuildContext context) {
     final api = ref.watch(rommApiProvider(widget.instance));
+    final viewMode = ref.watch(rommPlatformViewModeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -223,17 +222,18 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
           ),
           IconButton(
             icon: Icon(
-              _viewMode == _ViewMode.list
+              viewMode == DisplayMode.list
                   ? Icons.grid_view_outlined
                   : Icons.list_outlined,
               color: AppColors.textOnPrimary,
             ),
-            tooltip:
-                _viewMode == _ViewMode.list ? 'Grid view' : 'List view',
-            onPressed: () => setState(() => _viewMode =
-                _viewMode == _ViewMode.list
-                    ? _ViewMode.grid
-                    : _ViewMode.list),
+            tooltip: viewMode == DisplayMode.list ? 'Grid view' : 'List view',
+            onPressed: () {
+              ref.read(rommPlatformViewModeProvider.notifier).state =
+                  viewMode == DisplayMode.list
+                      ? DisplayMode.grid
+                      : DisplayMode.list;
+            },
           ),
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
@@ -270,13 +270,13 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
             ),
           ),
           // Results
-          Expanded(child: _buildBody(api)),
+          Expanded(child: _buildBody(api, viewMode)),
         ],
       ),
     );
   }
 
-  Widget _buildBody(RommApi api) {
+  Widget _buildBody(RommApi api, DisplayMode viewMode) {
     if (_isLoading && _roms.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -319,7 +319,7 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
     return RefreshIndicator(
       onRefresh: () => _loadPage(reset: true),
       color: AppColors.tealPrimary,
-      child: _viewMode == _ViewMode.list
+      child: viewMode == DisplayMode.list
           ? _buildListView(api)
           : _buildGridView(api),
     );

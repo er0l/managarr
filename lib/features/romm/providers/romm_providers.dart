@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/models/display_mode.dart';
 import '../api/models/romm_available_filters.dart';
 import '../api/models/romm_collection.dart';
 import '../api/models/romm_platform.dart';
@@ -11,6 +12,16 @@ import '../api/romm_api.dart';
 
 final rommApiProvider = Provider.family<RommApi, Instance>(
     (ref, instance) => RommApi.fromInstance(instance));
+
+// ---------------------------------------------------------------------------
+// Platform screen view mode — persists for the app session.
+// Default: gallery (grid). Switching to list is remembered when navigating
+// back and re-opening any platform folder.
+// ---------------------------------------------------------------------------
+
+final rommPlatformViewModeProvider = StateProvider<DisplayMode>(
+  (ref) => DisplayMode.grid,
+);
 
 // ---------------------------------------------------------------------------
 // Platforms

@@ -100,7 +100,10 @@ class _PlatformsTab extends ConsumerWidget {
         ),
       ),
       data: (platforms) {
-        if (platforms.isEmpty) {
+        // Hide platforms with no ROMs — keeps the grid uncluttered.
+        final visible = platforms.where((p) => p.romCount > 0).toList();
+
+        if (visible.isEmpty) {
           return const Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -161,9 +164,9 @@ class _PlatformsTab extends ConsumerWidget {
                     crossAxisSpacing: 12,
                     childAspectRatio: 1.4,
                   ),
-                  itemCount: platforms.length,
+                  itemCount: visible.length,
                   itemBuilder: (ctx, i) => _PlatformCard(
-                    platform: platforms[i],
+                    platform: visible[i],
                     instance: instance,
                     api: api,
                   ),
