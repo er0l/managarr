@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -327,36 +328,63 @@ class _MovieTile extends StatelessWidget {
     final theme = Theme.of(context);
     final posterUrl = movie.posterUrl;
 
+    final statusColor = movie.hasFile
+        ? AppColors.statusOnline
+        : movie.monitored
+            ? AppColors.statusWarning
+            : AppColors.statusUnknown;
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
         horizontal: Spacing.pageHorizontal,
         vertical: 4,
       ),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: SizedBox(
-          width: 44,
-          height: 64,
-          child: posterUrl != null
-              ? Image.network(posterUrl, fit: BoxFit.cover)
-              : Container(
-                  color: AppColors.tealDark,
-                  alignment: Alignment.center,
-                  child: Text(
-                    movie.title.isNotEmpty ? movie.title[0] : 'M',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+      leading: Hero(
+        tag: 'radarr-poster-${movie.id}',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            width: 44,
+            height: 64,
+            child: posterUrl != null
+                ? Image.network(posterUrl, fit: BoxFit.cover)
+                : Container(
+                    color: AppColors.tealDark,
+                    alignment: Alignment.center,
+                    child: Text(
+                      movie.title.isNotEmpty ? movie.title[0] : 'M',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
+          ),
         ),
       ),
-      title: Text(
-        movie.title,
-        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              movie.title,
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: statusColor,
+              boxShadow: [
+                BoxShadow(color: statusColor.withAlpha(90), blurRadius: 4),
+              ],
+            ),
+          ),
+        ],
       ),
       subtitle: Text(
         [
@@ -367,7 +395,10 @@ class _MovieTile extends StatelessWidget {
         style:
             theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
       ),
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
     );
   }
 }

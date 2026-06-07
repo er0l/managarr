@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/shimmer_box.dart';
 import '../api/models/movie.dart';
 
 class MovieCard extends StatelessWidget {
@@ -15,25 +17,30 @@ class MovieCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Poster image
-            if (posterUrl != null)
-              Image.network(
-                posterUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return _Skeleton();
-                },
-                errorBuilder: (e, s, t) => _Placeholder(movie: movie),
-              )
-            else
-              _Placeholder(movie: movie),
+            // Poster image with Hero animation
+            Hero(
+              tag: 'radarr-poster-${movie.id}',
+              child: posterUrl != null
+                  ? Image.network(
+                      posterUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const ShimmerBox(borderRadius: 0);
+                      },
+                      errorBuilder: (e, s, t) => _Placeholder(movie: movie),
+                    )
+                  : _Placeholder(movie: movie),
+            ),
 
             // Bottom gradient overlay with title + year
             Positioned(
@@ -125,9 +132,3 @@ class _Placeholder extends StatelessWidget {
   }
 }
 
-class _Skeleton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(color: AppColors.surfaceElevated);
-  }
-}

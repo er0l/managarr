@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../database/models/service_type.dart';
 import '../theme/app_colors.dart';
+import '../../features/dashboard/models/health_result.dart';
+import '../../features/dashboard/providers/health_check_provider.dart';
 import '../../features/settings/providers/instances_provider.dart';
 import '../../features/search/screens/global_search_screen.dart';
 
@@ -75,6 +77,9 @@ class AppDrawer extends ConsumerWidget {
                         title: Text(
                           instance.name,
                           style: theme.textTheme.bodyMedium,
+                        ),
+                        trailing: _DrawerStatusDot(
+                          healthAsync: ref.watch(healthCheckProvider(instance)),
                         ),
                         onTap: () {
                           Navigator.pop(context);
@@ -190,4 +195,39 @@ class _ServiceIcon extends StatelessWidget {
         ServiceType.rtorrent => 'assets/brands/rtorrent.svg',
         ServiceType.prowlarr => 'assets/brands/prowlarr.svg',
       };
+}
+
+/// Tiny glowing status dot shown in the drawer next to each instance.
+class _DrawerStatusDot extends StatelessWidget {
+  const _DrawerStatusDot({required this.healthAsync});
+  final AsyncValue<HealthResult> healthAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return healthAsync.when(
+      loading: () => const SizedBox(
+        width: 8,
+        height: 8,
+        child: CircularProgressIndicator(
+          strokeWidth: 1.5,
+          color: AppColors.statusUnknown,
+        ),
+      ),
+      error: (e, st) => _dot(AppColors.statusOffline, AppColors.statusOfflineGlow),
+      data: (r) => _dot(
+        r.online ? AppColors.statusOnline : AppColors.statusOffline,
+        r.online ? AppColors.statusOnlineGlow : AppColors.statusOfflineGlow,
+      ),
+    );
+  }
+
+  Widget _dot(Color color, Color glow) => Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+          boxShadow: [BoxShadow(color: glow, blurRadius: 6, spreadRadius: 1)],
+        ),
+      );
 }

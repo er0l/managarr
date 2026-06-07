@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -49,6 +50,7 @@ class _RadarrMovieDetailScreenState
 
   Future<void> _toggleMonitor() async {
     if (_actionPending) return;
+    HapticFeedback.lightImpact();
     setState(() => _actionPending = true);
     try {
       final api = ref.read(radarrApiProvider(widget.instance));
@@ -815,19 +817,22 @@ class _BackdropHeader extends StatelessWidget {
                 : null,
             child: Stack(
               children: [
-                Container(
-                  width: 60,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black54, blurRadius: 8)
-                    ],
+                Hero(
+                  tag: 'radarr-poster-${movie.id}',
+                  child: Container(
+                    width: 60,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black54, blurRadius: 8)
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: poster != null
+                        ? Image.network(poster, fit: BoxFit.cover)
+                        : Container(color: AppColors.tealDark),
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: poster != null
-                      ? Image.network(poster, fit: BoxFit.cover)
-                      : Container(color: AppColors.tealDark),
                 ),
                 if (poster != null)
                   Positioned(
