@@ -12,6 +12,8 @@ class TautulliSession {
   final String? product;
   final String? thumb;
   final String? platform; // e.g. "Android (12)"
+  final int? userId;
+  final int? sectionId;
 
   // Metadata
   final int? year;
@@ -58,6 +60,8 @@ class TautulliSession {
     this.product,
     this.thumb,
     this.platform,
+    this.userId,
+    this.sectionId,
     this.year,
     this.libraryName,
     this.videoResolution,
@@ -100,6 +104,9 @@ class TautulliSession {
       product: json['product'],
       thumb: json['thumb'],
       platform: json['platform'],
+      userId: int.tryParse(json['user_id']?.toString() ?? ''),
+      sectionId: int.tryParse(json['library_id']?.toString() ?? '') ??
+          int.tryParse(json['section_id']?.toString() ?? ''),
       year: int.tryParse(json['year']?.toString() ?? ''),
       libraryName: json['library_name'],
       videoResolution: json['video_resolution'],
