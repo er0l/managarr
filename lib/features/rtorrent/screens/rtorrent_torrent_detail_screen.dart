@@ -5,6 +5,20 @@ import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/torrent.dart';
 import '../api/rtorrent_api.dart';
+import '../providers/rtorrent_providers.dart';
+
+// Watches the torrent list and extracts a single torrent by hash.
+// Stays up-to-date whenever the parent provider is refreshed.
+final _torrentByHashProvider = Provider.autoDispose
+    .family<RTorrentTorrent?, ({Instance instance, String hash})>((ref, key) {
+  final list = ref.watch(rtorrentTorrentsProvider(key.instance)).valueOrNull;
+  if (list == null) return null;
+  try {
+    return list.firstWhere((t) => t.hash == key.hash);
+  } catch (_) {
+    return null;
+  }
+});
 
 // Per-torrent trackers/files providers
 final _trackersProvider =
@@ -25,13 +39,11 @@ class RTorrentTorrentDetailScreen extends ConsumerStatefulWidget {
   const RTorrentTorrentDetailScreen({
     super.key,
     required this.instance,
-    required this.torrent,
-    required this.onRefresh,
+    required this.initialTorrent,
   });
 
   final Instance instance;
-  final RTorrentTorrent torrent;
-  final Future<void> Function() onRefresh;
+  final RTorrentTorrent initialTorrent;
 
   @override
   ConsumerState<RTorrentTorrentDetailScreen> createState() =>
@@ -42,10 +54,12 @@ class _RTorrentTorrentDetailScreenState
     extends ConsumerState<RTorrentTorrentDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  late RTorrentTorrent _torrent;
 
   @override
   void initState() {
     super.initState();
+    _torrent = widget.initialTorrent;
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -54,6 +68,9 @@ class _RTorrentTorrentDetailScreenState
     _tabController.dispose();
     super.dispose();
   }
+
+  void _refresh() =>
+      ref.invalidate(rtorrentTorrentsProvider(widget.instance));
 
   Future<void> _action(Future<bool> Function() fn, String successMsg) async {
     try {
@@ -65,7 +82,7 @@ class _RTorrentTorrentDetailScreenState
           backgroundColor: ok ? AppColors.statusOnline : AppColors.statusOffline,
         ),
       );
-      if (ok) await widget.onRefresh();
+      if (ok) _refresh();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +93,16 @@ class _RTorrentTorrentDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    final t = widget.torrent;
+    // Keep _torrent up-to-date whenever the provider delivers new data
+    ref.listen(
+      _torrentByHashProvider(
+          (instance: widget.instance, hash: _torrent.hash)),
+      (_, next) {
+        if (next != null && mounted) setState(() => _torrent = next);
+      },
+    );
+
+    final t = _torrent;
     final api = RTorrentApi.fromInstance(widget.instance);
 
     const muted = Color(0xA0FFFFFF);
@@ -111,14 +137,14 @@ class _RTorrentTorrentDetailScreenState
         backgroundColor: AppColors.orangeAccent,
         foregroundColor: Colors.white,
         tooltip: 'Reload',
-        onPressed: widget.onRefresh,
+        onPressed: _refresh,
         child: const Icon(Icons.refresh),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       body: TabBarView(
         controller: _tabController,
         children: [
-          _InfoTab(torrent: t, onRefresh: widget.onRefresh),
+          _InfoTab(torrent: t, onRefresh: () async => _refresh()),
           _TrackersTab(instance: widget.instance, hash: t.hash),
           _FilesTab(instance: widget.instance, hash: t.hash),
         ],
@@ -190,7 +216,7 @@ class _RTorrentTorrentDetailScreenState
   }
 
   Future<void> _showEditLabelDialog(RTorrentApi api) async {
-    final controller = TextEditingController(text: widget.torrent.label);
+    final controller = TextEditingController(text: _torrent.label);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -216,7 +242,7 @@ class _RTorrentTorrentDetailScreenState
 
     if (confirmed == true && mounted) {
       await _action(
-        () => api.setLabel(widget.torrent.hash, controller.text.trim()),
+        () => api.setLabel(_torrent.hash, controller.text.trim()),
         'Label updated',
       );
     }
@@ -257,7 +283,7 @@ class _RTorrentTorrentDetailScreenState
 
     if (confirmed == true && mounted) {
       await _action(
-        () => api.remove(widget.torrent.hash, deleteData: deleteData),
+        () => api.remove(_torrent.hash, deleteData: deleteData),
         'Torrent removed',
       );
       if (mounted) Navigator.of(context).pop();

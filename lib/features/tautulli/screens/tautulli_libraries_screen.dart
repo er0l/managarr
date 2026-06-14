@@ -141,6 +141,7 @@ class _LibraryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final api = ref.read(tautulliApiProvider(instance));
     return librariesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, s) => Center(child: Text('Error: $e')),
@@ -150,12 +151,14 @@ class _LibraryList extends StatelessWidget {
           color: AppColors.tealPrimary,
           onRefresh: () async =>
               ref.invalidate(tautulliLibrariesProvider(instance)),
-          child: ListView.separated(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
             itemCount: libs.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final lib = libs[index];
-              return ListTile(
+              return _LibraryCard(
+                library: lib,
+                api: api,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -165,25 +168,6 @@ class _LibraryList extends StatelessWidget {
                     ),
                   ),
                 ),
-                leading: CircleAvatar(
-                  backgroundColor: AppColors.tealPrimary.withAlpha(30),
-                  child: Icon(
-                    _getLibraryIcon(lib.sectionType),
-                    color: AppColors.tealPrimary,
-                    size: 20,
-                  ),
-                ),
-                title: Text(
-                  lib.sectionName,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-                subtitle: Text(
-                  '${lib.count} items',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                trailing: const Icon(Icons.chevron_right,
-                    size: 20, color: AppColors.textSecondary),
               );
             },
           ),
@@ -191,15 +175,119 @@ class _LibraryList extends StatelessWidget {
       },
     );
   }
+}
 
-  IconData _getLibraryIcon(String type) {
-    return switch (type.toLowerCase()) {
-      'movie' => Icons.movie_outlined,
-      'show' => Icons.tv_outlined,
-      'artist' => Icons.music_note_outlined,
-      'photo' => Icons.photo_outlined,
-      _ => Icons.folder_outlined,
-    };
+class _LibraryCard extends StatelessWidget {
+  const _LibraryCard(
+      {required this.library, required this.api, required this.onTap});
+
+  final TautulliLibrary library;
+  final dynamic api; // TautulliApi
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1A2233) : const Color(0xFFF0F2F5);
+    final hasArt = library.art != null && library.art!.isNotEmpty;
+    final artUrl = hasArt ? api.artUrl(library.art!) as String : null;
+    final lastAccessed = library.lastAccessedRelative();
+    final isUnknown = lastAccessed == 'Unknown';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            height: 110,
+            child: Stack(
+              children: [
+                // Background art (right side, darkened)
+                if (artUrl != null)
+                  Positioned.fill(
+                    child: Row(
+                      children: [
+                        const Spacer(),
+                        Expanded(
+                          flex: 2,
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                cardBg,
+                                cardBg.withAlpha(0),
+                              ],
+                            ).createShader(bounds),
+                            blendMode: BlendMode.dstIn,
+                            child: Image.network(
+                              artUrl,
+                              fit: BoxFit.cover,
+                              height: 110,
+                              errorBuilder: (_, e, s) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // Text content
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        library.sectionName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        library.countDescription(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        library.playsDescription(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        lastAccessed,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isUnknown
+                              ? AppColors.textSecondary
+                              : AppColors.tealPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

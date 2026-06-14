@@ -140,9 +140,7 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
                       MaterialPageRoute(
                         builder: (_) => RTorrentTorrentDetailScreen(
                           instance: widget.instance,
-                          torrent: filtered[i],
-                          onRefresh: () async => ref.invalidate(
-                              rtorrentTorrentsProvider(widget.instance)),
+                          initialTorrent: filtered[i],
                         ),
                       ),
                     ),

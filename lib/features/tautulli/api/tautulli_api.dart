@@ -240,4 +240,11 @@ class TautulliApi {
         _baseUrl.contains('/api/v2') ? _baseUrl : '$_baseUrl/api/v2';
     return '$base?cmd=pms_image_proxy&img=${Uri.encodeComponent(thumb)}&apikey=$_apiKey&width=150&height=225';
   }
+
+  /// Builds a pms_image_proxy URL for a Plex library art/backdrop.
+  String artUrl(String art) {
+    final base =
+        _baseUrl.contains('/api/v2') ? _baseUrl : '$_baseUrl/api/v2';
+    return '$base?cmd=pms_image_proxy&img=${Uri.encodeComponent(art)}&apikey=$_apiKey&width=400&height=150';
+  }
 }
