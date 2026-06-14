@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/config/byte_formatter.dart';
 import '../../../core/config/spacing.dart';
@@ -28,9 +29,9 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize controller with current provider value
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchController.text = ref.read(radarrSearchQueryProvider(widget.instance.id));
+      _searchController.text =
+          ref.read(radarrSearchQueryProvider(widget.instance.id));
     });
   }
 
@@ -43,13 +44,14 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
   @override
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(radarrMoviesProvider(widget.instance));
-    final filteredMovies = ref.watch(radarrFilteredMoviesProvider(widget.instance));
-    final displayMode = ref.watch(radarrDisplayModeProvider(widget.instance.id));
+    final filteredMovies =
+        ref.watch(radarrFilteredMoviesProvider(widget.instance));
+    final displayMode =
+        ref.watch(radarrDisplayModeProvider(widget.instance.id));
     final query = ref.watch(radarrSearchQueryProvider(widget.instance.id));
 
     return Column(
       children: [
-        // Search bar
         Padding(
           padding: const EdgeInsets.fromLTRB(
             Spacing.pageHorizontal,
@@ -78,25 +80,44 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
                   : null,
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(
+                  color: AppColors.tealPrimary.withAlpha(180),
+                  width: 1.5,
+                ),
+              ),
+              filled: true,
             ),
             onChanged: (v) => ref
-                .read(radarrSearchQueryProvider(widget.instance.id).notifier)
+                .read(
+                    radarrSearchQueryProvider(widget.instance.id).notifier)
                 .state = v,
           ),
         ),
-        // Movie list/grid
         Expanded(
           child: moviesAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => _ErrorView(
               message: e.toString(),
-              onRetry: () => ref.invalidate(radarrMoviesProvider(widget.instance)),
+              onRetry: () =>
+                  ref.invalidate(radarrMoviesProvider(widget.instance)),
             ),
             data: (_) {
               if (filteredMovies.isEmpty) {
                 return Center(
                   child: Text(
-                    query.isNotEmpty ? 'No results for "$query"' : 'No movies found',
+                    query.isNotEmpty
+                        ? 'No results for "$query"'
+                        : 'No movies found',
                     style: Theme.of(context)
                         .textTheme
                         .bodyLarge
@@ -109,8 +130,10 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
                 onRefresh: () async =>
                     ref.invalidate(radarrMoviesProvider(widget.instance)),
                 child: displayMode == DisplayMode.grid
-                    ? _MovieGrid(movies: filteredMovies, instance: widget.instance)
-                    : _MovieList(movies: filteredMovies, instance: widget.instance),
+                    ? _MovieGrid(
+                        movies: filteredMovies, instance: widget.instance)
+                    : _MovieList(
+                        movies: filteredMovies, instance: widget.instance),
               );
             },
           ),
@@ -129,8 +152,10 @@ class _MovieGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(
-        Spacing.pageHorizontal, 0,
-        Spacing.pageHorizontal, Spacing.s24,
+        Spacing.pageHorizontal,
+        0,
+        Spacing.pageHorizontal,
+        Spacing.s24,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 3 : 2,
@@ -197,57 +222,28 @@ String _formatRuntime(int minutes) {
   return '${h}h ${m}m';
 }
 
+String _formatStatus(String? status) {
+  if (status == null || status.isEmpty) return '';
+  switch (status.toLowerCase()) {
+    case 'released':
+      return 'Released';
+    case 'incinemas':
+      return 'In Cinemas';
+    case 'announced':
+      return 'Announced';
+    case 'tba':
+      return 'TBA';
+    default:
+      return status[0].toUpperCase() + status.substring(1);
+  }
+}
+
 class _MovieTile extends ConsumerWidget {
-  const _MovieTile({required this.movie, required this.instance, required this.onTap});
+  const _MovieTile(
+      {required this.movie, required this.instance, required this.onTap});
   final RadarrMovie movie;
   final Instance instance;
   final VoidCallback onTap;
-
-  Future<void> _handleAction(BuildContext context, WidgetRef ref, String action) async {
-    final api = ref.read(radarrApiProvider(instance));
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      switch (action) {
-        case 'monitor':
-          await api.toggleMonitorMovie(movie.id, !movie.monitored);
-          ref.invalidate(radarrMoviesProvider(instance));
-        case 'search':
-          await api.searchMovie(movie.id);
-          messenger.showSnackBar(const SnackBar(
-            content: Text('Search started'),
-            behavior: SnackBarBehavior.floating,
-          ));
-        case 'delete':
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Remove Movie'),
-              content: Text('Remove "${movie.title}" from Radarr?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.statusOffline),
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Remove'),
-                ),
-              ],
-            ),
-          );
-          if (confirmed == true) {
-            await api.deleteMovie(movie.id);
-            ref.invalidate(radarrMoviesProvider(instance));
-          }
-      }
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(
-        content: Text('Error: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -257,257 +253,198 @@ class _MovieTile extends ConsumerWidget {
     final fanartUrl = movie.fanartUrl;
     final accentColor = ServiceType.radarr.brandColor;
 
-    final statusColor = movie.hasFile
-        ? AppColors.statusOnline
-        : movie.monitored
-            ? AppColors.statusWarning
-            : AppColors.statusUnknown;
+    final profilesAsync = ref.watch(radarrQualityProfilesProvider(instance));
+    final profileName = profilesAsync.valueOrNull
+        ?.where((p) => p.id == movie.qualityProfileId)
+        .map((p) => p.name)
+        .firstOrNull;
 
     final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.pageHorizontal,
-        vertical: 4,
-      ),
-      child: Material(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
-          child: SizedBox(
-            height: 112,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Fanart backdrop bleed at low opacity
-                if (fanartUrl != null)
+    final line2Parts = [
+      '${movie.year}',
+      if (movie.runtime != null && movie.runtime! > 0)
+        _formatRuntime(movie.runtime!),
+      if (movie.studio != null && movie.studio!.isNotEmpty) movie.studio!,
+    ];
+
+    final line3Parts = [
+      if (profileName != null && profileName.isNotEmpty) profileName,
+      if (movie.status != null) _formatStatus(movie.status),
+      if (movie.added != null)
+        'Added ${DateFormat('MMM y').format(movie.added!)}',
+    ];
+
+    return Opacity(
+      opacity: movie.hasFile ? 1.0 : 0.55,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.pageHorizontal,
+          vertical: 4,
+        ),
+        child: Material(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onTap();
+            },
+            child: SizedBox(
+              height: 120,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (fanartUrl != null)
+                    Positioned.fill(
+                      child: Image.network(
+                        fanartUrl,
+                        fit: BoxFit.cover,
+                        color:
+                            Colors.black.withAlpha(isDark ? 184 : 210),
+                        colorBlendMode: BlendMode.darken,
+                        errorBuilder: (context, e, st) =>
+                            const SizedBox.shrink(),
+                      ),
+                    ),
                   Positioned.fill(
-                    child: Image.network(
-                      fanartUrl,
-                      fit: BoxFit.cover,
-                      color: Colors.black.withAlpha(isDark ? 184 : 210),
-                      colorBlendMode: BlendMode.darken,
-                      errorBuilder: (context, e, st) => const SizedBox.shrink(),
-                    ),
-                  ),
-                // Gradient overlay so text is readable regardless of fanart
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          cardBg,
-                          cardBg.withAlpha(isDark ? 200 : 230),
-                          cardBg.withAlpha(isDark ? 120 : 160),
-                        ],
-                        stops: const [0, 0.55, 1],
-                      ),
-                    ),
-                  ),
-                ),
-                // 3-dot context menu — top-right corner
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: PopupMenuButton<String>(
-                    icon: const Icon(
-                      Icons.more_vert,
-                      size: 18,
-                      color: Colors.white60,
-                    ),
-                    onSelected: (action) => _handleAction(context, ref, action),
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'monitor',
-                        child: ListTile(
-                          leading: Icon(
-                            movie.monitored ? Icons.bookmark_remove_outlined : Icons.bookmark_add_outlined,
-                          ),
-                          title: Text(movie.monitored ? 'Unmonitor' : 'Monitor'),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'search',
-                        child: ListTile(
-                          leading: Icon(Icons.search),
-                          title: Text('Search'),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
-                      ),
-                      const PopupMenuDivider(),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: ListTile(
-                          leading: Icon(Icons.delete_outline, color: AppColors.statusOffline),
-                          title: Text('Remove', style: TextStyle(color: AppColors.statusOffline)),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Foreground content
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      // Poster
-                      Hero(
-                        tag: 'radarr-poster-${movie.id}',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: SizedBox(
-                            width: 62,
-                            height: 92,
-                            child: posterUrl != null
-                                ? Image.network(posterUrl, fit: BoxFit.cover)
-                                : Container(
-                                    color: AppColors.tealDark,
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      movie.title.isNotEmpty ? movie.title[0] : 'M',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 22,
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Text content
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Title + status dot
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 7,
-                                  height: 7,
-                                  margin: const EdgeInsets.only(right: 6, top: 1),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: statusColor,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: statusColor.withAlpha(100),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    movie.title,
-                                    style: theme.textTheme.bodyLarge?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.2,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            // Year · Runtime · Cert · Rating  [▶] [✓]
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    [
-                                      '${movie.year}',
-                                      if (movie.runtime != null && movie.runtime! > 0)
-                                        _formatRuntime(movie.runtime!),
-                                      if (movie.certification != null &&
-                                          movie.certification!.isNotEmpty)
-                                        movie.certification!,
-                                      if (movie.tmdbRating != null)
-                                        '★ ${movie.tmdbRating!.toStringAsFixed(1)}',
-                                    ].join(' · '),
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                                // Status icon indicators
-                                if (movie.youtubeTrailerId != null &&
-                                    movie.youtubeTrailerId!.isNotEmpty) ...[
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    Icons.smart_display_outlined,
-                                    size: 13,
-                                    color: AppColors.textSecondary.withAlpha(180),
-                                  ),
-                                ],
-                                if (movie.hasFile) ...[
-                                  const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.check_circle_outline,
-                                    size: 13,
-                                    color: AppColors.statusOnline,
-                                  ),
-                                ],
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            // Bottom chips row
-                            Row(
-                              children: [
-                                // File size chip
-                                if (movie.hasFile &&
-                                    movie.sizeOnDisk != null &&
-                                    movie.sizeOnDisk! > 0) ...[
-                                  _Chip(
-                                    label: ByteFormatter.format(movie.sizeOnDisk!),
-                                    color: AppColors.statusOnline,
-                                  ),
-                                  const SizedBox(width: 6),
-                                ],
-                                // Quality badge
-                                if (movie.qualityName != null &&
-                                    movie.qualityName!.isNotEmpty)
-                                  _Chip(
-                                    label: movie.qualityName!,
-                                    color: accentColor,
-                                  ),
-                                // Monitor icon (right-aligned)
-                                const Spacer(),
-                                Icon(
-                                  movie.monitored
-                                      ? Icons.bookmark
-                                      : Icons.bookmark_border,
-                                  size: 16,
-                                  color: movie.monitored
-                                      ? accentColor
-                                      : AppColors.textSecondary,
-                                ),
-                              ],
-                            ),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            cardBg,
+                            cardBg.withAlpha(isDark ? 200 : 230),
+                            cardBg.withAlpha(isDark ? 120 : 160),
                           ],
+                          stops: const [0, 0.55, 1],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                      children: [
+                        // Poster
+                        Hero(
+                          tag: 'radarr-poster-${movie.id}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 60,
+                              height: 88,
+                              child: posterUrl != null
+                                  ? Image.network(posterUrl,
+                                      fit: BoxFit.cover)
+                                  : Container(
+                                      color: AppColors.tealDark,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        movie.title.isNotEmpty
+                                            ? movie.title[0]
+                                            : 'M',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 22,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Text content
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Line 1: Title
+                              Text(
+                                movie.title,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 3),
+                              // Line 2: Year · Runtime · Studio
+                              Text(
+                                line2Parts.join(' · '),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 3),
+                              // Line 3: Profile · Status · DateAdded
+                              Text(
+                                line3Parts.join(' · '),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textSecondary
+                                      .withAlpha(200),
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              // Line 4: icons + filesize
+                              Row(
+                                children: [
+                                  if (movie.youtubeTrailerId != null &&
+                                      movie.youtubeTrailerId!.isNotEmpty) ...[
+                                    Icon(
+                                      Icons.smart_display_outlined,
+                                      size: 14,
+                                      color: AppColors.textSecondary
+                                          .withAlpha(180),
+                                    ),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Icon(
+                                    movie.monitored
+                                        ? Icons.bookmark
+                                        : Icons.bookmark_border,
+                                    size: 14,
+                                    color: movie.monitored
+                                        ? accentColor
+                                        : AppColors.textSecondary,
+                                  ),
+                                  if (movie.hasFile) ...[
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.check_circle_outline,
+                                      size: 14,
+                                      color: AppColors.statusOnline,
+                                    ),
+                                  ],
+                                  const Spacer(),
+                                  if (movie.hasFile &&
+                                      movie.sizeOnDisk != null &&
+                                      movie.sizeOnDisk! > 0)
+                                    _Chip(
+                                      label: ByteFormatter.format(
+                                          movie.sizeOnDisk!),
+                                      color: AppColors.statusOnline,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -556,7 +493,8 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off, size: 48, color: AppColors.statusOffline),
+            const Icon(Icons.cloud_off,
+                size: 48, color: AppColors.statusOffline),
             const SizedBox(height: Spacing.s16),
             Text(
               'Could not connect',
