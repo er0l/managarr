@@ -29,24 +29,7 @@ class RadarrHomeScreen extends ConsumerStatefulWidget {
   ConsumerState<RadarrHomeScreen> createState() => _RadarrHomeScreenState();
 }
 
-class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  static const _tabs = ['Library', 'Upcoming', 'Missing', 'Cutoff', 'Activity'];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
+class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
   Future<void> _runCommand(String name, String label) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -85,8 +68,7 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
                         : Icons.arrow_downward),
                     onPressed: () {
                       ref
-                          .read(radarrSortAscendingProvider(
-                                  widget.instance.id)
+                          .read(radarrSortAscendingProvider(widget.instance.id)
                               .notifier)
                           .state = !ascending;
                       Navigator.pop(ctx);
@@ -136,8 +118,8 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
           children: [
             Padding(
               padding: const EdgeInsets.all(Spacing.s16),
-              child:
-                  Text('Filter by', style: Theme.of(ctx).textTheme.titleLarge),
+              child: Text('Filter by',
+                  style: Theme.of(ctx).textTheme.titleLarge),
             ),
             const Divider(height: 1),
             Flexible(
@@ -169,6 +151,66 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
     );
   }
 
+  void _openUpcoming() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: AppColors.tealPrimary,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text(
+              'Upcoming',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+          body: RadarrCalendarScreen(instance: widget.instance),
+        ),
+      ),
+    );
+  }
+
+  void _openMissing() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: AppColors.tealPrimary,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text(
+              'Missing',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+          body: RadarrMissingScreen(instance: widget.instance),
+        ),
+      ),
+    );
+  }
+
+  void _openHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: AppColors.tealPrimary,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text(
+              'History',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+          body: RadarrActivityScreen(instance: widget.instance),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayMode =
@@ -185,8 +227,8 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'Radarr',
-      tabs: _tabs,
-      tabController: _tabController,
+      tabs: const [],
+      tabViews: [RadarrMoviesScreen(instance: widget.instance)],
       floatingActionButton: FloatingActionButton(
         backgroundColor: ServiceType.radarr.brandColor,
         foregroundColor: Colors.black,
@@ -201,23 +243,17 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
       ),
       bottomLeadingActions: [
         IconButton(
-          icon: Icon(
-            Icons.filter_list,
-            color: filterActive ? AppColors.tealPrimary : muted,
-          ),
+          icon: Icon(Icons.filter_list,
+              color: filterActive ? AppColors.tealPrimary : muted),
           tooltip: 'Filter',
           onPressed: _showFilterBottomSheet,
         ),
         IconButton(
-          icon: Icon(
-            Icons.sort,
-            color: sortActive ? AppColors.tealPrimary : muted,
-          ),
+          icon: Icon(Icons.sort,
+              color: sortActive ? AppColors.tealPrimary : muted),
           tooltip: 'Sort',
           onPressed: _showSortBottomSheet,
         ),
-      ],
-      bottomTrailingActions: [
         IconButton(
           icon: Icon(
             displayMode == DisplayMode.grid
@@ -234,6 +270,23 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
                 ? DisplayMode.list
                 : DisplayMode.grid;
           },
+        ),
+      ],
+      bottomTrailingActions: [
+        IconButton(
+          icon: const Icon(Icons.calendar_month_outlined, color: muted),
+          tooltip: 'Upcoming',
+          onPressed: _openUpcoming,
+        ),
+        IconButton(
+          icon: const Icon(Icons.video_file_outlined, color: muted),
+          tooltip: 'Missing',
+          onPressed: _openMissing,
+        ),
+        IconButton(
+          icon: const Icon(Icons.history, color: muted),
+          tooltip: 'History',
+          onPressed: _openHistory,
         ),
       ],
       bottomMoreItems: const [
@@ -258,6 +311,15 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
           child: ListTile(
             leading: Icon(Icons.list_alt_outlined),
             title: Text('Import Lists'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'cutoff',
+          child: ListTile(
+            leading: Icon(Icons.hd_outlined),
+            title: Text('Cutoff Unmet'),
             contentPadding: EdgeInsets.zero,
           ),
         ),
@@ -299,6 +361,27 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
                     RadarrImportListsScreen(instance: widget.instance),
               ),
             );
+          case 'cutoff':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  backgroundColor:
+                      Theme.of(context).scaffoldBackgroundColor,
+                  appBar: AppBar(
+                    backgroundColor: AppColors.tealPrimary,
+                    iconTheme: const IconThemeData(color: Colors.white),
+                    title: const Text(
+                      'Cutoff Unmet',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  body: RadarrCutoffUnmetScreen(
+                      instance: widget.instance),
+                ),
+              ),
+            );
           case 'tags':
             Navigator.push(
               context,
@@ -316,13 +399,6 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen>
             );
         }
       },
-      tabViews: [
-        RadarrMoviesScreen(instance: widget.instance),
-        RadarrCalendarScreen(instance: widget.instance),
-        RadarrMissingScreen(instance: widget.instance),
-        RadarrCutoffUnmetScreen(instance: widget.instance),
-        RadarrActivityScreen(instance: widget.instance),
-      ],
     );
   }
 }
