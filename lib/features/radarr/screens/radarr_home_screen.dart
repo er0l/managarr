@@ -255,6 +255,23 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
           onPressed: _showSortBottomSheet,
         ),
         IconButton(
+          icon: const Icon(Icons.history, color: muted),
+          tooltip: 'History',
+          onPressed: _openHistory,
+        ),
+      ],
+      bottomTrailingActions: [
+        IconButton(
+          icon: const Icon(Icons.calendar_month_outlined, color: muted),
+          tooltip: 'Upcoming',
+          onPressed: _openUpcoming,
+        ),
+        IconButton(
+          icon: const Icon(Icons.video_file_outlined, color: muted),
+          tooltip: 'Missing',
+          onPressed: _openMissing,
+        ),
+        IconButton(
           icon: Icon(
             displayMode == DisplayMode.grid
                 ? Icons.view_list_outlined
@@ -270,23 +287,6 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
                 ? DisplayMode.list
                 : DisplayMode.grid;
           },
-        ),
-      ],
-      bottomTrailingActions: [
-        IconButton(
-          icon: const Icon(Icons.calendar_month_outlined, color: muted),
-          tooltip: 'Upcoming',
-          onPressed: _openUpcoming,
-        ),
-        IconButton(
-          icon: const Icon(Icons.video_file_outlined, color: muted),
-          tooltip: 'Missing',
-          onPressed: _openMissing,
-        ),
-        IconButton(
-          icon: const Icon(Icons.history, color: muted),
-          tooltip: 'History',
-          onPressed: _openHistory,
         ),
       ],
       bottomMoreItems: const [
