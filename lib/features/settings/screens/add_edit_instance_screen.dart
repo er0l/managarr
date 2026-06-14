@@ -45,6 +45,7 @@ class _AddEditInstanceScreenState
   late final TextEditingController _apiKeyCtrl;
   late final TextEditingController _usernameCtrl;
   late final TextEditingController _passwordCtrl;
+  late final TextEditingController _localUrlCtrl;
 
   ServiceType _serviceType = ServiceType.radarr;
   String _protocol = 'http';
@@ -65,6 +66,7 @@ class _AddEditInstanceScreenState
     super.initState();
     final e = widget.existingInstance;
     _nameCtrl = TextEditingController(text: e?.name ?? '');
+    _localUrlCtrl = TextEditingController(text: e?.localUrl ?? '');
     _enabled = e?.enabled ?? true;
 
     if (e != null) {
@@ -111,6 +113,7 @@ class _AddEditInstanceScreenState
     _apiKeyCtrl.dispose();
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
+    _localUrlCtrl.dispose();
     super.dispose();
   }
 
@@ -270,6 +273,7 @@ class _AddEditInstanceScreenState
         ? '${_usernameCtrl.text.trim()}:${_passwordCtrl.text}'
         : _apiKeyCtrl.text.trim();
 
+    final localUrlRaw = _localUrlCtrl.text.trim();
     final companion = InstancesCompanion(
       id: _isEdit ? Value(widget.existingInstance!.id) : const Value.absent(),
       name: Value(_nameCtrl.text.trim()),
@@ -277,6 +281,7 @@ class _AddEditInstanceScreenState
       baseUrl: Value(_baseUrl),
       apiKey: Value(storedApiKey),
       enabled: Value(_enabled),
+      localUrl: Value(localUrlRaw.isEmpty ? null : localUrlRaw),
     );
 
     if (_isEdit) {
@@ -414,6 +419,21 @@ class _AddEditInstanceScreenState
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: Spacing.s16),
+                _FormField(
+                  controller: _localUrlCtrl,
+                  label: 'Local URL (optional)',
+                  hint: 'http://192.168.1.100:7878',
+                  mono: true,
+                ),
+                const SizedBox(height: Spacing.s4),
+                Text(
+                  'LAN address shown when on your home network. '
+                  'Toggle via the home icon in the service AppBar.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                 ),
                 const SizedBox(height: Spacing.s16),
                 SwitchListTile(

@@ -307,6 +307,7 @@ class _MovieList extends StatelessWidget {
         final movie = movies[index];
         return _MovieTile(
           movie: movie,
+          instance: instance,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
@@ -331,13 +332,60 @@ String _formatRuntime(int minutes) {
   return '${h}h ${m}m';
 }
 
-class _MovieTile extends StatelessWidget {
-  const _MovieTile({required this.movie, required this.onTap});
+class _MovieTile extends ConsumerWidget {
+  const _MovieTile({required this.movie, required this.instance, required this.onTap});
   final RadarrMovie movie;
+  final Instance instance;
   final VoidCallback onTap;
 
+  Future<void> _handleAction(BuildContext context, WidgetRef ref, String action) async {
+    final api = ref.read(radarrApiProvider(instance));
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      switch (action) {
+        case 'monitor':
+          await api.toggleMonitorMovie(movie.id, !movie.monitored);
+          ref.invalidate(radarrMoviesProvider(instance));
+        case 'search':
+          await api.searchMovie(movie.id);
+          messenger.showSnackBar(const SnackBar(
+            content: Text('Search started'),
+            behavior: SnackBarBehavior.floating,
+          ));
+        case 'delete':
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Remove Movie'),
+              content: Text('Remove "${movie.title}" from Radarr?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.statusOffline),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Remove'),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true) {
+            await api.deleteMovie(movie.id);
+            ref.invalidate(radarrMoviesProvider(instance));
+          }
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final posterUrl = movie.posterUrl;
@@ -397,6 +445,51 @@ class _MovieTile extends StatelessWidget {
                         stops: const [0, 0.55, 1],
                       ),
                     ),
+                  ),
+                ),
+                // 3-dot context menu — top-right corner
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: PopupMenuButton<String>(
+                    icon: const Icon(
+                      Icons.more_vert,
+                      size: 18,
+                      color: Colors.white60,
+                    ),
+                    onSelected: (action) => _handleAction(context, ref, action),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'monitor',
+                        child: ListTile(
+                          leading: Icon(
+                            movie.monitored ? Icons.bookmark_remove_outlined : Icons.bookmark_add_outlined,
+                          ),
+                          title: Text(movie.monitored ? 'Unmonitor' : 'Monitor'),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'search',
+                        child: ListTile(
+                          leading: Icon(Icons.search),
+                          title: Text('Search'),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: ListTile(
+                          leading: Icon(Icons.delete_outline, color: AppColors.statusOffline),
+                          title: Text('Remove', style: TextStyle(color: AppColors.statusOffline)),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 // Foreground content

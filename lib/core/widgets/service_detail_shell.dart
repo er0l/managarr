@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../database/app_database.dart';
 import '../database/models/service_type.dart';
+import '../network/dio_client.dart';
 import '../theme/app_colors.dart';
 import 'app_drawer.dart';
 
@@ -12,7 +14,7 @@ import 'app_drawer.dart';
 ///
 /// All service home screens use this widget so the chrome matches the rest
 /// of the app shell (Dashboard, Search, Settings).
-class ServiceDetailShell extends StatelessWidget {
+class ServiceDetailShell extends ConsumerWidget {
   const ServiceDetailShell({
     super.key,
     required this.instance,
@@ -57,7 +59,7 @@ class ServiceDetailShell extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (tabs.isNotEmpty && tabViews.length != tabs.length) {
       throw ArgumentError('tabs and tabViews must have the same length');
     }
@@ -65,6 +67,12 @@ class ServiceDetailShell extends StatelessWidget {
     final type      = _serviceType;
     final brandColor = _brandColor;
     final iconAsset  = _iconAsset(type);
+
+    final hasLocalUrl =
+        instance.localUrl != null && instance.localUrl!.isNotEmpty;
+    final useLocal = hasLocalUrl
+        ? ref.watch(useLocalUrlProvider(instance.id))
+        : false;
 
     // All service AppBars use the app teal — white text is always legible.
     const fgColor      = Colors.white;
@@ -152,7 +160,20 @@ class ServiceDetailShell extends StatelessWidget {
             ),
           ],
         ),
-        actions: actions,
+        actions: [
+          if (hasLocalUrl)
+            IconButton(
+              icon: Icon(
+                useLocal ? Icons.home_outlined : Icons.public,
+                color: useLocal ? brandColor : fgColorMuted,
+              ),
+              tooltip: useLocal ? 'Using local URL' : 'Using remote URL',
+              onPressed: () => ref
+                  .read(useLocalUrlProvider(instance.id).notifier)
+                  .state = !useLocal,
+            ),
+          ...?actions,
+        ],
         bottom: tabs.isNotEmpty
             ? TabBar(
                 controller: tabController,

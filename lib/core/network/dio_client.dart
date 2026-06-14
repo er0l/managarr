@@ -87,11 +87,17 @@ class _ErrorInterceptor extends Interceptor {
   }
 }
 
+/// Toggles between local (LAN) and remote URL for a given instance id.
+/// `true` = use localUrl (home network); `false` = use baseUrl (remote).
+final useLocalUrlProvider = StateProvider.family<bool, int>(
+  (ref, instanceId) => false,
+);
+
 /// Creates a [Dio] instance configured for a given [Instance].
-Dio buildDioForInstance(Instance instance) {
+Dio buildDioForInstance(Instance instance, {String? overrideBaseUrl}) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: instance.baseUrl,
+      baseUrl: overrideBaseUrl ?? instance.baseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 30),
     ),
@@ -122,6 +128,11 @@ Dio buildDioForInstance(Instance instance) {
 }
 
 /// Riverpod family provider — one [Dio] client per [Instance].
+/// Rebuilds automatically when [useLocalUrlProvider] toggles.
 final dioProvider = Provider.family<Dio, Instance>((ref, instance) {
-  return buildDioForInstance(instance);
+  final useLocal = ref.watch(useLocalUrlProvider(instance.id));
+  final localUrl = instance.localUrl;
+  final effectiveUrl =
+      (useLocal && localUrl != null && localUrl.isNotEmpty) ? localUrl : null;
+  return buildDioForInstance(instance, overrideBaseUrl: effectiveUrl);
 });

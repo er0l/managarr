@@ -77,6 +77,17 @@ class $InstancesTable extends Instances
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _localUrlMeta = const VerificationMeta(
+    'localUrl',
+  );
+  @override
+  late final GeneratedColumn<String> localUrl = GeneratedColumn<String>(
+    'local_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -85,6 +96,7 @@ class $InstancesTable extends Instances
     baseUrl,
     apiKey,
     enabled,
+    localUrl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -142,6 +154,12 @@ class $InstancesTable extends Instances
         enabled.isAcceptableOrUnknown(data['enabled']!, _enabledMeta),
       );
     }
+    if (data.containsKey('local_url')) {
+      context.handle(
+        _localUrlMeta,
+        localUrl.isAcceptableOrUnknown(data['local_url']!, _localUrlMeta),
+      );
+    }
     return context;
   }
 
@@ -175,6 +193,10 @@ class $InstancesTable extends Instances
         DriftSqlType.bool,
         data['${effectivePrefix}enabled'],
       )!,
+      localUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_url'],
+      ),
     );
   }
 
@@ -193,6 +215,10 @@ class Instance extends DataClass implements Insertable<Instance> {
   final String baseUrl;
   final String apiKey;
   final bool enabled;
+
+  /// Optional LAN URL used when the device is on the home network.
+  /// When non-null the app probes this URL first; falls back to [baseUrl].
+  final String? localUrl;
   const Instance({
     required this.id,
     required this.name,
@@ -200,6 +226,7 @@ class Instance extends DataClass implements Insertable<Instance> {
     required this.baseUrl,
     required this.apiKey,
     required this.enabled,
+    this.localUrl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -210,6 +237,9 @@ class Instance extends DataClass implements Insertable<Instance> {
     map['base_url'] = Variable<String>(baseUrl);
     map['api_key'] = Variable<String>(apiKey);
     map['enabled'] = Variable<bool>(enabled);
+    if (!nullToAbsent || localUrl != null) {
+      map['local_url'] = Variable<String>(localUrl);
+    }
     return map;
   }
 
@@ -221,6 +251,9 @@ class Instance extends DataClass implements Insertable<Instance> {
       baseUrl: Value(baseUrl),
       apiKey: Value(apiKey),
       enabled: Value(enabled),
+      localUrl: localUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localUrl),
     );
   }
 
@@ -236,6 +269,7 @@ class Instance extends DataClass implements Insertable<Instance> {
       baseUrl: serializer.fromJson<String>(json['baseUrl']),
       apiKey: serializer.fromJson<String>(json['apiKey']),
       enabled: serializer.fromJson<bool>(json['enabled']),
+      localUrl: serializer.fromJson<String?>(json['localUrl']),
     );
   }
   @override
@@ -248,6 +282,7 @@ class Instance extends DataClass implements Insertable<Instance> {
       'baseUrl': serializer.toJson<String>(baseUrl),
       'apiKey': serializer.toJson<String>(apiKey),
       'enabled': serializer.toJson<bool>(enabled),
+      'localUrl': serializer.toJson<String?>(localUrl),
     };
   }
 
@@ -258,6 +293,7 @@ class Instance extends DataClass implements Insertable<Instance> {
     String? baseUrl,
     String? apiKey,
     bool? enabled,
+    Value<String?> localUrl = const Value.absent(),
   }) => Instance(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -265,6 +301,7 @@ class Instance extends DataClass implements Insertable<Instance> {
     baseUrl: baseUrl ?? this.baseUrl,
     apiKey: apiKey ?? this.apiKey,
     enabled: enabled ?? this.enabled,
+    localUrl: localUrl.present ? localUrl.value : this.localUrl,
   );
   Instance copyWithCompanion(InstancesCompanion data) {
     return Instance(
@@ -276,6 +313,7 @@ class Instance extends DataClass implements Insertable<Instance> {
       baseUrl: data.baseUrl.present ? data.baseUrl.value : this.baseUrl,
       apiKey: data.apiKey.present ? data.apiKey.value : this.apiKey,
       enabled: data.enabled.present ? data.enabled.value : this.enabled,
+      localUrl: data.localUrl.present ? data.localUrl.value : this.localUrl,
     );
   }
 
@@ -287,14 +325,15 @@ class Instance extends DataClass implements Insertable<Instance> {
           ..write('serviceType: $serviceType, ')
           ..write('baseUrl: $baseUrl, ')
           ..write('apiKey: $apiKey, ')
-          ..write('enabled: $enabled')
+          ..write('enabled: $enabled, ')
+          ..write('localUrl: $localUrl')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, name, serviceType, baseUrl, apiKey, enabled);
+      Object.hash(id, name, serviceType, baseUrl, apiKey, enabled, localUrl);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -304,7 +343,8 @@ class Instance extends DataClass implements Insertable<Instance> {
           other.serviceType == this.serviceType &&
           other.baseUrl == this.baseUrl &&
           other.apiKey == this.apiKey &&
-          other.enabled == this.enabled);
+          other.enabled == this.enabled &&
+          other.localUrl == this.localUrl);
 }
 
 class InstancesCompanion extends UpdateCompanion<Instance> {
@@ -314,6 +354,7 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
   final Value<String> baseUrl;
   final Value<String> apiKey;
   final Value<bool> enabled;
+  final Value<String?> localUrl;
   const InstancesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -321,6 +362,7 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     this.baseUrl = const Value.absent(),
     this.apiKey = const Value.absent(),
     this.enabled = const Value.absent(),
+    this.localUrl = const Value.absent(),
   });
   InstancesCompanion.insert({
     this.id = const Value.absent(),
@@ -329,6 +371,7 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     required String baseUrl,
     required String apiKey,
     this.enabled = const Value.absent(),
+    this.localUrl = const Value.absent(),
   }) : name = Value(name),
        serviceType = Value(serviceType),
        baseUrl = Value(baseUrl),
@@ -340,6 +383,7 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     Expression<String>? baseUrl,
     Expression<String>? apiKey,
     Expression<bool>? enabled,
+    Expression<String>? localUrl,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -348,6 +392,7 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
       if (baseUrl != null) 'base_url': baseUrl,
       if (apiKey != null) 'api_key': apiKey,
       if (enabled != null) 'enabled': enabled,
+      if (localUrl != null) 'local_url': localUrl,
     });
   }
 
@@ -358,6 +403,7 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     Value<String>? baseUrl,
     Value<String>? apiKey,
     Value<bool>? enabled,
+    Value<String?>? localUrl,
   }) {
     return InstancesCompanion(
       id: id ?? this.id,
@@ -366,6 +412,7 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
       baseUrl: baseUrl ?? this.baseUrl,
       apiKey: apiKey ?? this.apiKey,
       enabled: enabled ?? this.enabled,
+      localUrl: localUrl ?? this.localUrl,
     );
   }
 
@@ -390,6 +437,9 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     if (enabled.present) {
       map['enabled'] = Variable<bool>(enabled.value);
     }
+    if (localUrl.present) {
+      map['local_url'] = Variable<String>(localUrl.value);
+    }
     return map;
   }
 
@@ -401,7 +451,8 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
           ..write('serviceType: $serviceType, ')
           ..write('baseUrl: $baseUrl, ')
           ..write('apiKey: $apiKey, ')
-          ..write('enabled: $enabled')
+          ..write('enabled: $enabled, ')
+          ..write('localUrl: $localUrl')
           ..write(')'))
         .toString();
   }
@@ -635,6 +686,7 @@ typedef $$InstancesTableCreateCompanionBuilder =
       required String baseUrl,
       required String apiKey,
       Value<bool> enabled,
+      Value<String?> localUrl,
     });
 typedef $$InstancesTableUpdateCompanionBuilder =
     InstancesCompanion Function({
@@ -644,6 +696,7 @@ typedef $$InstancesTableUpdateCompanionBuilder =
       Value<String> baseUrl,
       Value<String> apiKey,
       Value<bool> enabled,
+      Value<String?> localUrl,
     });
 
 class $$InstancesTableFilterComposer
@@ -682,6 +735,11 @@ class $$InstancesTableFilterComposer
 
   ColumnFilters<bool> get enabled => $composableBuilder(
     column: $table.enabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localUrl => $composableBuilder(
+    column: $table.localUrl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -724,6 +782,11 @@ class $$InstancesTableOrderingComposer
     column: $table.enabled,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get localUrl => $composableBuilder(
+    column: $table.localUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InstancesTableAnnotationComposer
@@ -754,6 +817,9 @@ class $$InstancesTableAnnotationComposer
 
   GeneratedColumn<bool> get enabled =>
       $composableBuilder(column: $table.enabled, builder: (column) => column);
+
+  GeneratedColumn<String> get localUrl =>
+      $composableBuilder(column: $table.localUrl, builder: (column) => column);
 }
 
 class $$InstancesTableTableManager
@@ -790,6 +856,7 @@ class $$InstancesTableTableManager
                 Value<String> baseUrl = const Value.absent(),
                 Value<String> apiKey = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
+                Value<String?> localUrl = const Value.absent(),
               }) => InstancesCompanion(
                 id: id,
                 name: name,
@@ -797,6 +864,7 @@ class $$InstancesTableTableManager
                 baseUrl: baseUrl,
                 apiKey: apiKey,
                 enabled: enabled,
+                localUrl: localUrl,
               ),
           createCompanionCallback:
               ({
@@ -806,6 +874,7 @@ class $$InstancesTableTableManager
                 required String baseUrl,
                 required String apiKey,
                 Value<bool> enabled = const Value.absent(),
+                Value<String?> localUrl = const Value.absent(),
               }) => InstancesCompanion.insert(
                 id: id,
                 name: name,
@@ -813,6 +882,7 @@ class $$InstancesTableTableManager
                 baseUrl: baseUrl,
                 apiKey: apiKey,
                 enabled: enabled,
+                localUrl: localUrl,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -578,14 +578,60 @@ class _SeriesList extends StatelessWidget {
   }
 }
 
-class _SeriesTile extends StatelessWidget {
+class _SeriesTile extends ConsumerWidget {
   const _SeriesTile({required this.series, required this.instance});
 
   final SonarrSeries series;
   final Instance instance;
 
+  Future<void> _handleAction(BuildContext context, WidgetRef ref, String action) async {
+    final api = ref.read(sonarrApiProvider(instance));
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      switch (action) {
+        case 'monitor':
+          await api.toggleMonitorSeries(series.id, !series.monitored);
+          ref.invalidate(sonarrSeriesProvider(instance));
+        case 'search':
+          await api.searchSeries(series.id);
+          messenger.showSnackBar(const SnackBar(
+            content: Text('Search started'),
+            behavior: SnackBarBehavior.floating,
+          ));
+        case 'delete':
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Remove Series'),
+              content: Text('Remove "${series.title}" from Sonarr?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.statusOffline),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Remove'),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true) {
+            await api.deleteSeries(series.id);
+            ref.invalidate(sonarrSeriesProvider(instance));
+          }
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final posterUrl = series.posterUrl;
@@ -658,6 +704,51 @@ class _SeriesTile extends StatelessWidget {
                         stops: const [0, 0.55, 1],
                       ),
                     ),
+                  ),
+                ),
+                // 3-dot context menu — top-right corner
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: PopupMenuButton<String>(
+                    icon: const Icon(
+                      Icons.more_vert,
+                      size: 18,
+                      color: Colors.white60,
+                    ),
+                    onSelected: (action) => _handleAction(context, ref, action),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'monitor',
+                        child: ListTile(
+                          leading: Icon(
+                            series.monitored ? Icons.bookmark_remove_outlined : Icons.bookmark_add_outlined,
+                          ),
+                          title: Text(series.monitored ? 'Unmonitor' : 'Monitor'),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'search',
+                        child: ListTile(
+                          leading: Icon(Icons.search),
+                          title: Text('Search Monitored'),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: ListTile(
+                          leading: Icon(Icons.delete_outline, color: AppColors.statusOffline),
+                          title: Text('Remove', style: TextStyle(color: AppColors.statusOffline)),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 // Foreground content

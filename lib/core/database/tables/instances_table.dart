@@ -11,4 +11,8 @@ class Instances extends Table {
   TextColumn get baseUrl => text()();
   TextColumn get apiKey => text()();
   BoolColumn get enabled => boolean().withDefault(const Constant(true))();
+
+  /// Optional LAN URL used when the device is on the home network.
+  /// When non-null the app probes this URL first; falls back to [baseUrl].
+  TextColumn get localUrl => text().nullable()();
 }

@@ -207,6 +207,15 @@ class _AppShell extends ConsumerWidget {
                   .read(calendarViewModeProvider.notifier)
                   .state = !ref.read(calendarViewModeProvider),
             ),
+          // Global search — always visible
+          IconButton(
+            icon: const Icon(Icons.search, color: AppColors.textOnPrimary),
+            tooltip: 'Search',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const GlobalSearchScreen()),
+            ),
+          ),
         ],
       ),
       drawer: const AppDrawer(),
@@ -214,13 +223,6 @@ class _AppShell extends ConsumerWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) {
-          if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const GlobalSearchScreen()),
-            );
-            return;
-          }
           navigationShell.goBranch(
             index,
             initialLocation: index == navigationShell.currentIndex,
@@ -233,9 +235,9 @@ class _AppShell extends ConsumerWidget {
             label: 'Dashboard',
           ),
           NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search),
-            label: 'Search',
+            icon: Icon(Icons.apps_outlined),
+            selectedIcon: Icon(Icons.apps),
+            label: 'Services',
           ),
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
