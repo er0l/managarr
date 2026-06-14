@@ -16,12 +16,14 @@ class MovieCard extends StatelessWidget {
     final posterUrl = movie.posterUrl;
     final theme = Theme.of(context);
 
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      child: ClipRRect(
+    return Opacity(
+      opacity: movie.hasFile ? 1.0 : 0.55,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: Stack(
           fit: StackFit.expand,
@@ -100,6 +102,7 @@ class MovieCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
