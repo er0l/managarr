@@ -9,11 +9,8 @@ import '../theme/app_colors.dart';
 import 'app_drawer.dart';
 
 /// A shared scaffold for service detail modules (Radarr, Sonarr, etc.)
-/// that provides a consistent AppBar with the app's teal background,
-/// a brand-colour icon avatar, the service name, and the instance name.
-///
-/// All service home screens use this widget so the chrome matches the rest
-/// of the app shell (Dashboard, Search, Settings).
+/// that provides a consistent AppBar and a nzb360-style BottomAppBar with
+/// a centre-docked FAB, leading filter/sort actions, and a trailing ... menu.
 class ServiceDetailShell extends ConsumerWidget {
   const ServiceDetailShell({
     super.key,
@@ -21,8 +18,11 @@ class ServiceDetailShell extends ConsumerWidget {
     required this.serviceName,
     this.tabs = const [],
     required this.tabViews,
-    this.actions,
     this.floatingActionButton,
+    this.bottomLeadingActions,
+    this.bottomTrailingActions,
+    this.bottomMoreItems,
+    this.onMoreSelected,
     this.tabController,
   });
 
@@ -30,8 +30,23 @@ class ServiceDetailShell extends ConsumerWidget {
   final String serviceName;
   final List<String> tabs;
   final List<Widget> tabViews;
-  final List<Widget>? actions;
+
+  /// Centre-docked FAB — shown in the BottomAppBar notch.
   final Widget? floatingActionButton;
+
+  /// Widgets placed to the left of the FAB in the BottomAppBar (filter, sort…).
+  final List<Widget>? bottomLeadingActions;
+
+  /// Widgets placed to the right of the FAB in the BottomAppBar (view toggle…).
+  final List<Widget>? bottomTrailingActions;
+
+  /// Items for the ··· overflow menu in the BottomAppBar.
+  /// The local-URL toggle is auto-prepended when [instance.localUrl] is set.
+  final List<PopupMenuEntry<String>>? bottomMoreItems;
+
+  /// Called when a value from [bottomMoreItems] is selected.
+  final ValueChanged<String>? onMoreSelected;
+
   final TabController? tabController;
 
   ServiceType? get _serviceType {
@@ -64,149 +79,195 @@ class ServiceDetailShell extends ConsumerWidget {
       throw ArgumentError('tabs and tabViews must have the same length');
     }
 
-    final type      = _serviceType;
+    final type       = _serviceType;
     final brandColor = _brandColor;
     final iconAsset  = _iconAsset(type);
 
+    const fgColor      = Colors.white;
+    const fgColorMuted = Color(0xA0FFFFFF);
+
+    // ── Local URL toggle ─────────────────────────────────────────────────────
     final hasLocalUrl =
         instance.localUrl != null && instance.localUrl!.isNotEmpty;
     final useLocal = hasLocalUrl
         ? ref.watch(useLocalUrlProvider(instance.id))
         : false;
 
-    // All service AppBars use the app teal — white text is always legible.
-    const fgColor      = Colors.white;
-    const fgColorMuted = Color(0xA0FFFFFF); // white @ ~63 % opacity
-
-    final scaffold = Scaffold(
-      drawer: const AppDrawer(),
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        elevation: 0,
-        toolbarHeight: 60,
-        automaticallyImplyLeading: false,
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu, color: fgColor),
-            onPressed: () => Scaffold.of(ctx).openDrawer(),
-          ),
-        ),
-        iconTheme: const IconThemeData(color: fgColor),
-        title: Row(
-          children: [
-            // Brand-colour icon avatar — gives each service its own identity
-            // while keeping the overall chrome consistent.
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: brandColor,
-                borderRadius: BorderRadius.circular(9),
-                boxShadow: [
-                  BoxShadow(
-                    color: brandColor.withAlpha(90),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+    final List<PopupMenuEntry<String>> urlItems = hasLocalUrl
+        ? [
+            PopupMenuItem<String>(
+              value: '__localUrl__',
+              child: ListTile(
+                leading: Icon(
+                  useLocal ? Icons.home_outlined : Icons.public,
+                  color: useLocal ? brandColor : null,
+                ),
+                title: Text(useLocal ? 'Use Remote URL' : 'Use Local URL'),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
               ),
-              alignment: Alignment.center,
-              child: iconAsset != null
-                  ? SvgPicture.asset(
-                      iconAsset,
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                    )
-                  : Text(
-                      serviceName[0],
-                      style: const TextStyle(
-                        color: fgColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    serviceName,
+            if (bottomMoreItems?.isNotEmpty == true) const PopupMenuDivider(),
+          ]
+        : [];
+
+    final allMoreItems = [...urlItems, ...?bottomMoreItems];
+
+    final hasBottomContent = floatingActionButton != null ||
+        bottomLeadingActions?.isNotEmpty == true ||
+        bottomTrailingActions?.isNotEmpty == true ||
+        allMoreItems.isNotEmpty;
+
+    // ── AppBar ───────────────────────────────────────────────────────────────
+    final appBar = AppBar(
+      backgroundColor: AppColors.tealPrimary,
+      elevation: 0,
+      toolbarHeight: 60,
+      automaticallyImplyLeading: false,
+      leading: Builder(
+        builder: (ctx) => IconButton(
+          icon: const Icon(Icons.menu, color: fgColor),
+          onPressed: () => Scaffold.of(ctx).openDrawer(),
+        ),
+      ),
+      iconTheme: const IconThemeData(color: fgColor),
+      title: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: brandColor,
+              borderRadius: BorderRadius.circular(9),
+              boxShadow: [
+                BoxShadow(
+                  color: brandColor.withAlpha(90),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: iconAsset != null
+                ? SvgPicture.asset(
+                    iconAsset,
+                    width: 20,
+                    height: 20,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  )
+                : Text(
+                    serviceName[0],
                     style: const TextStyle(
                       color: fgColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 17,
-                      letterSpacing: -0.2,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
                     ),
                   ),
-                  Text(
-                    instance.name,
-                    style: const TextStyle(
-                      color: fgColorMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  serviceName,
+                  style: const TextStyle(
+                    color: fgColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 17,
+                    letterSpacing: -0.2,
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          if (hasLocalUrl)
-            IconButton(
-              icon: Icon(
-                useLocal ? Icons.home_outlined : Icons.public,
-                color: useLocal ? brandColor : fgColorMuted,
-              ),
-              tooltip: useLocal ? 'Using local URL' : 'Using remote URL',
-              onPressed: () => ref
-                  .read(useLocalUrlProvider(instance.id).notifier)
-                  .state = !useLocal,
-            ),
-          ...?actions,
-        ],
-        bottom: tabs.isNotEmpty
-            ? TabBar(
-                controller: tabController,
-                indicatorColor: brandColor,
-                indicatorWeight: 3,
-                dividerColor: Colors.transparent,
-                labelColor: fgColor,
-                unselectedLabelColor: fgColorMuted,
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
                 ),
-                tabs: tabs.map((t) => Tab(text: t)).toList(),
-              )
-            : null,
+                Text(
+                  instance.name,
+                  style: const TextStyle(
+                    color: fgColorMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
+      bottom: tabs.isNotEmpty
+          ? TabBar(
+              controller: tabController,
+              indicatorColor: brandColor,
+              indicatorWeight: 3,
+              dividerColor: Colors.transparent,
+              labelColor: fgColor,
+              unselectedLabelColor: fgColorMuted,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              tabs: tabs.map((t) => Tab(text: t)).toList(),
+            )
+          : null,
+    );
+
+    // ── BottomAppBar ─────────────────────────────────────────────────────────
+    final bottomBar = hasBottomContent
+        ? BottomAppBar(
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 8,
+            color: AppColors.surfaceCardDark,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              children: [
+                // Leading actions (filter, sort, etc.)
+                ...?bottomLeadingActions,
+                const Spacer(),
+                // Trailing actions (view toggle, etc.)
+                ...?bottomTrailingActions,
+                // Overflow menu
+                if (allMoreItems.isNotEmpty)
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: fgColorMuted),
+                    onSelected: (value) {
+                      if (value == '__localUrl__') {
+                        ref
+                            .read(useLocalUrlProvider(instance.id).notifier)
+                            .state = !useLocal;
+                      } else {
+                        onMoreSelected?.call(value);
+                      }
+                    },
+                    itemBuilder: (_) => allMoreItems,
+                  ),
+              ],
+            ),
+          )
+        : null;
+
+    // ── Scaffold ─────────────────────────────────────────────────────────────
+    final scaffold = Scaffold(
+      drawer: const AppDrawer(),
+      appBar: appBar,
+      floatingActionButtonLocation: hasBottomContent
+          ? FloatingActionButtonLocation.centerDocked
+          : FloatingActionButtonLocation.endFloat,
+      floatingActionButton: floatingActionButton,
+      bottomNavigationBar: bottomBar,
       body: tabs.isNotEmpty
           ? TabBarView(
               controller: tabController,
               children: tabViews,
             )
           : (tabViews.isNotEmpty ? tabViews.first : const SizedBox.shrink()),
-      floatingActionButton: floatingActionButton,
     );
 
-    // If tabs are present but no external controller, wrap in DefaultTabController.
     if (tabController == null && tabs.isNotEmpty) {
-      return DefaultTabController(
-        length: tabs.length,
-        child: scaffold,
-      );
+      return DefaultTabController(length: tabs.length, child: scaffold);
     }
-
     return scaffold;
   }
 }

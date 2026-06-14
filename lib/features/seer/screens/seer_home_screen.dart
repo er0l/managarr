@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/models/display_mode.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../providers/seer_providers.dart';
 import 'seer_discover_screen.dart';
@@ -46,13 +45,13 @@ class _SeerHomeScreenState extends ConsumerState<SeerHomeScreen>
       serviceName: 'Seer',
       tabs: _tabs,
       tabController: _tabController,
-      actions: [
+      bottomTrailingActions: [
         IconButton(
           icon: Icon(
             displayMode == DisplayMode.grid
                 ? Icons.view_list_outlined
                 : Icons.grid_view_outlined,
-            color: AppColors.textOnPrimary,
+            color: const Color(0xA0FFFFFF),
           ),
           tooltip:
               'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',

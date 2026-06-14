@@ -68,33 +68,28 @@ class _TautulliHomeScreenState extends State<TautulliHomeScreen>
       serviceName: 'Tautulli',
       tabs: _tabs,
       tabController: _tabController,
-      actions: [
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert),
-          onSelected: (value) {
-            if (value == 'graphs') _openGraphs();
-            if (value == 'statistics') _openStatistics();
-          },
-          itemBuilder: (_) => const [
-            PopupMenuItem(
-              value: 'graphs',
-              child: ListTile(
-                leading: Icon(Icons.bar_chart_outlined),
-                title: Text('Graphs'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            PopupMenuItem(
-              value: 'statistics',
-              child: ListTile(
-                leading: Icon(Icons.leaderboard_outlined),
-                title: Text('Statistics'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
+      bottomMoreItems: const [
+        PopupMenuItem(
+          value: 'graphs',
+          child: ListTile(
+            leading: Icon(Icons.bar_chart_outlined),
+            title: Text('Graphs'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'statistics',
+          child: ListTile(
+            leading: Icon(Icons.leaderboard_outlined),
+            title: Text('Statistics'),
+            contentPadding: EdgeInsets.zero,
+          ),
         ),
       ],
+      onMoreSelected: (value) {
+        if (value == 'graphs') _openGraphs();
+        if (value == 'statistics') _openStatistics();
+      },
       tabViews: [
         TautulliActivityScreen(instance: widget.instance),
         TautulliHistoryScreen(instance: widget.instance),

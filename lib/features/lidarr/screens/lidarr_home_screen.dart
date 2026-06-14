@@ -52,80 +52,141 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen>
     try {
       final api = ref.read(lidarrApiProvider(widget.instance));
       await api.sendCommand(name);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('$label started'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      messenger.showSnackBar(SnackBar(
+        content: Text('$label started'),
+        behavior: SnackBarBehavior.floating,
+      ));
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      messenger.showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        behavior: SnackBarBehavior.floating,
+      ));
     }
+  }
+
+  void _showSortBottomSheet() {
+    final currentSort = ref.read(lidarrSortOptionProvider(widget.instance.id));
+    final ascending = ref.read(lidarrSortAscendingProvider(widget.instance.id));
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(Spacing.s16),
+              child: Row(
+                children: [
+                  Text('Sort by', style: Theme.of(ctx).textTheme.titleLarge),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(ascending
+                        ? Icons.arrow_upward
+                        : Icons.arrow_downward),
+                    onPressed: () {
+                      ref
+                          .read(lidarrSortAscendingProvider(widget.instance.id)
+                              .notifier)
+                          .state = !ascending;
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: RadioGroup<LidarrSortOption>(
+                groupValue: currentSort,
+                onChanged: (val) {
+                  if (val != null) {
+                    ref
+                        .read(lidarrSortOptionProvider(widget.instance.id)
+                            .notifier)
+                        .state = val;
+                    Navigator.pop(ctx);
+                  }
+                },
+                child: ListView(
+                  shrinkWrap: true,
+                  children: LidarrSortOption.values
+                      .map((o) => RadioListTile<LidarrSortOption>(
+                            title: Text(o.label),
+                            value: o,
+                          ))
+                      .toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFilterBottomSheet() {
+    final currentFilter =
+        ref.read(lidarrFilterOptionProvider(widget.instance.id));
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(Spacing.s16),
+              child: Text('Filter by',
+                  style: Theme.of(ctx).textTheme.titleLarge),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: RadioGroup<LidarrFilterOption>(
+                groupValue: currentFilter,
+                onChanged: (val) {
+                  if (val != null) {
+                    ref
+                        .read(lidarrFilterOptionProvider(widget.instance.id)
+                            .notifier)
+                        .state = val;
+                    Navigator.pop(ctx);
+                  }
+                },
+                child: ListView(
+                  shrinkWrap: true,
+                  children: LidarrFilterOption.values
+                      .map((o) => RadioListTile<LidarrFilterOption>(
+                            title: Text(o.label),
+                            value: o,
+                          ))
+                      .toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final displayMode = ref.watch(lidarrDisplayModeProvider(widget.instance.id));
+    final displayMode =
+        ref.watch(lidarrDisplayModeProvider(widget.instance.id));
+    final currentSort =
+        ref.watch(lidarrSortOptionProvider(widget.instance.id));
+    final currentFilter =
+        ref.watch(lidarrFilterOptionProvider(widget.instance.id));
+    final filterActive = currentFilter != LidarrFilterOption.all;
+    final sortActive = currentSort != LidarrSortOption.alphabetical;
+
+    const muted = Color(0xA0FFFFFF);
 
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'Lidarr',
       tabs: _tabs,
       tabController: _tabController,
-      actions: [
-        IconButton(
-          icon: Icon(
-            displayMode == DisplayMode.grid
-                ? Icons.view_list_outlined
-                : Icons.grid_view_outlined,
-            color: AppColors.textOnPrimary,
-          ),
-          tooltip: 'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
-          onPressed: () {
-            ref.read(lidarrDisplayModeProvider(widget.instance.id).notifier).state =
-                displayMode == DisplayMode.grid ? DisplayMode.list : DisplayMode.grid;
-          },
-        ),
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: AppColors.textOnPrimary),
-          onSelected: (value) {
-            switch (value) {
-              case 'updateLibrary':
-                _runCommand('RescanArtist', 'Update Library');
-              case 'backup':
-                _runCommand('Backup', 'Backup');
-            }
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem(
-              value: 'updateLibrary',
-              child: ListTile(
-                leading: Icon(Icons.folder_open_outlined),
-                title: Text('Update Library'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            PopupMenuItem(
-              value: 'backup',
-              child: ListTile(
-                leading: Icon(Icons.backup_outlined),
-                title: Text('Backup'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-        ),
-      ],
-      tabViews: [
-        _LidarrArtistsTab(instance: widget.instance),
-        _LidarrHistoryTab(instance: widget.instance),
-        LidarrMissingAlbumsScreen(instance: widget.instance),
-      ],
       floatingActionButton: _currentTabIndex == 0
           ? FloatingActionButton(
               backgroundColor: AppColors.orangeAccent,
@@ -141,6 +202,70 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen>
               child: const Icon(Icons.add),
             )
           : null,
+      bottomLeadingActions: [
+        IconButton(
+          icon: Icon(Icons.filter_list,
+              color: filterActive ? AppColors.tealPrimary : muted),
+          tooltip: 'Filter',
+          onPressed: _showFilterBottomSheet,
+        ),
+        IconButton(
+          icon: Icon(Icons.sort,
+              color: sortActive ? AppColors.tealPrimary : muted),
+          tooltip: 'Sort',
+          onPressed: _showSortBottomSheet,
+        ),
+      ],
+      bottomTrailingActions: [
+        IconButton(
+          icon: Icon(
+            displayMode == DisplayMode.grid
+                ? Icons.view_list_outlined
+                : Icons.grid_view_outlined,
+            color: muted,
+          ),
+          tooltip:
+              'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
+          onPressed: () {
+            ref
+                .read(lidarrDisplayModeProvider(widget.instance.id).notifier)
+                .state = displayMode == DisplayMode.grid
+                ? DisplayMode.list
+                : DisplayMode.grid;
+          },
+        ),
+      ],
+      bottomMoreItems: const [
+        PopupMenuItem(
+          value: 'updateLibrary',
+          child: ListTile(
+            leading: Icon(Icons.folder_open_outlined),
+            title: Text('Update Library'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'backup',
+          child: ListTile(
+            leading: Icon(Icons.backup_outlined),
+            title: Text('Backup'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+      onMoreSelected: (value) {
+        switch (value) {
+          case 'updateLibrary':
+            _runCommand('RescanArtist', 'Update Library');
+          case 'backup':
+            _runCommand('Backup', 'Backup');
+        }
+      },
+      tabViews: [
+        _LidarrArtistsTab(instance: widget.instance),
+        _LidarrHistoryTab(instance: widget.instance),
+        LidarrMissingAlbumsScreen(instance: widget.instance),
+      ],
     );
   }
 }
@@ -170,108 +295,12 @@ class _LidarrArtistsTabState extends ConsumerState<_LidarrArtistsTab> {
     super.dispose();
   }
 
-  void _showSortBottomSheet() {
-    final currentSort = ref.read(lidarrSortOptionProvider(widget.instance.id));
-    final ascending = ref.read(lidarrSortAscendingProvider(widget.instance.id));
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(Spacing.s16),
-              child: Row(
-                children: [
-                  Text('Sort by', style: Theme.of(context).textTheme.titleLarge),
-                  const Spacer(),
-                  IconButton(
-                    icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
-                    onPressed: () {
-                      ref.read(lidarrSortAscendingProvider(widget.instance.id).notifier).state = !ascending;
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: RadioGroup<LidarrSortOption>(
-                groupValue: currentSort,
-                onChanged: (val) {
-                  if (val != null) {
-                    ref.read(lidarrSortOptionProvider(widget.instance.id).notifier).state = val;
-                    Navigator.pop(context);
-                  }
-                },
-                child: ListView(
-                  shrinkWrap: true,
-                  children: LidarrSortOption.values
-                      .map((option) => RadioListTile<LidarrSortOption>(
-                            title: Text(option.label),
-                            value: option,
-                          ))
-                      .toList(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showFilterBottomSheet() {
-    final currentFilter = ref.read(lidarrFilterOptionProvider(widget.instance.id));
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(Spacing.s16),
-              child: Text('Filter by', style: Theme.of(context).textTheme.titleLarge),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: RadioGroup<LidarrFilterOption>(
-                groupValue: currentFilter,
-                onChanged: (val) {
-                  if (val != null) {
-                    ref.read(lidarrFilterOptionProvider(widget.instance.id).notifier).state = val;
-                    Navigator.pop(context);
-                  }
-                },
-                child: ListView(
-                  shrinkWrap: true,
-                  children: LidarrFilterOption.values
-                      .map((option) => RadioListTile<LidarrFilterOption>(
-                            title: Text(option.label),
-                            value: option,
-                          ))
-                      .toList(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final artistsAsync = ref.watch(lidarrArtistsProvider(widget.instance));
     final filteredArtists = ref.watch(lidarrFilteredArtistsProvider(widget.instance));
     final displayMode = ref.watch(lidarrDisplayModeProvider(widget.instance.id));
     final query = ref.watch(lidarrSearchQueryProvider(widget.instance.id));
-    final currentSort = ref.watch(lidarrSortOptionProvider(widget.instance.id));
-    final currentFilter = ref.watch(lidarrFilterOptionProvider(widget.instance.id));
 
     return Column(
       children: [
@@ -282,42 +311,29 @@ class _LidarrArtistsTabState extends ConsumerState<_LidarrArtistsTab> {
             Spacing.pageHorizontal,
             Spacing.s8,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search artists…',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: query.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.read(lidarrSearchQueryProvider(widget.instance.id).notifier).state = '';
-                            },
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  onChanged: (v) => ref.read(lidarrSearchQueryProvider(widget.instance.id).notifier).state = v,
-                ),
-              ),
-              const SizedBox(width: Spacing.s8),
-              _ControlButton(
-                icon: Icons.filter_list,
-                isActive: currentFilter != LidarrFilterOption.all,
-                onTap: _showFilterBottomSheet,
-              ),
-              const SizedBox(width: Spacing.s4),
-              _ControlButton(
-                icon: Icons.sort,
-                isActive: currentSort != LidarrSortOption.alphabetical,
-                onTap: _showSortBottomSheet,
-              ),
-            ],
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search artists…',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: query.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        ref
+                            .read(lidarrSearchQueryProvider(widget.instance.id)
+                                .notifier)
+                            .state = '';
+                      },
+                    )
+                  : null,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            onChanged: (v) => ref
+                .read(lidarrSearchQueryProvider(widget.instance.id).notifier)
+                .state = v,
           ),
         ),
         Expanded(
@@ -343,27 +359,6 @@ class _LidarrArtistsTabState extends ConsumerState<_LidarrArtistsTab> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ControlButton extends StatelessWidget {
-  const _ControlButton({required this.icon, required this.isActive, required this.onTap});
-  final IconData icon;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return IconButton.filledTonal(
-      onPressed: onTap,
-      iconSize: 20,
-      style: IconButton.styleFrom(
-        backgroundColor: isActive ? colorScheme.primaryContainer : null,
-        foregroundColor: isActive ? colorScheme.onPrimaryContainer : null,
-      ),
-      icon: Icon(icon),
     );
   }
 }
