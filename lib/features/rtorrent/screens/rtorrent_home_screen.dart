@@ -55,13 +55,14 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
 
     final body = Column(
       children: [
-        _GlobalStatsHeader(stats: stats),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search torrents…',
+              hintText: stats.totalTorrents > 0
+                  ? 'Search ${stats.totalTorrents} torrents…'
+                  : 'Search torrents…',
               prefixIcon: const Icon(Icons.search, size: 20),
               suffixIcon: ref
                       .watch(rtorrentSearchQueryProvider(widget.instance.id))
@@ -405,96 +406,3 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
   }
 }
 
-class _GlobalStatsHeader extends StatelessWidget {
-  const _GlobalStatsHeader({required this.stats});
-  final RTorrentGlobalStats stats;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withAlpha(30),
-        border: Border(
-          bottom: BorderSide(
-            color: theme.colorScheme.primaryContainer.withAlpha(50),
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _StatItem(
-            icon: Icons.arrow_downward,
-            value: '${_fmt(stats.totalDownRate)}/s',
-            label: 'Download',
-            color: AppColors.statusOnline,
-          ),
-          _StatItem(
-            icon: Icons.arrow_upward,
-            value: '${_fmt(stats.totalUpRate)}/s',
-            label: 'Upload',
-            color: AppColors.blueAccent,
-          ),
-          _StatItem(
-            icon: Icons.layers_outlined,
-            value: stats.totalTorrents.toString(),
-            label: 'Total',
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _fmt(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    int i = 0;
-    double val = bytes.toDouble();
-    while (val >= 1024 && i < units.length - 1) {
-      val /= 1024;
-      i++;
-    }
-    return '${val.toStringAsFixed(i == 0 ? 0 : 1)} ${units[i]}';
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  const _StatItem({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                )),
-          ],
-        ),
-        Text(label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textSecondary,
-            )),
-      ],
-    );
-  }
-}

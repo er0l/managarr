@@ -7,7 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../api/models/romm_available_filters.dart';
@@ -15,669 +17,117 @@ import '../api/models/romm_collection.dart';
 import '../api/models/romm_platform.dart';
 import '../api/models/romm_rom.dart';
 import '../api/models/romm_search_filters.dart';
-import '../api/models/romm_stats.dart';
 import '../api/romm_api.dart';
 import '../providers/romm_providers.dart';
 import 'romm_collection_screen.dart';
 import 'romm_platform_screen.dart';
 import 'romm_rom_detail_screen.dart';
 
-class RommHomeScreen extends StatefulWidget {
+class RommHomeScreen extends ConsumerStatefulWidget {
   const RommHomeScreen({super.key, required this.instance});
 
   final Instance instance;
 
   @override
-  State<RommHomeScreen> createState() => _RommHomeScreenState();
+  ConsumerState<RommHomeScreen> createState() => _RommHomeScreenState();
 }
 
-class _RommHomeScreenState extends State<RommHomeScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  static const _tabs = ['Platforms', 'Collections', 'Search'];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
+  Future<void> _rescan() async {
+    final api = ref.read(rommApiProvider(widget.instance));
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await api.scanLibrary();
+      if (mounted) {
+        messenger.showSnackBar(const SnackBar(
+          content: Text('Library scan started'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(
+          content: Text('Scan failed: $e'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void _openCollections() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: AppColors.tealPrimary,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text(
+              'Collections',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+          body: _CollectionsScreen(instance: widget.instance),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final displayMode =
+        ref.watch(rommHomeDisplayModeProvider(widget.instance.id));
+    const muted = Color(0xA0FFFFFF);
+
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'ROMM',
-      tabs: _tabs,
-      tabController: _tabController,
-      tabViews: [
-        _PlatformsTab(instance: widget.instance),
-        _CollectionsTab(instance: widget.instance),
-        _SearchTab(instance: widget.instance),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Platforms tab
-// ---------------------------------------------------------------------------
-
-class _PlatformsTab extends ConsumerWidget {
-  const _PlatformsTab({required this.instance});
-
-  final Instance instance;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final platformsAsync = ref.watch(rommPlatformsProvider(instance));
-    final statsAsync = ref.watch(rommStatsProvider(instance));
-    final api = ref.watch(rommApiProvider(instance));
-    final theme = Theme.of(context);
-
-    return platformsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: AppColors.statusOffline),
-            const SizedBox(height: 12),
-            Text('$e'),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => ref.invalidate(rommPlatformsProvider(instance)),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-      data: (platforms) {
-        // Hide platforms with no ROMs — keeps the grid uncluttered.
-        final visible = platforms.where((p) => p.romCount > 0).toList();
-
-        if (visible.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.videogame_asset_outlined,
-                    size: 48, color: AppColors.textSecondary),
-                SizedBox(height: 12),
-                Text('No platforms found'),
-              ],
-            ),
-          );
-        }
-        return Column(
-          children: [
-            // Stats card
-            statsAsync.maybeWhen(
-              data: (stats) => _StatsCard(
-                stats: stats,
-                theme: theme,
-                onRescan: () async {
-                  try {
-                    await api.scanLibrary();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Library scan started'),
-                          backgroundColor: AppColors.statusOnline,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Scan failed: $e'),
-                          backgroundColor: AppColors.statusOffline,
-                        ),
-                      );
-                    }
-                  }
-                },
-              ),
-              orElse: () => const SizedBox.shrink(),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(rommPlatformsProvider(instance));
-                  ref.invalidate(rommStatsProvider(instance));
-                },
-                color: AppColors.tealPrimary,
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.4,
-                  ),
-                  itemCount: visible.length,
-                  itemBuilder: (ctx, i) => _PlatformCard(
-                    platform: visible[i],
-                    instance: instance,
-                    api: api,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _StatsCard extends StatelessWidget {
-  const _StatsCard({
-    required this.stats,
-    required this.theme,
-    required this.onRescan,
-  });
-
-  final RommStats stats;
-  final ThemeData theme;
-  final VoidCallback onRescan;
-
-  @override
-  Widget build(BuildContext context) {
-    final parts = [
-      '${stats.totalRoms} ROMs',
-      '${stats.totalPlatforms} platforms',
-      if (stats.formattedSize.isNotEmpty) stats.formattedSize,
-    ];
-    return Card(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            const Icon(Icons.storage_outlined,
-                size: 18, color: AppColors.tealPrimary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                parts.join(' · '),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            TextButton.icon(
-              onPressed: onRescan,
-              icon: const Icon(Icons.refresh, size: 14),
-              label: const Text('Rescan'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.tealPrimary,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: Size.zero,
-                textStyle: const TextStyle(fontSize: 12),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PlatformCard extends StatelessWidget {
-  const _PlatformCard({
-    required this.platform,
-    required this.instance,
-    required this.api,
-  });
-
-  final RommPlatform platform;
-  final Instance instance;
-  final RommApi api;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // GitHub CDN SVG logo (primary) — matches platform slug exactly.
-    final githubSvgUrl =
-        'https://raw.githubusercontent.com/rommapp/romm/master/frontend/assets/platforms/${platform.slug}.svg';
-
-    // Resolve ROMM/IGDB fallback logo URL and auth header.
-    // IGDB logos start with https:// — public, no auth needed.
-    // ROMM-hosted logos may be relative paths — need base URL + auth.
-    final rawLogoUrl = platform.urlLogo;
-    String? fallbackUrl;
-    Map<String, String>? fallbackHeaders;
-    if (rawLogoUrl != null && rawLogoUrl.isNotEmpty) {
-      final isExternal = rawLogoUrl.startsWith('http');
-      fallbackUrl = isExternal ? rawLogoUrl : '${instance.baseUrl}$rawLogoUrl';
-      if (!isExternal) {
-        final encoded = base64.encode(utf8.encode(instance.apiKey));
-        fallbackHeaders = {'Authorization': 'Basic $encoded'};
-      }
-    }
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: theme.colorScheme.surfaceContainerHighest,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                RommPlatformScreen(instance: instance, platform: platform),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Logo area — SVGs have transparency and render fine on the
-            //    card's natural (light or dark) background colour.
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: _PlatformLogo(
-                  slug: platform.slug,
-                  githubSvgUrl: githubSvgUrl,
-                  fallbackUrl: fallbackUrl,
-                  fallbackHeaders: fallbackHeaders,
-                  platformName: platform.displayName,
-                ),
-              ),
-            ),
-            // ── Platform name + ROM count ──────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    platform.displayName,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${platform.romCount} ROMs',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Platform logo with a three-tier fallback chain:
-///
-///   1. Bundled local asset  assets/platforms/{slug}.svg
-///      229 platform SVGs shipped with the app; instant, no network.
-///   2. GitHub CDN           rommapp/romm frontend/assets/platforms/{slug}.svg
-///      Catches slugs not yet in the bundled set.
-///   3. IGDB / ROMM raster   platform.urlLogo (http or relative path + auth)
-///   4. _LetterBadge         first letter of the platform name
-class _PlatformLogo extends StatefulWidget {
-  const _PlatformLogo({
-    required this.slug,
-    required this.githubSvgUrl,
-    required this.platformName,
-    this.fallbackUrl,
-    this.fallbackHeaders,
-  });
-
-  final String slug;
-  final String githubSvgUrl;
-  final String? fallbackUrl;
-  final Map<String, String>? fallbackHeaders;
-  final String platformName;
-
-  @override
-  State<_PlatformLogo> createState() => _PlatformLogoState();
-}
-
-class _PlatformLogoState extends State<_PlatformLogo> {
-  late final Future<Uint8List?> _svgFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _svgFuture = _loadSvg();
-  }
-
-  /// Tries local bundled asset first (fast, cached by rootBundle), then falls
-  /// back to a GitHub CDN fetch over the network.
-  Future<Uint8List?> _loadSvg() async {
-    // ── Tier 1: local bundled asset ──────────────────────────────────────────
-    if (widget.slug.isNotEmpty) {
-      try {
-        final data = await rootBundle
-            .load('assets/platforms/${widget.slug}.svg');
-        return data.buffer.asUint8List();
-      } catch (_) {
-        // Asset not bundled for this slug — fall through to network.
-      }
-    }
-
-    // ── Tier 2: GitHub CDN ───────────────────────────────────────────────────
-    return _fetchSvgBytes(widget.githubSvgUrl);
-  }
-
-  /// HTTP GET returning raw bytes, or null on any error / non-200 response.
-  static Future<Uint8List?> _fetchSvgBytes(String url) async {
-    try {
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 8);
-      final request = await client.getUrl(Uri.parse(url));
-      final response = await request.close();
-      if (response.statusCode != 200) {
-        client.close(force: true);
-        return null;
-      }
-      final builder = BytesBuilder(copy: false);
-      await for (final chunk in response) {
-        builder.add(chunk);
-      }
-      client.close();
-      return builder.takeBytes();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Uint8List?>(
-      future: _svgFuture,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return const SizedBox.expand();
-        }
-
-        final bytes = snap.data;
-        if (bytes != null) {
-          // Tiers 1–2: SVG bytes available (local or CDN).
-          // No colorFilter — SVGs use inline fill/style attributes and
-          // render with their original colours.
-          return SvgPicture.memory(bytes, fit: BoxFit.contain);
-        }
-
-        // ── Tier 3: IGDB / ROMM raster logo ─────────────────────────────────
-        if (widget.fallbackUrl != null) {
-          return Image.network(
-            widget.fallbackUrl!,
-            fit: BoxFit.contain,
-            headers: widget.fallbackHeaders,
-            errorBuilder: (_, _, _) => _LetterBadge(widget.platformName),
-          );
-        }
-
-        // ── Tier 4: letter badge ─────────────────────────────────────────────
-        return _LetterBadge(widget.platformName);
-      },
-    );
-  }
-}
-
-/// Last-resort fallback — shows the first letter of the platform name inside
-/// a teal circle so it is legible on both light and dark card backgrounds.
-class _LetterBadge extends StatelessWidget {
-  const _LetterBadge(this.name);
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: const BoxDecoration(
-          color: AppColors.tealPrimary,
-          shape: BoxShape.circle,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: const TextStyle(
+      tabs: const [],
+      tabViews: [_RommMainView(instance: widget.instance)],
+      appBarActions: [
+        IconButton(
+          icon: Icon(
+            displayMode == DisplayMode.grid
+                ? Icons.view_list_outlined
+                : Icons.grid_view_outlined,
             color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
           ),
+          tooltip:
+              'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
+          onPressed: () {
+            ref
+                .read(
+                    rommHomeDisplayModeProvider(widget.instance.id).notifier)
+                .state = displayMode == DisplayMode.grid
+                ? DisplayMode.list
+                : DisplayMode.grid;
+          },
         ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Collections tab
-// ---------------------------------------------------------------------------
-
-class _CollectionsTab extends ConsumerStatefulWidget {
-  const _CollectionsTab({required this.instance});
-
-  final Instance instance;
-
-  @override
-  ConsumerState<_CollectionsTab> createState() => _CollectionsTabState();
-}
-
-class _CollectionsTabState extends ConsumerState<_CollectionsTab> {
-  final _searchController = TextEditingController();
-  String _searchTerm = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _showCreateCollectionDialog(
-      BuildContext context, RommApi api) async {
-    final nameCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final messenger = ScaffoldMessenger.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Collection'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              minLines: 2,
-            ),
-          ],
+      ],
+      bottomLeadingActions: [
+        IconButton(
+          icon: const Icon(Icons.refresh_outlined, color: muted),
+          tooltip: 'Rescan Library',
+          onPressed: _rescan,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
-    final name = nameCtrl.text.trim();
-    final desc = descCtrl.text.trim();
-    nameCtrl.dispose();
-    descCtrl.dispose();
-    if (confirmed != true || !mounted) return;
-    if (name.isEmpty) return;
-    try {
-      await api.createCollection(
-          name,
-          description: desc.isEmpty ? null : desc);
-      ref.invalidate(rommCollectionsProvider(widget.instance));
-      messenger.showSnackBar(SnackBar(
-        content: Text('Collection "$name" created'),
-        backgroundColor: AppColors.statusOnline,
-      ));
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(
-        content: Text('Failed to create collection: $e'),
-        backgroundColor: AppColors.statusOffline,
-      ));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final collectionsAsync =
-        ref.watch(rommCollectionsProvider(widget.instance));
-    final api = ref.watch(rommApiProvider(widget.instance));
-
-    return Stack(
-      children: [
-        Column(
-          children: [
-            // Search bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search collections…',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: _searchTerm.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchTerm = '');
-                          },
-                        )
-                      : null,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                ),
-                onChanged: (v) => setState(() => _searchTerm = v.toLowerCase()),
-              ),
-            ),
-            Expanded(
-              child: collectionsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.statusOffline),
-                      const SizedBox(height: 12),
-                      Text('$e'),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () => ref
-                            .invalidate(rommCollectionsProvider(widget.instance)),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-                data: (collections) {
-                  final filtered = _searchTerm.isEmpty
-                      ? collections
-                      : collections
-                          .where((c) =>
-                              c.name.toLowerCase().contains(_searchTerm))
-                          .toList();
-
-                  if (filtered.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.folder_off_outlined,
-                              size: 48, color: AppColors.textSecondary),
-                          const SizedBox(height: 12),
-                          Text(
-                            _searchTerm.isNotEmpty
-                                ? 'No collections match "$_searchTerm"'
-                                : 'No collections found',
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return RefreshIndicator(
-                    onRefresh: () async =>
-                        ref.invalidate(rommCollectionsProvider(widget.instance)),
-                    color: AppColors.tealPrimary,
-                    child: ListView.separated(
-                      // Add padding at bottom so FAB doesn't cover last item
-                      padding: const EdgeInsets.only(bottom: 80),
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (ctx, i) => _CollectionTile(
-                        collection: filtered[i],
-                        instance: widget.instance,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+      ],
+      bottomTrailingActions: [
+        IconButton(
+          icon: const Icon(Icons.folder_outlined, color: muted),
+          tooltip: 'Collections',
+          onPressed: _openCollections,
         ),
-        // FAB for creating new collection
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton.extended(
-            heroTag: 'create_collection_fab',
-            backgroundColor: AppColors.tealPrimary,
-            foregroundColor: AppColors.textOnPrimary,
-            icon: const Icon(Icons.add),
-            label: const Text('New Collection'),
-            onPressed: () => _showCreateCollectionDialog(context, api),
+      ],
+      bottomMoreItems: const [
+        PopupMenuItem(
+          value: 'placeholder',
+          enabled: false,
+          child: ListTile(
+            leading: Icon(Icons.more_horiz_outlined),
+            title: Text('More options coming soon'),
+            contentPadding: EdgeInsets.zero,
           ),
         ),
       ],
@@ -685,68 +135,20 @@ class _CollectionsTabState extends ConsumerState<_CollectionsTab> {
   }
 }
 
-class _CollectionTile extends StatelessWidget {
-  const _CollectionTile({
-    required this.collection,
-    required this.instance,
-  });
+// ── Main view: platforms + unified search ────────────────────────────────────
 
-  final RommCollection collection;
+class _RommMainView extends ConsumerStatefulWidget {
+  const _RommMainView({required this.instance});
   final Instance instance;
 
   @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.tealPrimary.withAlpha(20),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.folder_outlined,
-            color: AppColors.tealPrimary, size: 22),
-      ),
-      title: Text(
-        collection.name,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text(
-        '${collection.romCount} ROMs',
-        style: const TextStyle(color: AppColors.textSecondary),
-      ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RommCollectionScreen(
-            instance: instance,
-            collection: collection,
-          ),
-        ),
-      ),
-    );
-  }
+  ConsumerState<_RommMainView> createState() => _RommMainViewState();
 }
 
-// ---------------------------------------------------------------------------
-// Search tab — global search with filters
-// ---------------------------------------------------------------------------
-
-class _SearchTab extends ConsumerStatefulWidget {
-  const _SearchTab({required this.instance});
-
-  final Instance instance;
-
-  @override
-  ConsumerState<_SearchTab> createState() => _SearchTabState();
-}
-
-class _SearchTabState extends ConsumerState<_SearchTab> {
+class _RommMainViewState extends ConsumerState<_RommMainView> {
   final _searchController = TextEditingController();
   String _searchTerm = '';
   RommSearchFilters _filters = const RommSearchFilters();
-  bool _hasSearched = false;
 
   @override
   void dispose() {
@@ -754,33 +156,19 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
     super.dispose();
   }
 
-  RommSearchKey get _key => (
-        instance: widget.instance,
-        searchTerm: _searchTerm,
-        filters: _filters,
-      );
-
-  bool get _shouldSearch =>
+  bool get _isSearching =>
       _searchTerm.isNotEmpty || _filters.hasActiveFilters;
 
   void _onSearchChanged(String v) {
-    setState(() {
-      _searchTerm = v.trim();
-      _hasSearched = _shouldSearch;
-    });
+    setState(() => _searchTerm = v.trim());
   }
 
   void _clearSearch() {
     _searchController.clear();
-    setState(() {
-      _searchTerm = '';
-      _hasSearched = _filters.hasActiveFilters;
-    });
+    setState(() => _searchTerm = '');
   }
 
   Future<void> _showFilterSheet() async {
-    // Await available filters; show snackbar on error but still open sheet
-    // so users can clear existing active filters.
     RommAvailableFilters filtersData;
     try {
       filtersData = await ref
@@ -801,38 +189,44 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _FilterSheet(
-        current: _filters,
-        available: filtersData,
-      ),
+      builder: (_) =>
+          _FilterSheet(current: _filters, available: filtersData),
     );
     if (updated != null && mounted) {
-      setState(() {
-        _filters = updated;
-        _hasSearched = _shouldSearch;
-      });
+      setState(() => _filters = updated);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Pre-fetch filter options in the background as soon as the Search tab opens.
     ref.watch(rommAvailableFiltersProvider(widget.instance));
 
-    final theme = Theme.of(context);
+    final statsAsync = ref.watch(rommStatsProvider(widget.instance));
+    final stats = statsAsync.valueOrNull;
+    final hintText = stats != null
+        ? 'Search ${stats.totalRoms} ROMs and ${stats.totalPlatforms} platforms'
+        : 'Search ROMs and platforms…';
+
+    final displayMode =
+        ref.watch(rommHomeDisplayModeProvider(widget.instance.id));
 
     return Column(
       children: [
-        // Search bar + filter button
+        // Search bar
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.pageHorizontal,
+            Spacing.s12,
+            Spacing.pageHorizontal,
+            Spacing.s8,
+          ),
           child: Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search all ROMs…',
+                    hintText: hintText,
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: _searchTerm.isNotEmpty
                         ? IconButton(
@@ -844,19 +238,28 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
                     contentPadding:
                         const EdgeInsets.symmetric(vertical: 10),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(
+                        color: AppColors.tealPrimary.withAlpha(180),
+                        width: 1.5,
+                      ),
                     ),
                     filled: true,
                   ),
                   onChanged: _onSearchChanged,
                   textInputAction: TextInputAction.search,
-                  onSubmitted: (_) =>
-                      setState(() => _hasSearched = _shouldSearch),
+                  onSubmitted: (_) => setState(() {}),
                 ),
               ),
               const SizedBox(width: 8),
-              // Filter button
               _FilterButton(
                 isActive: _filters.hasActiveFilters,
                 onTap: _showFilterSheet,
@@ -871,33 +274,20 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
             filters: _filters,
             onClear: () => setState(() {
               _filters = const RommSearchFilters();
-              _hasSearched = _searchTerm.isNotEmpty;
             }),
           ),
 
-        // Results
+        // Body: platforms or ROM search results
         Expanded(
-          child: !_hasSearched
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.search,
-                          size: 56, color: AppColors.textSecondary),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Search or apply filters\nto find ROMs',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : _SearchResults(
-                  searchKey: _key,
+          child: _isSearching
+              ? _RomSearchResults(
                   instance: widget.instance,
+                  searchTerm: _searchTerm,
+                  filters: _filters,
+                )
+              : _PlatformsView(
+                  instance: widget.instance,
+                  displayMode: displayMode,
                 ),
         ),
       ],
@@ -905,30 +295,200 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
   }
 }
 
-class _FilterButton extends StatelessWidget {
-  const _FilterButton({required this.isActive, required this.onTap});
+// ── Platforms view (grid + list) ─────────────────────────────────────────────
 
-  final bool isActive;
-  final VoidCallback onTap;
+class _PlatformsView extends ConsumerWidget {
+  const _PlatformsView({required this.instance, required this.displayMode});
+  final Instance instance;
+  final DisplayMode displayMode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final platformsAsync = ref.watch(rommPlatformsProvider(instance));
+    final api = ref.watch(rommApiProvider(instance));
+
+    return platformsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline,
+                size: 48, color: AppColors.statusOffline),
+            const SizedBox(height: 12),
+            Text('$e'),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => ref.invalidate(rommPlatformsProvider(instance)),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+      data: (platforms) {
+        final visible = platforms.where((p) => p.romCount > 0).toList();
+        if (visible.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.videogame_asset_outlined,
+                    size: 48, color: AppColors.textSecondary),
+                SizedBox(height: 12),
+                Text('No platforms found'),
+              ],
+            ),
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(rommPlatformsProvider(instance));
+          },
+          color: AppColors.tealPrimary,
+          child: displayMode == DisplayMode.grid
+              ? _PlatformsGrid(
+                  platforms: visible, instance: instance, api: api)
+              : _PlatformsList(
+                  platforms: visible, instance: instance, api: api),
+        );
+      },
+    );
+  }
+}
+
+class _PlatformsGrid extends StatelessWidget {
+  const _PlatformsGrid(
+      {required this.platforms, required this.instance, required this.api});
+  final List<RommPlatform> platforms;
+  final Instance instance;
+  final RommApi api;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isActive
-          ? AppColors.tealPrimary.withAlpha(30)
-          : Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(
-            Icons.tune_outlined,
-            size: 20,
-            color: isActive
-                ? AppColors.tealPrimary
-                : Theme.of(context).colorScheme.onSurfaceVariant,
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.4,
+      ),
+      itemCount: platforms.length,
+      itemBuilder: (ctx, i) => _PlatformCard(
+        platform: platforms[i],
+        instance: instance,
+        api: api,
+      ),
+    );
+  }
+}
+
+class _PlatformsList extends StatelessWidget {
+  const _PlatformsList(
+      {required this.platforms, required this.instance, required this.api});
+  final List<RommPlatform> platforms;
+  final Instance instance;
+  final RommApi api;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: Spacing.s24),
+      itemCount: platforms.length,
+      itemBuilder: (ctx, i) => _PlatformListTile(
+        platform: platforms[i],
+        instance: instance,
+        api: api,
+      ),
+    );
+  }
+}
+
+class _PlatformListTile extends StatelessWidget {
+  const _PlatformListTile(
+      {required this.platform, required this.instance, required this.api});
+  final RommPlatform platform;
+  final Instance instance;
+  final RommApi api;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardBg =
+        isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+
+    final githubSvgUrl =
+        'https://raw.githubusercontent.com/rommapp/romm/master/frontend/assets/platforms/${platform.slug}.svg';
+    final rawLogoUrl = platform.urlLogo;
+    String? fallbackUrl;
+    Map<String, String>? fallbackHeaders;
+    if (rawLogoUrl != null && rawLogoUrl.isNotEmpty) {
+      final isExternal = rawLogoUrl.startsWith('http');
+      fallbackUrl =
+          isExternal ? rawLogoUrl : '${instance.baseUrl}$rawLogoUrl';
+      if (!isExternal) {
+        final encoded = base64.encode(utf8.encode(instance.apiKey));
+        fallbackHeaders = {'Authorization': 'Basic $encoded'};
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.pageHorizontal, vertical: 4),
+      child: Material(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RommPlatformScreen(
+                  instance: instance, platform: platform),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: _PlatformLogo(
+                    slug: platform.slug,
+                    githubSvgUrl: githubSvgUrl,
+                    fallbackUrl: fallbackUrl,
+                    fallbackHeaders: fallbackHeaders,
+                    platformName: platform.displayName,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        platform.displayName,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w700),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${platform.romCount} ROMs',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right,
+                    size: 20, color: AppColors.textSecondary),
+              ],
+            ),
           ),
         ),
       ),
@@ -936,71 +496,26 @@ class _FilterButton extends StatelessWidget {
   }
 }
 
-class _ActiveFilterChips extends StatelessWidget {
-  const _ActiveFilterChips({required this.filters, required this.onClear});
+// ── ROM search results ────────────────────────────────────────────────────────
 
-  final RommSearchFilters filters;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final allFilters = [
-      ...filters.genres,
-      ...filters.franchises,
-      ...filters.companies,
-      ...filters.ageRatings,
-      ...filters.regions,
-      ...filters.languages,
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: allFilters
-                  .take(4)
-                  .map((f) => Chip(
-                        label: Text(f,
-                            style: const TextStyle(fontSize: 11)),
-                        padding: EdgeInsets.zero,
-                        materialTapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ))
-                  .toList(),
-            ),
-          ),
-          TextButton(
-            onPressed: onClear,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: Size.zero,
-            ),
-            child: const Text('Clear',
-                style: TextStyle(color: AppColors.tealPrimary)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SearchResults extends ConsumerWidget {
-  const _SearchResults({
-    required this.searchKey,
+class _RomSearchResults extends ConsumerWidget {
+  const _RomSearchResults({
     required this.instance,
+    required this.searchTerm,
+    required this.filters,
   });
-
-  final RommSearchKey searchKey;
   final Instance instance;
+  final String searchTerm;
+  final RommSearchFilters filters;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final romsAsync = ref.watch(rommSearchProvider(searchKey));
+    final key = (
+      instance: instance,
+      searchTerm: searchTerm,
+      filters: filters,
+    );
+    final romsAsync = ref.watch(rommSearchProvider(key));
     final api = ref.watch(rommApiProvider(instance));
 
     return romsAsync.when(
@@ -1013,11 +528,6 @@ class _SearchResults extends ConsumerWidget {
                 size: 48, color: AppColors.statusOffline),
             const SizedBox(height: 12),
             Text('$e'),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => ref.invalidate(rommSearchProvider(searchKey)),
-              child: const Text('Retry'),
-            ),
           ],
         ),
       ),
@@ -1038,8 +548,11 @@ class _SearchResults extends ConsumerWidget {
         return ListView.separated(
           itemCount: roms.length,
           separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (ctx, i) =>
-              _SearchRomTile(rom: roms[i], api: api, instance: instance),
+          itemBuilder: (ctx, i) => _SearchRomTile(
+            rom: roms[i],
+            api: api,
+            instance: instance,
+          ),
         );
       },
     );
@@ -1047,12 +560,8 @@ class _SearchResults extends ConsumerWidget {
 }
 
 class _SearchRomTile extends StatelessWidget {
-  const _SearchRomTile({
-    required this.rom,
-    required this.api,
-    required this.instance,
-  });
-
+  const _SearchRomTile(
+      {required this.rom, required this.api, required this.instance});
   final RommRom rom;
   final RommApi api;
   final Instance instance;
@@ -1109,22 +618,564 @@ class _SearchRomTile extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() {
-    return Container(
-      color: AppColors.tealPrimary.withAlpha(20),
-      child: const Icon(Icons.videogame_asset_outlined,
-          color: AppColors.tealPrimary, size: 24),
+  Widget _placeholder() => Container(
+        color: AppColors.tealPrimary.withAlpha(20),
+        child: const Icon(Icons.videogame_asset_outlined,
+            color: AppColors.tealPrimary, size: 24),
+      );
+}
+
+// ── Collections screen (push) ────────────────────────────────────────────────
+
+class _CollectionsScreen extends ConsumerStatefulWidget {
+  const _CollectionsScreen({required this.instance});
+  final Instance instance;
+
+  @override
+  ConsumerState<_CollectionsScreen> createState() =>
+      _CollectionsScreenState();
+}
+
+class _CollectionsScreenState extends ConsumerState<_CollectionsScreen> {
+  final _searchController = TextEditingController();
+  String _searchTerm = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _showCreateDialog(RommApi api) async {
+    final nameCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New Collection'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              minLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    final name = nameCtrl.text.trim();
+    final desc = descCtrl.text.trim();
+    nameCtrl.dispose();
+    descCtrl.dispose();
+    if (confirmed != true || !mounted) return;
+    if (name.isEmpty) return;
+    try {
+      await api.createCollection(name,
+          description: desc.isEmpty ? null : desc);
+      ref.invalidate(rommCollectionsProvider(widget.instance));
+      messenger.showSnackBar(SnackBar(
+        content: Text('Collection "$name" created'),
+        backgroundColor: AppColors.statusOnline,
+      ));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('Failed to create collection: $e'),
+        backgroundColor: AppColors.statusOffline,
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final collectionsAsync =
+        ref.watch(rommCollectionsProvider(widget.instance));
+    final api = ref.watch(rommApiProvider(widget.instance));
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  Spacing.pageHorizontal, 12, Spacing.pageHorizontal, 8),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search collections…',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _searchTerm.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchTerm = '');
+                          },
+                        )
+                      : null,
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(
+                      color: AppColors.tealPrimary.withAlpha(180),
+                      width: 1.5,
+                    ),
+                  ),
+                  filled: true,
+                ),
+                onChanged: (v) =>
+                    setState(() => _searchTerm = v.toLowerCase()),
+              ),
+            ),
+            Expanded(
+              child: collectionsAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline,
+                          size: 48, color: AppColors.statusOffline),
+                      const SizedBox(height: 12),
+                      Text('$e'),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => ref.invalidate(
+                            rommCollectionsProvider(widget.instance)),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (collections) {
+                  final filtered = _searchTerm.isEmpty
+                      ? collections
+                      : collections
+                          .where((c) => c.name
+                              .toLowerCase()
+                              .contains(_searchTerm))
+                          .toList();
+
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.folder_off_outlined,
+                              size: 48, color: AppColors.textSecondary),
+                          const SizedBox(height: 12),
+                          Text(
+                            _searchTerm.isNotEmpty
+                                ? 'No collections match "$_searchTerm"'
+                                : 'No collections found',
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return RefreshIndicator(
+                    onRefresh: () async => ref.invalidate(
+                        rommCollectionsProvider(widget.instance)),
+                    color: AppColors.tealPrimary,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.only(bottom: 80),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (ctx, i) => _CollectionTile(
+                        collection: filtered[i],
+                        instance: widget.instance,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton.extended(
+            heroTag: 'create_collection_fab',
+            backgroundColor: AppColors.tealPrimary,
+            foregroundColor: AppColors.textOnPrimary,
+            icon: const Icon(Icons.add),
+            label: const Text('New Collection'),
+            onPressed: () => _showCreateDialog(api),
+          ),
+        ),
+      ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Filter bottom sheet
-// ---------------------------------------------------------------------------
+class _CollectionTile extends StatelessWidget {
+  const _CollectionTile(
+      {required this.collection, required this.instance});
+  final RommCollection collection;
+  final Instance instance;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.tealPrimary.withAlpha(20),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(Icons.folder_outlined,
+            color: AppColors.tealPrimary, size: 22),
+      ),
+      title: Text(
+        collection.name,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        '${collection.romCount} ROMs',
+        style: const TextStyle(color: AppColors.textSecondary),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RommCollectionScreen(
+            instance: instance,
+            collection: collection,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Platform card (grid) — unchanged ─────────────────────────────────────────
+
+class _PlatformCard extends StatelessWidget {
+  const _PlatformCard(
+      {required this.platform, required this.instance, required this.api});
+  final RommPlatform platform;
+  final Instance instance;
+  final RommApi api;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final githubSvgUrl =
+        'https://raw.githubusercontent.com/rommapp/romm/master/frontend/assets/platforms/${platform.slug}.svg';
+    final rawLogoUrl = platform.urlLogo;
+    String? fallbackUrl;
+    Map<String, String>? fallbackHeaders;
+    if (rawLogoUrl != null && rawLogoUrl.isNotEmpty) {
+      final isExternal = rawLogoUrl.startsWith('http');
+      fallbackUrl =
+          isExternal ? rawLogoUrl : '${instance.baseUrl}$rawLogoUrl';
+      if (!isExternal) {
+        final encoded = base64.encode(utf8.encode(instance.apiKey));
+        fallbackHeaders = {'Authorization': 'Basic $encoded'};
+      }
+    }
+
+    return Card(
+      elevation: 0,
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: theme.colorScheme.surfaceContainerHighest,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                RommPlatformScreen(instance: instance, platform: platform),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: _PlatformLogo(
+                  slug: platform.slug,
+                  githubSvgUrl: githubSvgUrl,
+                  fallbackUrl: fallbackUrl,
+                  fallbackHeaders: fallbackHeaders,
+                  platformName: platform.displayName,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    platform.displayName,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${platform.romCount} ROMs',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Platform logo with fallback chain ────────────────────────────────────────
+
+class _PlatformLogo extends StatefulWidget {
+  const _PlatformLogo({
+    required this.slug,
+    required this.githubSvgUrl,
+    required this.platformName,
+    this.fallbackUrl,
+    this.fallbackHeaders,
+  });
+
+  final String slug;
+  final String githubSvgUrl;
+  final String? fallbackUrl;
+  final Map<String, String>? fallbackHeaders;
+  final String platformName;
+
+  @override
+  State<_PlatformLogo> createState() => _PlatformLogoState();
+}
+
+class _PlatformLogoState extends State<_PlatformLogo> {
+  late final Future<Uint8List?> _svgFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _svgFuture = _loadSvg();
+  }
+
+  Future<Uint8List?> _loadSvg() async {
+    if (widget.slug.isNotEmpty) {
+      try {
+        final data =
+            await rootBundle.load('assets/platforms/${widget.slug}.svg');
+        return data.buffer.asUint8List();
+      } catch (_) {}
+    }
+    return _fetchSvgBytes(widget.githubSvgUrl);
+  }
+
+  static Future<Uint8List?> _fetchSvgBytes(String url) async {
+    try {
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 8);
+      final request = await client.getUrl(Uri.parse(url));
+      final response = await request.close();
+      if (response.statusCode != 200) {
+        client.close(force: true);
+        return null;
+      }
+      final builder = BytesBuilder(copy: false);
+      await for (final chunk in response) {
+        builder.add(chunk);
+      }
+      client.close();
+      return builder.takeBytes();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Uint8List?>(
+      future: _svgFuture,
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const SizedBox.expand();
+        }
+        final bytes = snap.data;
+        if (bytes != null) {
+          return SvgPicture.memory(bytes, fit: BoxFit.contain);
+        }
+        if (widget.fallbackUrl != null) {
+          return Image.network(
+            widget.fallbackUrl!,
+            fit: BoxFit.contain,
+            headers: widget.fallbackHeaders,
+            errorBuilder: (_, _, _) => _LetterBadge(widget.platformName),
+          );
+        }
+        return _LetterBadge(widget.platformName);
+      },
+    );
+  }
+}
+
+class _LetterBadge extends StatelessWidget {
+  const _LetterBadge(this.name);
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: const BoxDecoration(
+          color: AppColors.tealPrimary,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : '?',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Filter button ─────────────────────────────────────────────────────────────
+
+class _FilterButton extends StatelessWidget {
+  const _FilterButton({required this.isActive, required this.onTap});
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isActive
+          ? AppColors.tealPrimary.withAlpha(30)
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(
+            Icons.tune_outlined,
+            size: 20,
+            color: isActive
+                ? AppColors.tealPrimary
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Active filter chips ───────────────────────────────────────────────────────
+
+class _ActiveFilterChips extends StatelessWidget {
+  const _ActiveFilterChips({required this.filters, required this.onClear});
+  final RommSearchFilters filters;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final allFilters = [
+      ...filters.genres,
+      ...filters.franchises,
+      ...filters.companies,
+      ...filters.ageRatings,
+      ...filters.regions,
+      ...filters.languages,
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: allFilters
+                  .take(4)
+                  .map((f) => Chip(
+                        label: Text(f,
+                            style: const TextStyle(fontSize: 11)),
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ))
+                  .toList(),
+            ),
+          ),
+          TextButton(
+            onPressed: onClear,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+            ),
+            child: const Text('Clear',
+                style: TextStyle(color: AppColors.tealPrimary)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Filter bottom sheet ───────────────────────────────────────────────────────
 
 class _FilterSheet extends StatefulWidget {
   const _FilterSheet({required this.current, required this.available});
-
   final RommSearchFilters current;
   final RommAvailableFilters available;
 
@@ -1165,11 +1216,11 @@ class _FilterSheetState extends State<_FilterSheet> {
       builder: (_, controller) => Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
-            // Handle
             Container(
               margin: const EdgeInsets.only(top: 8),
               width: 40,
@@ -1179,7 +1230,6 @@ class _FilterSheetState extends State<_FilterSheet> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
               child: Row(
@@ -1195,14 +1245,14 @@ class _FilterSheetState extends State<_FilterSheet> {
                       child: const Text('Clear all'),
                     ),
                   TextButton(
-                    onPressed: () => Navigator.pop(context, _filters),
+                    onPressed: () =>
+                        Navigator.pop(context, _filters),
                     child: const Text('Apply'),
                   ),
                 ],
               ),
             ),
             const Divider(height: 1),
-            // Filter categories
             Expanded(
               child: hasAnyFilters
                   ? const Center(
@@ -1222,11 +1272,8 @@ class _FilterSheetState extends State<_FilterSheet> {
                             title: 'Genres',
                             options: widget.available.genres,
                             selected: _filters.genres,
-                            onToggle: (v) => _toggle(
-                              v,
-                              _filters.genres,
-                              (l) => _filters.copyWith(genres: l),
-                            ),
+                            onToggle: (v) => _toggle(v, _filters.genres,
+                                (l) => _filters.copyWith(genres: l)),
                           ),
                         if (widget.available.franchises.isNotEmpty)
                           _FilterCategory(
@@ -1234,10 +1281,10 @@ class _FilterSheetState extends State<_FilterSheet> {
                             options: widget.available.franchises,
                             selected: _filters.franchises,
                             onToggle: (v) => _toggle(
-                              v,
-                              _filters.franchises,
-                              (l) => _filters.copyWith(franchises: l),
-                            ),
+                                v,
+                                _filters.franchises,
+                                (l) =>
+                                    _filters.copyWith(franchises: l)),
                           ),
                         if (widget.available.companies.isNotEmpty)
                           _FilterCategory(
@@ -1245,10 +1292,10 @@ class _FilterSheetState extends State<_FilterSheet> {
                             options: widget.available.companies,
                             selected: _filters.companies,
                             onToggle: (v) => _toggle(
-                              v,
-                              _filters.companies,
-                              (l) => _filters.copyWith(companies: l),
-                            ),
+                                v,
+                                _filters.companies,
+                                (l) =>
+                                    _filters.copyWith(companies: l)),
                           ),
                         if (widget.available.ageRatings.isNotEmpty)
                           _FilterCategory(
@@ -1256,21 +1303,18 @@ class _FilterSheetState extends State<_FilterSheet> {
                             options: widget.available.ageRatings,
                             selected: _filters.ageRatings,
                             onToggle: (v) => _toggle(
-                              v,
-                              _filters.ageRatings,
-                              (l) => _filters.copyWith(ageRatings: l),
-                            ),
+                                v,
+                                _filters.ageRatings,
+                                (l) =>
+                                    _filters.copyWith(ageRatings: l)),
                           ),
                         if (widget.available.regions.isNotEmpty)
                           _FilterCategory(
                             title: 'Regions',
                             options: widget.available.regions,
                             selected: _filters.regions,
-                            onToggle: (v) => _toggle(
-                              v,
-                              _filters.regions,
-                              (l) => _filters.copyWith(regions: l),
-                            ),
+                            onToggle: (v) => _toggle(v, _filters.regions,
+                                (l) => _filters.copyWith(regions: l)),
                           ),
                         if (widget.available.languages.isNotEmpty)
                           _FilterCategory(
@@ -1278,10 +1322,10 @@ class _FilterSheetState extends State<_FilterSheet> {
                             options: widget.available.languages,
                             selected: _filters.languages,
                             onToggle: (v) => _toggle(
-                              v,
-                              _filters.languages,
-                              (l) => _filters.copyWith(languages: l),
-                            ),
+                                v,
+                                _filters.languages,
+                                (l) =>
+                                    _filters.copyWith(languages: l)),
                           ),
                       ],
                     ),
@@ -1300,7 +1344,6 @@ class _FilterCategory extends StatelessWidget {
     required this.selected,
     required this.onToggle,
   });
-
   final String title;
   final List<String> options;
   final List<String> selected;
