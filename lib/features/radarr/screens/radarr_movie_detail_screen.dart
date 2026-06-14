@@ -431,6 +431,17 @@ class _OverviewTab extends StatelessWidget {
                   color: AppColors.statusUnknown),
           ],
         ),
+        // Genre chips
+        if (movie.genres != null && movie.genres!.isNotEmpty) ...[
+          const SizedBox(height: Spacing.s8),
+          Wrap(
+            spacing: Spacing.s4,
+            runSpacing: Spacing.s4,
+            children: movie.genres!
+                .map((g) => _GenreChip(label: g))
+                .toList(),
+          ),
+        ],
         if (movie.sizeOnDisk != null && movie.sizeOnDisk! > 0) ...[
           const SizedBox(height: Spacing.s4),
           Text(_formatBytes(movie.sizeOnDisk!),
@@ -1033,6 +1044,32 @@ String _formatRuntime(int minutes) {
 // ---------------------------------------------------------------------------
 // Shared UI widgets
 // ---------------------------------------------------------------------------
+
+class _GenreChip extends StatelessWidget {
+  const _GenreChip({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppColors.tealPrimary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withAlpha(55)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          color: color.withAlpha(220),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
 
 class _RatingPill extends StatelessWidget {
   const _RatingPill({required this.rating});

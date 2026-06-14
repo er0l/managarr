@@ -469,21 +469,45 @@ class _MovieTile extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 5),
-                            // Year · Runtime · Cert · Rating
-                            Text(
-                              [
-                                '${movie.year}',
-                                if (movie.runtime != null && movie.runtime! > 0)
-                                  _formatRuntime(movie.runtime!),
-                                if (movie.certification != null &&
-                                    movie.certification!.isNotEmpty)
-                                  movie.certification!,
-                                if (movie.tmdbRating != null)
-                                  '★ ${movie.tmdbRating!.toStringAsFixed(1)}',
-                              ].join(' · '),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                            // Year · Runtime · Cert · Rating  [▶] [✓]
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    [
+                                      '${movie.year}',
+                                      if (movie.runtime != null && movie.runtime! > 0)
+                                        _formatRuntime(movie.runtime!),
+                                      if (movie.certification != null &&
+                                          movie.certification!.isNotEmpty)
+                                        movie.certification!,
+                                      if (movie.tmdbRating != null)
+                                        '★ ${movie.tmdbRating!.toStringAsFixed(1)}',
+                                    ].join(' · '),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                                // Status icon indicators
+                                if (movie.youtubeTrailerId != null &&
+                                    movie.youtubeTrailerId!.isNotEmpty) ...[
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    Icons.smart_display_outlined,
+                                    size: 13,
+                                    color: AppColors.textSecondary.withAlpha(180),
+                                  ),
+                                ],
+                                if (movie.hasFile) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.check_circle_outline,
+                                    size: 13,
+                                    color: AppColors.statusOnline,
+                                  ),
+                                ],
+                              ],
                             ),
                             const SizedBox(height: 8),
                             // Bottom chips row

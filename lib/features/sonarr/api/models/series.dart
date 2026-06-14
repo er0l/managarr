@@ -31,6 +31,7 @@ class SonarrSeries {
     this.rootFolderPath,
     this.tags,
     this.tmdbRating,
+    this.genres,
   });
 
   @JsonKey(defaultValue: 0)
@@ -65,6 +66,8 @@ class SonarrSeries {
   final String? path;
   final String? rootFolderPath;
   final List<int>? tags;
+
+  final List<String>? genres;
 
   /// TMDB audience rating (0–10 scale), extracted from the nested
   /// `ratings.tmdb.value` field in the Sonarr API response.

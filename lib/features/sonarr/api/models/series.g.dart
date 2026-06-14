@@ -45,6 +45,7 @@ SonarrSeries _$SonarrSeriesFromJson(Map<String, dynamic> json) => SonarrSeries(
       ?.map((e) => (e as num).toInt())
       .toList(),
   tmdbRating: _tmdbRatingFromJson(json['ratings']),
+  genres: (json['genres'] as List<dynamic>?)?.map((e) => e as String).toList(),
 );
 
 Map<String, dynamic> _$SonarrSeriesToJson(SonarrSeries instance) =>
@@ -74,6 +75,7 @@ Map<String, dynamic> _$SonarrSeriesToJson(SonarrSeries instance) =>
       'path': instance.path,
       'rootFolderPath': instance.rootFolderPath,
       'tags': instance.tags,
+      'genres': instance.genres,
     };
 
 SonarrSeason _$SonarrSeasonFromJson(Map<String, dynamic> json) => SonarrSeason(

@@ -32,6 +32,7 @@ class RadarrMovie {
     this.images,
     this.qualityName,
     this.tmdbRating,
+    this.genres,
   });
 
   @JsonKey(defaultValue: 0)
@@ -71,6 +72,8 @@ class RadarrMovie {
 
   /// Quality name from the downloaded movie file, e.g. "Bluray-1080p".
   final String? qualityName;
+
+  final List<String>? genres;
 
   /// TMDB audience rating (0–10 scale), extracted from the nested
   /// `ratings.tmdb.value` field in the Radarr API response.

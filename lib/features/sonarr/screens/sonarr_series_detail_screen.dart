@@ -454,6 +454,19 @@ class _SonarrSeriesDetailScreenState
                     ],
                   ),
 
+                  // Genre chips
+                  if (_series.genres != null &&
+                      _series.genres!.isNotEmpty) ...[
+                    const SizedBox(height: Spacing.s8),
+                    Wrap(
+                      spacing: Spacing.s4,
+                      runSpacing: Spacing.s4,
+                      children: _series.genres!
+                          .map((g) => _SonarrGenreChip(label: g))
+                          .toList(),
+                    ),
+                  ],
+
                   // Size on disk
                   if ((_series.statistics?.sizeOnDisk ?? 0) > 0) ...[
                     const SizedBox(height: Spacing.s4),
@@ -928,6 +941,32 @@ class _Chip extends StatelessWidget {
                 TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w500),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SonarrGenreChip extends StatelessWidget {
+  const _SonarrGenreChip({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    const color = AppColors.tealPrimary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withAlpha(55)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

@@ -733,24 +733,39 @@ class _SeriesTile extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 5),
-                            // Year · Seasons · Network · Rating
-                            Text(
-                              [
-                                if (series.year != null && series.year! > 0)
-                                  '${series.year}',
-                                if (series.seasonCount != null)
-                                  '${series.seasonCount} season${series.seasonCount == 1 ? '' : 's'}',
-                                if (series.network != null &&
-                                    series.network!.isNotEmpty)
-                                  series.network!,
-                                if (series.tmdbRating != null)
-                                  '★ ${series.tmdbRating!.toStringAsFixed(1)}',
-                              ].join(' · '),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            // Year · Seasons · Network · Rating  [✓]
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    [
+                                      if (series.year != null && series.year! > 0)
+                                        '${series.year}',
+                                      if (series.seasonCount != null)
+                                        '${series.seasonCount} season${series.seasonCount == 1 ? '' : 's'}',
+                                      if (series.network != null &&
+                                          series.network!.isNotEmpty)
+                                        series.network!,
+                                      if (series.tmdbRating != null)
+                                        '★ ${series.tmdbRating!.toStringAsFixed(1)}',
+                                    ].join(' · '),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                // Downloaded indicator
+                                if ((series.statistics?.percentOfEpisodes ?? 0) >= 100) ...[
+                                  const SizedBox(width: 6),
+                                  const Icon(
+                                    Icons.check_circle_outline,
+                                    size: 13,
+                                    color: AppColors.statusOnline,
+                                  ),
+                                ],
+                              ],
                             ),
                             const SizedBox(height: 8),
                             // Bottom chips row
