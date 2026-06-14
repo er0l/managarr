@@ -78,8 +78,9 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
   Future<void> _showFilterSheet() async {
     RommAvailableFilters filtersData;
     try {
-      filtersData =
-          await ref.read(rommAvailableFiltersProvider(widget.instance).future);
+      // Call API directly to avoid autoDispose provider recycling the future
+      final api = ref.read(rommApiProvider(widget.instance));
+      filtersData = await api.getAvailableFilters();
     } catch (e) {
       filtersData = const RommAvailableFilters();
       if (mounted) {

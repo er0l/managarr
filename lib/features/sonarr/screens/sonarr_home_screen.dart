@@ -796,7 +796,7 @@ class _SeriesTile extends ConsumerWidget {
       if (profileName != null && profileName.isNotEmpty) profileName,
       _formatSeriesStatus(series.status),
       if (series.added != null)
-        'Added ${DateFormat('MMM y').format(series.added!)}',
+        'Added ${DateFormat('MMM d, y').format(series.added!)}',
     ].where((s) => s.isNotEmpty).toList();
 
     return Opacity(

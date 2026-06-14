@@ -179,6 +179,12 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
           onPressed: () => _showSortSheet(context),
         ),
       ],
+      bottomTrailingActions: [
+        _SpeedIndicator(
+          downRate: stats.totalDownRate,
+          upRate: stats.totalUpRate,
+        ),
+      ],
     );
   }
 
@@ -399,6 +405,51 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
               }
             },
             child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpeedIndicator extends StatelessWidget {
+  const _SpeedIndicator({required this.downRate, required this.upRate});
+  final int downRate;
+  final int upRate;
+
+  static String _fmt(int bps) {
+    if (bps <= 0) return '0 B/s';
+    if (bps < 1024) return '$bps B/s';
+    if (bps < 1024 * 1024) return '${(bps / 1024).toStringAsFixed(0)} KB/s';
+    return '${(bps / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const muted = Color(0xA0FFFFFF);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.arrow_downward, size: 10, color: AppColors.statusOnline),
+              const SizedBox(width: 2),
+              Text(_fmt(downRate),
+                  style: const TextStyle(fontSize: 10, color: muted)),
+            ],
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.arrow_upward, size: 10, color: AppColors.blueAccent),
+              const SizedBox(width: 2),
+              Text(_fmt(upRate),
+                  style: const TextStyle(fontSize: 10, color: muted)),
+            ],
           ),
         ],
       ),

@@ -272,7 +272,7 @@ class _MovieTile extends ConsumerWidget {
       if (profileName != null && profileName.isNotEmpty) profileName,
       if (movie.status != null) _formatStatus(movie.status),
       if (movie.added != null)
-        'Added ${DateFormat('MMM y').format(movie.added!)}',
+        'Added ${DateFormat('MMM d, y').format(movie.added!)}',
     ];
 
     return Opacity(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
@@ -15,10 +16,7 @@ class TautulliActivityDetailScreen extends ConsumerStatefulWidget {
   });
 
   final TautulliSession session;
-
-  /// Pre-built pms_image_proxy URL (empty string if no thumb).
   final String thumbUrl;
-
   final Instance instance;
 
   @override
@@ -37,7 +35,7 @@ class _TautulliActivityDetailScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Stop Stream'),
+        title: const Text('Terminate Session'),
         content: Text(
           'Stop the stream for ${widget.session.friendlyName ?? widget.session.user ?? 'this user'}?',
         ),
@@ -50,7 +48,7 @@ class _TautulliActivityDetailScreenState
             style: FilledButton.styleFrom(
                 backgroundColor: AppColors.statusOffline),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Stop'),
+            child: const Text('Terminate'),
           ),
         ],
       ),
@@ -65,7 +63,7 @@ class _TautulliActivityDetailScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Stream stopped'),
+            content: Text('Stream terminated'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -76,7 +74,7 @@ class _TautulliActivityDetailScreenState
         setState(() => _stopping = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to stop stream: $e'),
+            content: Text('Failed to terminate session: $e'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -88,6 +86,7 @@ class _TautulliActivityDetailScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final session = widget.session;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -102,32 +101,11 @@ class _TautulliActivityDetailScreenState
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          if (_stopping)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.textOnPrimary,
-                ),
-              ),
-            )
-          else if (session.sessionKey != null)
-            IconButton(
-              icon: const Icon(Icons.stop_circle_outlined,
-                  color: AppColors.statusOffline),
-              tooltip: 'Stop Stream',
-              onPressed: _stopStream,
-            ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Header: poster + title/user row
+          // ── Header ──────────────────────────────────────────────────
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -151,24 +129,20 @@ class _TautulliActivityDetailScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (session.grandparentTitle != null &&
-                        session.grandparentTitle!.isNotEmpty) ...[
+                    if (session.grandparentTitle?.isNotEmpty == true) ...[
                       Text(
                         session.grandparentTitle!,
                         style: theme.textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      if (session.parentTitle != null &&
-                          session.parentTitle!.isNotEmpty)
+                      if (session.parentTitle?.isNotEmpty == true)
                         Text(
                           session.parentTitle!,
                           style: theme.textTheme.bodyMedium
                               ?.copyWith(color: AppColors.textSecondary),
                         ),
-                      Text(
-                        session.displayTitle,
-                        style: theme.textTheme.bodyMedium,
-                      ),
+                      Text(session.displayTitle,
+                          style: theme.textTheme.bodyMedium),
                     ] else
                       Text(
                         session.displayTitle,
@@ -176,8 +150,7 @@ class _TautulliActivityDetailScreenState
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     const SizedBox(height: 8),
-                    _TranscodeDecisionBadge(
-                        decision: session.transcodeDecision),
+                    _TranscodeDecisionBadge(decision: session.transcodeDecision),
                     const SizedBox(height: 6),
                     _StateBadge(state: session.state),
                   ],
@@ -186,18 +159,8 @@ class _TautulliActivityDetailScreenState
             ],
           ),
           const SizedBox(height: 16),
-          // Progress
+          // ── Progress bar ─────────────────────────────────────────────
           if (session.duration > 0) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(session.viewOffsetFormatted,
-                    style: theme.textTheme.bodySmall),
-                Text(session.durationFormatted,
-                    style: theme.textTheme.bodySmall),
-              ],
-            ),
-            const SizedBox(height: 4),
             LinearProgressIndicator(
               value: session.progressFraction,
               minHeight: 6,
@@ -205,75 +168,202 @@ class _TautulliActivityDetailScreenState
               backgroundColor: AppColors.tealPrimary.withAlpha(20),
               color: AppColors.tealPrimary,
             ),
-            const SizedBox(height: 4),
-            Text(
-              '${session.progressPercent}% watched',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
           ],
-          const Divider(),
           const SizedBox(height: 8),
-          // Detail rows
-          _DetailSection(title: 'Playback', rows: [
-            _DetailRow(
-                label: 'User',
-                value: session.friendlyName ?? session.user ?? '—'),
-            _DetailRow(
-                label: 'Player',
-                value: session.player ?? session.product ?? '—'),
-            _DetailRow(label: 'IP Address', value: session.ipAddress ?? '—'),
-            _DetailRow(
-                label: 'Location',
-                value: session.location?.toUpperCase() ?? '—'),
-          ]),
-          const SizedBox(height: 16),
-          _DetailSection(title: 'Stream', rows: [
-            _DetailRow(
-                label: 'Video',
-                value: [
-                  if (session.videoResolution?.isNotEmpty == true)
-                    session.videoResolution!,
-                  if (session.videoCodec?.isNotEmpty == true)
-                    session.videoCodec!.toUpperCase(),
-                ].join(' / ').ifEmpty('—')),
-            _DetailRow(
-                label: 'Audio',
-                value: session.audioCodec?.toUpperCase() ?? '—'),
-            _DetailRow(
-                label: 'Container',
-                value: session.container?.toUpperCase() ?? '—'),
-            _DetailRow(
-                label: 'Bitrate',
-                value: session.streamBitrate > 0
-                    ? '${session.streamBitrate} kbps'
-                    : '—'),
-            _DetailRow(
-                label: 'Quality', value: session.qualityProfile ?? '—'),
-          ]),
-          const SizedBox(height: 24),
-          // Stop stream button
-          if (session.sessionKey != null)
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.statusOffline,
-                side: const BorderSide(color: AppColors.statusOffline),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+          // ── Metadata card ────────────────────────────────────────────
+          _InfoCard(
+            title: 'Metadata',
+            isDark: isDark,
+            rows: [
+              _InfoRow(
+                label: 'TITLE',
+                value: session.grandparentTitle?.isNotEmpty == true
+                    ? session.grandparentTitle!
+                    : session.displayTitle,
               ),
-              onPressed: _stopping ? null : _stopStream,
-              icon: const Icon(Icons.stop_circle_outlined),
-              label: const Text('Stop Stream'),
+              if (session.year != null)
+                _InfoRow(label: 'YEAR', value: '${session.year}'),
+              if (session.duration > 0)
+                _InfoRow(label: 'DURATION', value: session.progressFormatted),
+              if (session.eta != null)
+                _InfoRow(
+                  label: 'ETA',
+                  value: DateFormat('h:mm a').format(session.eta!),
+                ),
+              if (session.libraryName?.isNotEmpty == true)
+                _InfoRow(label: 'LIBRARY', value: session.libraryName!),
+              _InfoRow(
+                label: 'USER',
+                value: session.friendlyName ?? session.user ?? '—',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // ── Player card ──────────────────────────────────────────────
+          _InfoCard(
+            title: 'Player',
+            isDark: isDark,
+            rows: [
+              if (session.ipAddress?.isNotEmpty == true)
+                _InfoRow(label: 'LOCATION', value: session.ipAddress!),
+              if (session.platform?.isNotEmpty == true)
+                _InfoRow(label: 'PLATFORM', value: session.platform!),
+              if (session.product?.isNotEmpty == true)
+                _InfoRow(label: 'PRODUCT', value: session.product!),
+              if (session.player?.isNotEmpty == true)
+                _InfoRow(label: 'PLAYER', value: session.player!),
+              _InfoRow(
+                label: 'QUALITY',
+                value: session.qualityProfile != null
+                    ? '${session.qualityProfile}'
+                        '${session.streamBitrate > 0 ? ' (${session.bandwidthLabel})' : ''}'
+                    : session.bandwidthLabel,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // ── Stream card ──────────────────────────────────────────────
+          _InfoCard(
+            title: 'Stream',
+            isDark: isDark,
+            rows: [
+              _InfoRow(label: 'BANDWIDTH', value: session.bandwidthLabel),
+              _InfoRow(label: 'STREAM', value: session.streamDecisionLabel),
+              _InfoRow(label: 'CONTAINER', value: session.containerStreamLabel),
+              _InfoRow(label: 'VIDEO', value: session.videoStreamLabel),
+              _InfoRow(label: 'AUDIO', value: session.audioStreamLabel),
+              _InfoRow(label: 'SUBTITLE', value: session.subtitleStreamLabel),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // ── Terminate session button ──────────────────────────────────
+          if (session.sessionKey != null)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.statusOffline,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: _stopping ? null : _stopStream,
+                icon: _stopping
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.close),
+                label: const Text(
+                  'Terminate Session',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+              ),
             ),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 }
 
-extension on String {
-  String ifEmpty(String fallback) => isEmpty ? fallback : this;
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared card widget
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.title,
+    required this.rows,
+    required this.isDark,
+  });
+
+  final String title;
+  final List<_InfoRow> rows;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cardBg = isDark ? const Color(0xFF1A2233) : const Color(0xFFF2F4F7);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+            child: Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: AppColors.tealPrimary,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          ...rows.map((row) => _InfoRowWidget(row: row)),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
 }
+
+class _InfoRow {
+  const _InfoRow({required this.label, required this.value});
+  final String label;
+  final String value;
+}
+
+class _InfoRowWidget extends StatelessWidget {
+  const _InfoRowWidget({required this.row});
+  final _InfoRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              row.label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              row.value.isNotEmpty ? row.value : '—',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Small reusable widgets
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _PlaceholderPoster extends StatelessWidget {
   const _PlaceholderPoster({required this.mediaType});
@@ -356,62 +446,6 @@ class _StateBadge extends StatelessWidget {
               color: color,
               fontWeight: FontWeight.w600,
             ),
-      ),
-    );
-  }
-}
-
-class _DetailSection extends StatelessWidget {
-  const _DetailSection({required this.title, required this.rows});
-  final String title;
-  final List<Widget> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.tealPrimary, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        ...rows,
-      ],
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
       ),
     );
   }

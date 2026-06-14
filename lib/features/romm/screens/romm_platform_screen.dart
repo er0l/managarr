@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/romm_platform.dart';
@@ -166,6 +165,8 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
     final api = ref.watch(rommApiProvider(widget.instance));
     final viewMode = ref.watch(rommPlatformViewModeProvider);
 
+    const muted = Color(0xA0FFFFFF);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.tealPrimary,
@@ -188,39 +189,6 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
           ],
         ),
         actions: [
-          PopupMenuButton<_SortOption>(
-            icon: const Icon(Icons.sort, color: AppColors.textOnPrimary),
-            tooltip: 'Sort',
-            onSelected: (opt) {
-              setState(() {
-                _orderBy = opt.orderBy;
-                _orderDir = opt.orderDir;
-              });
-              _loadPage(reset: true);
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: _SortOption('name', 'asc'),
-                child: Text('Name (A-Z)'),
-              ),
-              PopupMenuItem(
-                value: _SortOption('name', 'desc'),
-                child: Text('Name (Z-A)'),
-              ),
-              PopupMenuItem(
-                value: _SortOption('average_rating', 'desc'),
-                child: Text('Rating ↓'),
-              ),
-              PopupMenuItem(
-                value: _SortOption('fs_size_bytes', 'desc'),
-                child: Text('Size ↓'),
-              ),
-              PopupMenuItem(
-                value: _SortOption('first_release_date', 'desc'),
-                child: Text('Year ↓'),
-              ),
-            ],
-          ),
           IconButton(
             icon: Icon(
               viewMode == DisplayMode.list
@@ -235,10 +203,6 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
                       ? DisplayMode.grid
                       : DisplayMode.list;
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
-            onPressed: () => _loadPage(reset: true),
           ),
         ],
       ),
@@ -262,8 +226,19 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 10),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(
+                    color: AppColors.tealPrimary.withAlpha(180),
+                    width: 1.5,
+                  ),
                 ),
                 filled: true,
               ),
@@ -273,6 +248,50 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
           // Results
           Expanded(child: _buildBody(api, viewMode)),
         ],
+      ),
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.refresh_outlined, color: muted),
+              tooltip: 'Reload',
+              onPressed: () => _loadPage(reset: true),
+            ),
+            PopupMenuButton<_SortOption>(
+              icon: const Icon(Icons.sort, color: muted),
+              tooltip: 'Sort',
+              onSelected: (opt) {
+                setState(() {
+                  _orderBy = opt.orderBy;
+                  _orderDir = opt.orderDir;
+                });
+                _loadPage(reset: true);
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: _SortOption('name', 'asc'),
+                  child: Text('Name (A-Z)'),
+                ),
+                PopupMenuItem(
+                  value: _SortOption('name', 'desc'),
+                  child: Text('Name (Z-A)'),
+                ),
+                PopupMenuItem(
+                  value: _SortOption('average_rating', 'desc'),
+                  child: Text('Rating ↓'),
+                ),
+                PopupMenuItem(
+                  value: _SortOption('fs_size_bytes', 'desc'),
+                  child: Text('Size ↓'),
+                ),
+                PopupMenuItem(
+                  value: _SortOption('first_release_date', 'desc'),
+                  child: Text('Year ↓'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -396,7 +415,6 @@ class _RomListTile extends StatelessWidget {
     final coverUrl = api.coverUrl(rom);
     final isExternal = rom.urlCover != null && rom.urlCover!.isNotEmpty;
     final authHeaders = isExternal ? null : {'Authorization': api.authHeader};
-    final accentColor = ServiceType.romm.brandColor;
     final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
 
     return Padding(
@@ -510,13 +528,7 @@ class _RomListTile extends StatelessWidget {
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            // Platform chip
-                            if (rom.platformDisplayName.isNotEmpty)
-                              _RomChip(
-                                label: rom.platformDisplayName,
-                                color: accentColor,
-                              ),
+                            // (platform chip removed — we're already inside the platform)
                           ],
                         ),
                       ),
@@ -560,7 +572,6 @@ class _RomGridCard extends StatelessWidget {
     final coverUrl = api.coverUrl(rom);
     final isExternal = rom.urlCover != null && rom.urlCover!.isNotEmpty;
     final authHeaders = isExternal ? null : {'Authorization': api.authHeader};
-    final accentColor = ServiceType.romm.brandColor;
 
     Widget cover;
     if (coverUrl != null) {
@@ -595,31 +606,6 @@ class _RomGridCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   cover,
-                  // Bottom gradient + platform chip
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: DecoratedBox(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black87],
-                          stops: [0.45, 1.0],
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(6, 16, 6, 6),
-                        child: rom.platformDisplayName.isNotEmpty
-                            ? _RomChip(
-                                label: rom.platformDisplayName,
-                                color: accentColor,
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -653,38 +639,6 @@ class _RomGridCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Shared chip widget
-// ---------------------------------------------------------------------------
-
-class _RomChip extends StatelessWidget {
-  const _RomChip({required this.label, required this.color});
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withAlpha(28),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withAlpha(70), width: 0.8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w600,
-          color: color,
-          letterSpacing: 0.1,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Sort option helper
