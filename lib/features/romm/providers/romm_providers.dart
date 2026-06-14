@@ -27,6 +27,11 @@ final rommPlatformViewModeProvider = StateProvider<DisplayMode>(
 final rommHomeDisplayModeProvider =
     StateProvider.family<DisplayMode, int>((ref, _) => DisplayMode.grid);
 
+// Home-screen active search filters — per instance.
+final rommHomeFiltersProvider =
+    StateProvider.family<RommSearchFilters, int>(
+        (ref, _) => const RommSearchFilters());
+
 // ---------------------------------------------------------------------------
 // Platforms
 // ---------------------------------------------------------------------------

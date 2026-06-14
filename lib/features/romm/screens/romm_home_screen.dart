@@ -75,10 +75,43 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
     );
   }
 
+  Future<void> _showFilterSheet() async {
+    RommAvailableFilters filtersData;
+    try {
+      filtersData =
+          await ref.read(rommAvailableFiltersProvider(widget.instance).future);
+    } catch (e) {
+      filtersData = const RommAvailableFilters();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not load filter options: $e'),
+          backgroundColor: AppColors.statusOffline,
+          duration: const Duration(seconds: 4),
+        ));
+      }
+    }
+    if (!mounted) return;
+
+    final current =
+        ref.read(rommHomeFiltersProvider(widget.instance.id));
+    final updated = await showModalBottomSheet<RommSearchFilters>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          _FilterSheet(current: current, available: filtersData),
+    );
+    if (updated != null && mounted) {
+      ref.read(rommHomeFiltersProvider(widget.instance.id).notifier).state =
+          updated;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayMode =
         ref.watch(rommHomeDisplayModeProvider(widget.instance.id));
+    final filters = ref.watch(rommHomeFiltersProvider(widget.instance.id));
     const muted = Color(0xA0FFFFFF);
 
     return ServiceDetailShell(
@@ -98,8 +131,7 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
               'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
           onPressed: () {
             ref
-                .read(
-                    rommHomeDisplayModeProvider(widget.instance.id).notifier)
+                .read(rommHomeDisplayModeProvider(widget.instance.id).notifier)
                 .state = displayMode == DisplayMode.grid
                 ? DisplayMode.list
                 : DisplayMode.grid;
@@ -111,6 +143,16 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
           icon: const Icon(Icons.refresh_outlined, color: muted),
           tooltip: 'Rescan Library',
           onPressed: _rescan,
+        ),
+        IconButton(
+          icon: Icon(
+            Icons.tune_outlined,
+            color: filters.hasActiveFilters
+                ? AppColors.tealPrimary
+                : muted,
+          ),
+          tooltip: 'Filter',
+          onPressed: _showFilterSheet,
         ),
       ],
       bottomTrailingActions: [
@@ -148,16 +190,12 @@ class _RommMainView extends ConsumerStatefulWidget {
 class _RommMainViewState extends ConsumerState<_RommMainView> {
   final _searchController = TextEditingController();
   String _searchTerm = '';
-  RommSearchFilters _filters = const RommSearchFilters();
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
-
-  bool get _isSearching =>
-      _searchTerm.isNotEmpty || _filters.hasActiveFilters;
 
   void _onSearchChanged(String v) {
     setState(() => _searchTerm = v.trim());
@@ -168,38 +206,11 @@ class _RommMainViewState extends ConsumerState<_RommMainView> {
     setState(() => _searchTerm = '');
   }
 
-  Future<void> _showFilterSheet() async {
-    RommAvailableFilters filtersData;
-    try {
-      filtersData = await ref
-          .read(rommAvailableFiltersProvider(widget.instance).future);
-    } catch (e) {
-      filtersData = const RommAvailableFilters();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Could not load filter options: $e'),
-          backgroundColor: AppColors.statusOffline,
-          duration: const Duration(seconds: 4),
-        ));
-      }
-    }
-    if (!mounted) return;
-
-    final updated = await showModalBottomSheet<RommSearchFilters>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) =>
-          _FilterSheet(current: _filters, available: filtersData),
-    );
-    if (updated != null && mounted) {
-      setState(() => _filters = updated);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    ref.watch(rommAvailableFiltersProvider(widget.instance));
+    final filters =
+        ref.watch(rommHomeFiltersProvider(widget.instance.id));
+    final isSearching = _searchTerm.isNotEmpty || filters.hasActiveFilters;
 
     final statsAsync = ref.watch(rommStatsProvider(widget.instance));
     final stats = statsAsync.valueOrNull;
@@ -220,70 +231,57 @@ class _RommMainViewState extends ConsumerState<_RommMainView> {
             Spacing.pageHorizontal,
             Spacing.s8,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: hintText,
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _searchTerm.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: _clearSearch,
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide(
-                        color: AppColors.tealPrimary.withAlpha(180),
-                        width: 1.5,
-                      ),
-                    ),
-                    filled: true,
-                  ),
-                  onChanged: _onSearchChanged,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => setState(() {}),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: hintText,
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _searchTerm.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: _clearSearch,
+                    )
+                  : null,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(
+                  color: AppColors.tealPrimary.withAlpha(180),
+                  width: 1.5,
                 ),
               ),
-              const SizedBox(width: 8),
-              _FilterButton(
-                isActive: _filters.hasActiveFilters,
-                onTap: _showFilterSheet,
-              ),
-            ],
+              filled: true,
+            ),
+            onChanged: _onSearchChanged,
+            textInputAction: TextInputAction.search,
           ),
         ),
 
         // Active filter chips
-        if (_filters.hasActiveFilters)
+        if (filters.hasActiveFilters)
           _ActiveFilterChips(
-            filters: _filters,
-            onClear: () => setState(() {
-              _filters = const RommSearchFilters();
-            }),
+            filters: filters,
+            onClear: () => ref
+                .read(rommHomeFiltersProvider(widget.instance.id).notifier)
+                .state = const RommSearchFilters(),
           ),
 
         // Body: platforms or ROM search results
         Expanded(
-          child: _isSearching
+          child: isSearching
               ? _RomSearchResults(
                   instance: widget.instance,
                   searchTerm: _searchTerm,
-                  filters: _filters,
+                  filters: filters,
                 )
               : _PlatformsView(
                   instance: widget.instance,
@@ -1087,38 +1085,6 @@ class _LetterBadge extends StatelessWidget {
   }
 }
 
-// ── Filter button ─────────────────────────────────────────────────────────────
-
-class _FilterButton extends StatelessWidget {
-  const _FilterButton({required this.isActive, required this.onTap});
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: isActive
-          ? AppColors.tealPrimary.withAlpha(30)
-          : Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(
-            Icons.tune_outlined,
-            size: 20,
-            color: isActive
-                ? AppColors.tealPrimary
-                : Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ── Active filter chips ───────────────────────────────────────────────────────
 
 class _ActiveFilterChips extends StatelessWidget {
@@ -1206,7 +1172,7 @@ class _FilterSheetState extends State<_FilterSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasAnyFilters = widget.available.isEmpty;
+    final noFiltersFromServer = widget.available.isEmpty;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -1254,7 +1220,7 @@ class _FilterSheetState extends State<_FilterSheet> {
             ),
             const Divider(height: 1),
             Expanded(
-              child: hasAnyFilters
+              child: noFiltersFromServer
                   ? const Center(
                       child: Padding(
                         padding: EdgeInsets.all(24),

@@ -79,6 +79,8 @@ class _RTorrentTorrentDetailScreenState
     final t = widget.torrent;
     final api = RTorrentApi.fromInstance(widget.instance);
 
+    const muted = Color(0xA0FFFFFF);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.tealPrimary,
@@ -104,57 +106,6 @@ class _RTorrentTorrentDetailScreenState
             Tab(text: 'Files'),
           ],
         ),
-        actions: [
-          PopupMenuButton<_TorrentAction>(
-            icon: const Icon(Icons.more_vert, color: AppColors.textOnPrimary),
-            onSelected: (action) => switch (action) {
-              _TorrentAction.resume => _action(
-                  () => api.resume(t.hash), 'Torrent resumed'),
-              _TorrentAction.pause => _action(
-                  () => api.pause(t.hash), 'Torrent paused'),
-              _TorrentAction.stop => _action(
-                  () => api.stop(t.hash), 'Torrent stopped'),
-              _TorrentAction.check => _action(
-                  () => api.checkHash(t.hash), 'Hash check started'),
-              _TorrentAction.setLabel => _showEditLabelDialog(api),
-              _TorrentAction.remove => _showRemoveDialog(api),
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                  value: _TorrentAction.resume,
-                  child: ListTile(
-                      leading: Icon(Icons.play_arrow),
-                      title: Text('Resume'))),
-              const PopupMenuItem(
-                  value: _TorrentAction.pause,
-                  child: ListTile(
-                      leading: Icon(Icons.pause),
-                      title: Text('Pause'))),
-              const PopupMenuItem(
-                  value: _TorrentAction.stop,
-                  child: ListTile(
-                      leading: Icon(Icons.stop),
-                      title: Text('Stop'))),
-              const PopupMenuItem(
-                  value: _TorrentAction.check,
-                  child: ListTile(
-                      leading: Icon(Icons.verified_outlined),
-                      title: Text('Check Hash'))),
-              const PopupMenuItem(
-                  value: _TorrentAction.setLabel,
-                  child: ListTile(
-                      leading: Icon(Icons.label_outline),
-                      title: Text('Set Label'))),
-              const PopupMenuItem(
-                  value: _TorrentAction.remove,
-                  child: ListTile(
-                      leading: Icon(Icons.delete_outline,
-                          color: Colors.red),
-                      title: Text('Remove',
-                          style: TextStyle(color: Colors.red)))),
-            ],
-          ),
-        ],
       ),
       body: TabBarView(
         controller: _tabController,
@@ -163,6 +114,69 @@ class _RTorrentTorrentDetailScreenState
           _TrackersTab(instance: widget.instance, hash: t.hash),
           _FilesTab(instance: widget.instance, hash: t.hash),
         ],
+      ),
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        child: Row(
+          children: [
+            // Left: Resume · Pause · Stop
+            IconButton(
+              icon: const Icon(Icons.play_arrow_outlined),
+              color: muted,
+              tooltip: 'Resume',
+              onPressed: () =>
+                  _action(() => api.resume(t.hash), 'Torrent resumed'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.pause_outlined),
+              color: muted,
+              tooltip: 'Pause',
+              onPressed: () =>
+                  _action(() => api.pause(t.hash), 'Torrent paused'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.stop_outlined),
+              color: muted,
+              tooltip: 'Stop',
+              onPressed: () =>
+                  _action(() => api.stop(t.hash), 'Torrent stopped'),
+            ),
+            const Spacer(),
+            // Right: Check Hash · Set Label · ··· (Remove)
+            IconButton(
+              icon: const Icon(Icons.verified_outlined),
+              color: muted,
+              tooltip: 'Check Hash',
+              onPressed: () =>
+                  _action(() => api.checkHash(t.hash), 'Hash check started'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.label_outline),
+              color: muted,
+              tooltip: 'Set Label',
+              onPressed: () => _showEditLabelDialog(api),
+            ),
+            PopupMenuButton<_TorrentAction>(
+              icon: const Icon(Icons.more_vert, color: muted),
+              tooltip: 'More',
+              onSelected: (action) => switch (action) {
+                _TorrentAction.remove => _showRemoveDialog(api),
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: _TorrentAction.remove,
+                  child: ListTile(
+                    leading:
+                        Icon(Icons.delete_outline, color: Colors.red),
+                    title: Text('Remove',
+                        style: TextStyle(color: Colors.red)),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -243,7 +257,7 @@ class _RTorrentTorrentDetailScreenState
   }
 }
 
-enum _TorrentAction { resume, pause, stop, check, setLabel, remove }
+enum _TorrentAction { remove }
 
 class _InfoTab extends StatelessWidget {
   const _InfoTab({required this.torrent});
