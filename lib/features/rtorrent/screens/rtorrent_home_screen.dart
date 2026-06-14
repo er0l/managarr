@@ -58,51 +58,49 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
         _GlobalStatsHeader(stats: stats),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search torrents…',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: ref
-                            .watch(rtorrentSearchQueryProvider(
-                                widget.instance.id))
-                            .isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              ref
-                                  .read(rtorrentSearchQueryProvider(
-                                          widget.instance.id)
-                                      .notifier)
-                                  .state = '';
-                            },
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  onChanged: (v) => ref
-                      .read(rtorrentSearchQueryProvider(widget.instance.id)
-                          .notifier)
-                      .state = v,
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search torrents…',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: ref
+                      .watch(rtorrentSearchQueryProvider(widget.instance.id))
+                      .isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        ref
+                            .read(rtorrentSearchQueryProvider(
+                                    widget.instance.id)
+                                .notifier)
+                            .state = '';
+                      },
+                    )
+                  : null,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(
+                  color: AppColors.tealPrimary.withAlpha(180),
+                  width: 1.5,
                 ),
               ),
-              const SizedBox(width: 8),
-              _ControlButton(
-                icon: Icons.filter_list,
-                onTap: () => _showFilterSheet(context, labels),
-              ),
-              const SizedBox(width: 4),
-              _ControlButton(
-                icon: Icons.sort,
-                onTap: () => _showSortSheet(context),
-              ),
-            ],
+              filled: true,
+            ),
+            onChanged: (v) => ref
+                .read(
+                    rtorrentSearchQueryProvider(widget.instance.id).notifier)
+                .state = v,
           ),
         ),
         Expanded(
@@ -156,6 +154,8 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
       ],
     );
 
+    const muted = Color(0xA0FFFFFF);
+
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'rTorrent',
@@ -166,6 +166,18 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
         onPressed: () => _showAddOptions(context),
         child: const Icon(Icons.add, color: Colors.white),
       ),
+      bottomLeadingActions: [
+        IconButton(
+          icon: const Icon(Icons.filter_list, color: muted),
+          tooltip: 'Filter',
+          onPressed: () => _showFilterSheet(context, labels),
+        ),
+        IconButton(
+          icon: const Icon(Icons.sort, color: muted),
+          tooltip: 'Sort',
+          onPressed: () => _showSortSheet(context),
+        ),
+      ],
     );
   }
 
@@ -389,21 +401,6 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ControlButton extends StatelessWidget {
-  const _ControlButton({required this.icon, required this.onTap});
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton.filledTonal(
-      onPressed: onTap,
-      iconSize: 20,
-      icon: Icon(icon),
     );
   }
 }
