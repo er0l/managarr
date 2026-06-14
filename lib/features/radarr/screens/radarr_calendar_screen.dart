@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
@@ -9,14 +10,22 @@ import '../api/models/movie.dart';
 import '../providers/radarr_providers.dart';
 import 'radarr_movie_detail_screen.dart';
 
-// Returns the nearest future release date from the available dates on a movie.
-DateTime? _nearestFutureRelease(RadarrMovie movie) {
-  final now = DateTime.now();
-  final candidates = [
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+List<DateTime> _allReleaseDates(RadarrMovie movie) {
+  return [
     movie.digitalRelease,
     movie.physicalRelease,
     movie.inCinemas,
-  ].whereType<DateTime>().where((d) => d.isAfter(now)).toList();
+  ].whereType<DateTime>().toList();
+}
+
+DateTime? _nearestFutureRelease(RadarrMovie movie) {
+  final now = DateTime.now();
+  final candidates =
+      _allReleaseDates(movie).where((d) => d.isAfter(now)).toList();
   if (candidates.isEmpty) return null;
   candidates.sort();
   return candidates.first;
@@ -55,31 +64,68 @@ String _formatStatus(String? status) {
   }
 }
 
-class RadarrCalendarScreen extends ConsumerWidget {
-  const RadarrCalendarScreen({super.key, required this.instance});
+// ---------------------------------------------------------------------------
+// Screen
+// ---------------------------------------------------------------------------
 
+class RadarrCalendarScreen extends ConsumerStatefulWidget {
+  const RadarrCalendarScreen({super.key, required this.instance});
   final Instance instance;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final moviesAsync = ref.watch(radarrMoviesProvider(instance));
-    final profilesAsync = ref.watch(radarrQualityProfilesProvider(instance));
+  ConsumerState<RadarrCalendarScreen> createState() =>
+      _RadarrCalendarScreenState();
+}
+
+class _RadarrCalendarScreenState extends ConsumerState<RadarrCalendarScreen> {
+  DateTime _focusedDay = DateTime.now();
+  DateTime _selectedDay = DateTime.now();
+  final _searchController = TextEditingController();
+  String _searchTerm = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final moviesAsync = ref.watch(radarrMoviesProvider(widget.instance));
+    final profilesAsync =
+        ref.watch(radarrQualityProfilesProvider(widget.instance));
+    final theme = Theme.of(context);
 
     return moviesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (allMovies) {
-        // Upcoming: monitored movies without a file, not yet released
         final upcoming = allMovies
             .where((m) => m.monitored && !m.hasFile)
             .toList();
 
-        if (upcoming.isEmpty) {
-          return const Center(child: Text('No upcoming movies'));
+        // Build day → movies map (using all release dates)
+        final byDay = <DateTime, List<RadarrMovie>>{};
+        for (final movie in upcoming) {
+          for (final date in _allReleaseDates(movie)) {
+            final key = DateTime(date.year, date.month, date.day);
+            byDay.putIfAbsent(key, () => []).add(movie);
+          }
         }
 
-        // Sort: movies with a future date first (ascending), unknowns last
-        upcoming.sort((a, b) {
+        // Movies for selected day
+        final selKey = DateTime(
+            _selectedDay.year, _selectedDay.month, _selectedDay.day);
+        final dayMovies = (byDay[selKey] ?? upcoming)
+            .where((m) =>
+                _searchTerm.isEmpty ||
+                m.title
+                    .toLowerCase()
+                    .contains(_searchTerm.toLowerCase()))
+            .toList();
+
+        // Sort by nearest release date
+        dayMovies.sort((a, b) {
           final da = _nearestFutureRelease(a);
           final db = _nearestFutureRelease(b);
           if (da == null && db == null) return a.title.compareTo(b.title);
@@ -90,63 +136,234 @@ class RadarrCalendarScreen extends ConsumerWidget {
 
         final profiles = profilesAsync.valueOrNull ?? [];
 
+        // Show all upcoming if nothing for selected day (fallback)
+        final isFiltered = byDay[selKey] != null;
+
         return RefreshIndicator(
-          onRefresh: () async => ref.invalidate(radarrMoviesProvider(instance)),
-          child: ListView.builder(
-            padding: const EdgeInsets.only(bottom: Spacing.s24),
-            itemCount: upcoming.length,
-            itemBuilder: (context, index) {
-              final movie = upcoming[index];
-              final releaseDate = _nearestFutureRelease(movie);
-              final profileName = profiles
-                  .where((p) => p.id == movie.qualityProfileId)
-                  .map((p) => p.name)
-                  .firstOrNull;
-              return _UpcomingTile(
-                movie: movie,
-                releaseDate: releaseDate,
-                profileName: profileName,
-                instance: instance,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => RadarrMovieDetailScreen(
-                      movie: movie,
-                      instance: instance,
+          onRefresh: () async =>
+              ref.invalidate(radarrMoviesProvider(widget.instance)),
+          color: AppColors.tealPrimary,
+          child: CustomScrollView(
+            slivers: [
+              // Month calendar
+              SliverToBoxAdapter(
+                child: TableCalendar<RadarrMovie>(
+                  firstDay: DateTime.utc(2020, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  focusedDay: _focusedDay,
+                  selectedDayPredicate: (day) =>
+                      isSameDay(_selectedDay, day),
+                  calendarFormat: CalendarFormat.month,
+                  availableCalendarFormats: const {
+                    CalendarFormat.month: 'Month',
+                  },
+                  eventLoader: (day) {
+                    final key = DateTime(day.year, day.month, day.day);
+                    return byDay[key] ?? [];
+                  },
+                  onDaySelected: (selected, focused) {
+                    setState(() {
+                      _selectedDay = selected;
+                      _focusedDay = focused;
+                    });
+                  },
+                  onPageChanged: (focused) {
+                    setState(() => _focusedDay = focused);
+                  },
+                  calendarStyle: CalendarStyle(
+                    todayDecoration: BoxDecoration(
+                      color: AppColors.tealPrimary.withAlpha(60),
+                      shape: BoxShape.circle,
+                    ),
+                    todayTextStyle: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    selectedDecoration: const BoxDecoration(
+                      color: AppColors.tealPrimary,
+                      shape: BoxShape.circle,
+                    ),
+                    selectedTextStyle:
+                        const TextStyle(color: Colors.white),
+                    markerDecoration: const BoxDecoration(
+                      color: AppColors.orangeAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    markersMaxCount: 1,
+                    outsideDaysVisible: false,
+                  ),
+                  headerStyle: HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                    titleTextStyle: theme.textTheme.titleMedium!
+                        .copyWith(fontWeight: FontWeight.w700),
+                    leftChevronIcon: const Icon(Icons.chevron_left,
+                        color: AppColors.tealPrimary),
+                    rightChevronIcon: const Icon(Icons.chevron_right,
+                        color: AppColors.tealPrimary),
+                  ),
+                  daysOfWeekStyle: DaysOfWeekStyle(
+                    weekdayStyle: theme.textTheme.bodySmall!
+                        .copyWith(color: AppColors.textSecondary),
+                    weekendStyle: theme.textTheme.bodySmall!
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: Divider(height: 1)),
+              // Search bar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Spacing.pageHorizontal,
+                    Spacing.s12,
+                    Spacing.pageHorizontal,
+                    Spacing.s8,
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search upcoming movies…',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _searchTerm.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchTerm = '');
+                              },
+                            )
+                          : null,
+                      isDense: true,
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(
+                          color: AppColors.tealPrimary.withAlpha(180),
+                          width: 1.5,
+                        ),
+                      ),
+                      filled: true,
+                    ),
+                    onChanged: (v) => setState(() => _searchTerm = v.trim()),
+                  ),
+                ),
+              ),
+              // Day label
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      Spacing.pageHorizontal, 4, Spacing.pageHorizontal, 8),
+                  child: Text(
+                    isFiltered
+                        ? _selectedDayLabel(_selectedDay)
+                        : 'All Upcoming',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: AppColors.tealDark,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                onSearch: () async {
-                  final api = ref.read(radarrApiProvider(instance));
-                  try {
-                    await api.searchMovie(movie.id);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Search started'),
-                          behavior: SnackBarBehavior.floating,
+              ),
+              // Movie list
+              if (dayMovies.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        isFiltered
+                            ? 'No upcoming movies on this date'
+                            : 'No upcoming movies',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (ctx, i) {
+                      final movie = dayMovies[i];
+                      final releaseDate = _nearestFutureRelease(movie);
+                      final profileName = profiles
+                          .where((p) => p.id == movie.qualityProfileId)
+                          .map((p) => p.name)
+                          .firstOrNull;
+                      return _UpcomingTile(
+                        movie: movie,
+                        releaseDate: releaseDate,
+                        profileName: profileName,
+                        instance: widget.instance,
+                        onTap: () => Navigator.push(
+                          ctx,
+                          MaterialPageRoute(
+                            builder: (_) => RadarrMovieDetailScreen(
+                              movie: movie,
+                              instance: widget.instance,
+                            ),
+                          ),
                         ),
+                        onSearch: () async {
+                          final api = ref.read(
+                              radarrApiProvider(widget.instance));
+                          try {
+                            await api.searchMovie(movie.id);
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Search started'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: $e'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
                       );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error: $e'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  }
-                },
-              );
-            },
+                    },
+                    childCount: dayMovies.length,
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: Spacing.s24)),
+            ],
           ),
         );
       },
     );
   }
+
+  String _selectedDayLabel(DateTime day) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    if (isSameDay(day, today)) return 'Today';
+    if (isSameDay(day, tomorrow)) return 'Tomorrow';
+    return DateFormat('EEEE, MMMM d').format(day);
+  }
 }
+
+// ---------------------------------------------------------------------------
+// Tile (unchanged from previous version)
+// ---------------------------------------------------------------------------
 
 class _UpcomingTile extends StatelessWidget {
   const _UpcomingTile({
@@ -170,7 +387,8 @@ class _UpcomingTile extends StatelessWidget {
     final theme = Theme.of(context);
     final posterUrl = movie.posterUrl;
     final isDark = theme.brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg =
+        isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
 
     final line2Parts = [
       '${movie.year}',
@@ -183,7 +401,7 @@ class _UpcomingTile extends StatelessWidget {
       if (profileName != null && profileName!.isNotEmpty) profileName!,
       _formatStatus(movie.status),
       if (movie.inCinemas != null)
-        DateFormat('MMM y').format(movie.inCinemas!),
+        DateFormat('MMM d, y').format(movie.inCinemas!),
     ].where((s) => s.isNotEmpty).toList();
 
     final availText = _availabilityText(releaseDate);
@@ -204,7 +422,6 @@ class _UpcomingTile extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             child: Row(
               children: [
-                // Poster
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: SizedBox(
@@ -216,7 +433,9 @@ class _UpcomingTile extends StatelessWidget {
                             color: AppColors.tealDark,
                             alignment: Alignment.center,
                             child: Text(
-                              movie.title.isNotEmpty ? movie.title[0] : 'M',
+                              movie.title.isNotEmpty
+                                  ? movie.title[0]
+                                  : 'M',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -227,12 +446,10 @@ class _UpcomingTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Text
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Line 1: Title
                       Text(
                         movie.title,
                         style: theme.textTheme.bodyLarge?.copyWith(
@@ -243,17 +460,14 @@ class _UpcomingTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
-                      // Line 2: Year · Runtime · Studio
                       Text(
                         line2Parts.join(' · '),
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                            color: AppColors.textSecondary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
-                      // Line 3: Profile · Status · Date
                       Text(
                         line3Parts.join(' · '),
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -264,7 +478,6 @@ class _UpcomingTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      // Line 4: Availability in teal or muted
                       Text(
                         availText,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -280,7 +493,6 @@ class _UpcomingTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Search icon
                 IconButton(
                   icon: Icon(
                     Icons.search,

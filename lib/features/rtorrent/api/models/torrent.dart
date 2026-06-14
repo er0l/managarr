@@ -32,20 +32,21 @@ class RTorrentTorrent {
   int get percentageDone =>
       size == 0 ? 0 : ((completed / size) * 100).clamp(0, 100).round();
 
-  bool get isCompleted => completed >= size;
+  bool get isCompleted => size > 0 && completed >= size;
   bool get isSeeding => isCompleted && isActive;
-  bool get isFinished => isCompleted && !isActive;
+  bool get isFinished => isCompleted && state == 0;
   bool get isDownloading => !isCompleted && isActive;
   bool get isError => message.isNotEmpty;
-  bool get isPaused => !isCompleted && !isActive && state == 1;
-  bool get isStopped => state == 0;
+  // state==1 and not actively transferring = paused (works for both partial and completed)
+  bool get isPaused => !isActive && state == 1;
+  bool get isStopped => state == 0 && !isCompleted;
 
   String get statusLabel {
     if (isError) return 'Error';
     if (isSeeding) return 'Seeding';
-    if (isFinished) return 'Finished';
     if (isDownloading) return 'Downloading';
-    if (isPaused) return 'Paused';
+    if (isPaused) return 'Pausing';
+    if (isFinished) return 'Finished';
     return 'Stopped';
   }
 }

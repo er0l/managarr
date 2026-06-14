@@ -34,12 +34,15 @@ class RommRomDetailScreen extends ConsumerStatefulWidget {
 
 class _RommRomDetailScreenState extends ConsumerState<RommRomDetailScreen> {
   bool? _isFavouriteOverride;
+  bool _downloading = false;
+  double _progress = 0;
 
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(
         rommRomDetailProvider((instance: widget.instance, romId: widget.romId)));
     final api = ref.watch(rommApiProvider(widget.instance));
+    const muted = Color(0xA0FFFFFF);
 
     return Scaffold(
       appBar: AppBar(
@@ -47,83 +50,107 @@ class _RommRomDetailScreenState extends ConsumerState<RommRomDetailScreen> {
         iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
         title: Text(widget.romName,
             style: const TextStyle(color: AppColors.textOnPrimary)),
-        actions: detailAsync.maybeWhen(
-          data: (rom) {
-            final isFav = _isFavouriteOverride ?? rom.isFavourite;
-            return [
-              // Edit button
-              IconButton(
-                icon: const Icon(Icons.edit_outlined,
-                    color: AppColors.textOnPrimary),
-                tooltip: 'Edit ROM',
-                onPressed: () async {
-                  final result = await Navigator.push<bool>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => RommEditRomScreen(
-                        rom: rom,
-                        instance: widget.instance,
+      ),
+      floatingActionButton: detailAsync.maybeWhen(
+        data: (rom) => FloatingActionButton(
+          backgroundColor: AppColors.tealPrimary,
+          foregroundColor: Colors.white,
+          tooltip: 'Download',
+          onPressed: _downloading
+              ? null
+              : () => rom.files.length > 1
+                  ? _showFilePickerSheet(context, api, rom)
+                  : _download(api, rom, rom.fsName),
+          child: _downloading
+              ? SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    value: _progress > 0 ? _progress : null,
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.download_outlined),
+        ),
+        orElse: () => null,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: detailAsync.maybeWhen(
+        data: (rom) {
+          final isFav = _isFavouriteOverride ?? rom.isFavourite;
+          return BottomAppBar(
+            shape: const CircularNotchedRectangle(),
+            child: Row(
+              children: [
+                // Left: Edit + Favourite
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: muted),
+                  tooltip: 'Edit ROM',
+                  onPressed: () async {
+                    final result = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RommEditRomScreen(
+                          rom: rom,
+                          instance: widget.instance,
+                        ),
+                      ),
+                    );
+                    if (result == true) {
+                      ref.invalidate(rommRomDetailProvider(
+                          (instance: widget.instance, romId: widget.romId)));
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    isFav ? Icons.favorite : Icons.favorite_border,
+                    color: isFav ? Colors.redAccent : muted,
+                  ),
+                  tooltip: isFav ? 'Remove from favourites' : 'Add to favourites',
+                  onPressed: () async {
+                    final newVal = !isFav;
+                    setState(() => _isFavouriteOverride = newVal);
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      await api.toggleFavourite(rom.id, newVal);
+                      ref.invalidate(rommRomDetailProvider(
+                          (instance: widget.instance, romId: widget.romId)));
+                    } catch (e) {
+                      setState(() => _isFavouriteOverride = isFav);
+                      messenger.showSnackBar(SnackBar(
+                        content: Text('Failed to update favourite: $e'),
+                        backgroundColor: AppColors.statusOffline,
+                      ));
+                    }
+                  },
+                ),
+                const Spacer(),
+                // Right: ···
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: muted),
+                  onSelected: (value) async {
+                    if (value == 'delete') await _confirmDelete(context, api, rom);
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: ListTile(
+                        leading: Icon(Icons.delete_outline,
+                            color: AppColors.statusOffline),
+                        title: Text('Delete ROM',
+                            style: TextStyle(color: AppColors.statusOffline)),
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                  );
-                  if (result == true) {
-                    ref.invalidate(rommRomDetailProvider(
-                        (instance: widget.instance, romId: widget.romId)));
-                  }
-                },
-              ),
-              // Favourite toggle
-              IconButton(
-                icon: Icon(
-                  isFav ? Icons.favorite : Icons.favorite_border,
-                  color: isFav ? Colors.redAccent : AppColors.textOnPrimary,
+                  ],
                 ),
-                tooltip: isFav ? 'Remove from favourites' : 'Add to favourites',
-                onPressed: () async {
-                  final newVal = !isFav;
-                  setState(() => _isFavouriteOverride = newVal);
-                  final messenger = ScaffoldMessenger.of(context);
-                  try {
-                    await api.toggleFavourite(rom.id, newVal);
-                    ref.invalidate(rommRomDetailProvider(
-                        (instance: widget.instance, romId: widget.romId)));
-                  } catch (e) {
-                    setState(() => _isFavouriteOverride = isFav);
-                    messenger.showSnackBar(SnackBar(
-                      content: Text('Failed to update favourite: $e'),
-                      backgroundColor: AppColors.statusOffline,
-                    ));
-                  }
-                },
-              ),
-              // More options (delete)
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert,
-                    color: AppColors.textOnPrimary),
-                onSelected: (value) async {
-                  if (value == 'delete') {
-                    await _confirmDelete(context, api, rom);
-                  }
-                },
-                itemBuilder: (_) => [
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, color: AppColors.statusOffline),
-                        SizedBox(width: 8),
-                        Text('Delete ROM',
-                            style:
-                                TextStyle(color: AppColors.statusOffline)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ];
-          },
-          orElse: () => null,
-        ),
+              ],
+            ),
+          );
+        },
+        orElse: () => null,
       ),
       body: detailAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -188,6 +215,169 @@ class _RommRomDetailScreenState extends ConsumerState<RommRomDetailScreen> {
       ));
     }
   }
+
+  void _showFilePickerSheet(BuildContext context, RommApi api, RommRom rom) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, controller) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withAlpha(80),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Text(
+                  'Select File to Download',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.separated(
+                  controller: controller,
+                  itemCount: rom.files.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final file = rom.files[i];
+                    final sizeText = file.sizeBytes != null
+                        ? _formatBytes(file.sizeBytes!)
+                        : '';
+                    return ListTile(
+                      leading: const Icon(
+                          Icons.insert_drive_file_outlined,
+                          color: AppColors.tealPrimary),
+                      title: Text(file.fileName,
+                          style: const TextStyle(fontSize: 13)),
+                      subtitle: sizeText.isNotEmpty ? Text(sizeText) : null,
+                      trailing: IconButton(
+                        icon: const Icon(Icons.download_outlined,
+                            color: AppColors.tealPrimary),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _download(api, rom, file.fileName);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return '';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    double size = bytes.toDouble();
+    int i = 0;
+    while (size >= 1024 && i < units.length - 1) {
+      size /= 1024;
+      i++;
+    }
+    return '${size.toStringAsFixed(i == 0 ? 0 : 1)} ${units[i]}';
+  }
+
+  Future<void> _download(RommApi api, RommRom rom, String fileName) async {
+    setState(() {
+      _downloading = true;
+      _progress = 0;
+    });
+
+    File? tempFile;
+    try {
+      final tempDir = await getTemporaryDirectory();
+      tempFile = File('${tempDir.path}/$fileName');
+
+      final url = api.downloadUrl(rom.id, fileName);
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(minutes: 30),
+        headers: {'Authorization': api.authHeader},
+      ));
+
+      await dio.download(
+        url,
+        tempFile.path,
+        onReceiveProgress: (received, total) {
+          if (total > 0 && mounted) {
+            setState(() => _progress = received / total);
+          }
+        },
+      );
+
+      if (!mounted) return;
+
+      setState(() => _progress = 0);
+      final Uint8List bytes = await tempFile.readAsBytes();
+
+      if (!mounted) return;
+
+      final result = await FilePicker.platform.saveFile(
+        fileName: fileName,
+        bytes: bytes,
+      );
+
+      if (!mounted) return;
+
+      if (result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Saved: $fileName'),
+          backgroundColor: AppColors.statusOnline,
+          duration: const Duration(seconds: 4),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Save cancelled'),
+          duration: Duration(seconds: 2),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Download failed: $e'),
+          backgroundColor: AppColors.statusOffline,
+        ));
+      }
+    } finally {
+      try {
+        await tempFile?.delete();
+      } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _downloading = false;
+          _progress = 0;
+        });
+      }
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -205,9 +395,6 @@ class _RomDetailBody extends StatefulWidget {
 }
 
 class _RomDetailBodyState extends State<_RomDetailBody> {
-  bool _downloading = false;
-  double _progress = 0;
-
   @override
   Widget build(BuildContext context) {
     final rom = widget.rom;
@@ -381,45 +568,7 @@ class _RomDetailBodyState extends State<_RomDetailBody> {
                 ),
                 const SizedBox(height: 16),
 
-                // Download button (single or multi-file)
-                SizedBox(
-                  width: double.infinity,
-                  child: _downloading
-                      ? Column(
-                          children: [
-                            LinearProgressIndicator(
-                              value: _progress > 0 ? _progress : null,
-                              color: AppColors.tealPrimary,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _progress > 0
-                                  ? '${(_progress * 100).toStringAsFixed(0)}%'
-                                  : 'Downloading…',
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ],
-                        )
-                      : rom.files.length > 1
-                          ? FilledButton.icon(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.tealPrimary,
-                              ),
-                              onPressed: () =>
-                                  _showFilePickerSheet(context, api, rom),
-                              icon: const Icon(Icons.download_outlined),
-                              label: const Text('Download…'),
-                            )
-                          : FilledButton.icon(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.tealPrimary,
-                              ),
-                              onPressed: () =>
-                                  _download(api, rom, rom.fsName),
-                              icon: const Icon(Icons.download_outlined),
-                              label: const Text('Download'),
-                            ),
-                ),
+                const SizedBox(height: 80),
               ],
             ),
           ),
@@ -428,172 +577,6 @@ class _RomDetailBodyState extends State<_RomDetailBody> {
     );
   }
 
-  void _showFilePickerSheet(
-      BuildContext context, RommApi api, RommRom rom) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.3,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (_, controller) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withAlpha(80),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Text(
-                  'Select File to Download',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView.separated(
-                  controller: controller,
-                  itemCount: rom.files.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (_, i) {
-                    final file = rom.files[i];
-                    final sizeText = file.sizeBytes != null
-                        ? _formatBytes(file.sizeBytes!)
-                        : '';
-                    return ListTile(
-                      leading: const Icon(
-                          Icons.insert_drive_file_outlined,
-                          color: AppColors.tealPrimary),
-                      title: Text(file.fileName,
-                          style: const TextStyle(fontSize: 13)),
-                      subtitle: sizeText.isNotEmpty ? Text(sizeText) : null,
-                      trailing: IconButton(
-                        icon: const Icon(Icons.download_outlined,
-                            color: AppColors.tealPrimary),
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _download(api, rom, file.fileName);
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    double size = bytes.toDouble();
-    int i = 0;
-    while (size >= 1024 && i < units.length - 1) {
-      size /= 1024;
-      i++;
-    }
-    return '${size.toStringAsFixed(i == 0 ? 0 : 1)} ${units[i]}';
-  }
-
-  Future<void> _download(RommApi api, RommRom rom, String fileName) async {
-    setState(() {
-      _downloading = true;
-      _progress = 0;
-    });
-
-    File? tempFile;
-    try {
-      // Download to temp directory first
-      final tempDir = await getTemporaryDirectory();
-      tempFile = File('${tempDir.path}/$fileName');
-
-      final url = api.downloadUrl(rom.id, fileName);
-      final dio = Dio(BaseOptions(
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(minutes: 30),
-        headers: {'Authorization': api.authHeader},
-      ));
-
-      await dio.download(
-        url,
-        tempFile.path,
-        onReceiveProgress: (received, total) {
-          if (total > 0 && mounted) {
-            setState(() => _progress = received / total);
-          }
-        },
-      );
-
-      if (!mounted) return;
-
-      // Read bytes from temp file and offer save dialog
-      setState(() => _progress = 0); // reset while reading
-      final Uint8List bytes = await tempFile.readAsBytes();
-
-      if (!mounted) return;
-
-      final result = await FilePicker.platform.saveFile(
-        fileName: fileName,
-        bytes: bytes,
-      );
-
-      if (!mounted) return;
-
-      if (result != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Saved: $fileName'),
-          backgroundColor: AppColors.statusOnline,
-          duration: const Duration(seconds: 4),
-        ));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Save cancelled'),
-          duration: Duration(seconds: 2),
-        ));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Download failed: $e'),
-          backgroundColor: AppColors.statusOffline,
-        ));
-      }
-    } finally {
-      // Clean up temp file
-      try {
-        await tempFile?.delete();
-      } catch (_) {}
-      if (mounted) {
-        setState(() {
-          _downloading = false;
-          _progress = 0;
-        });
-      }
-    }
-  }
 }
 
 // ---------------------------------------------------------------------------

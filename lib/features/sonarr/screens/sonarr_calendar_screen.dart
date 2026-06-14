@@ -1,82 +1,223 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
-import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/calendar.dart';
 import '../providers/sonarr_providers.dart';
 
-class SonarrCalendarScreen extends ConsumerWidget {
+class SonarrCalendarScreen extends ConsumerStatefulWidget {
   const SonarrCalendarScreen({super.key, required this.instance});
-
   final Instance instance;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final calendarAsync = ref.watch(sonarrCalendarProvider(instance));
-    final displayMode = ref.watch(sonarrDisplayModeProvider(instance.id));
+  ConsumerState<SonarrCalendarScreen> createState() =>
+      _SonarrCalendarScreenState();
+}
+
+class _SonarrCalendarScreenState extends ConsumerState<SonarrCalendarScreen> {
+  DateTime _focusedDay = DateTime.now();
+  DateTime _selectedDay = DateTime.now();
+  final _searchController = TextEditingController();
+  String _searchTerm = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final calendarAsync = ref.watch(sonarrCalendarProvider(widget.instance));
+    final theme = Theme.of(context);
 
     return calendarAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (episodes) {
-        if (episodes.isEmpty) {
-          return const Center(child: Text('No upcoming episodes found'));
-        }
-
-        // Group by date
-        final grouped = <DateTime, List<SonarrCalendar>>{};
-        for (final e in episodes) {
-          if (e.airDateUtc != null) {
-            final date = e.airDateUtc!.toLocal();
-            final day = DateTime(date.year, date.month, date.day);
-            grouped.putIfAbsent(day, () => []).add(e);
+        // Build day → episodes map
+        final byDay = <DateTime, List<SonarrCalendar>>{};
+        for (final ep in episodes) {
+          if (ep.airDateUtc != null) {
+            final d = ep.airDateUtc!.toLocal();
+            final key = DateTime(d.year, d.month, d.day);
+            byDay.putIfAbsent(key, () => []).add(ep);
           }
         }
 
-        final sortedDates = grouped.keys.toList()..sort();
+        // Episodes for selected day, filtered by search
+        final selKey = DateTime(
+            _selectedDay.year, _selectedDay.month, _selectedDay.day);
+        final dayEpisodes = (byDay[selKey] ?? [])
+            .where((ep) =>
+                _searchTerm.isEmpty ||
+                (ep.series?.title ?? '')
+                    .toLowerCase()
+                    .contains(_searchTerm.toLowerCase()) ||
+                (ep.title ?? '')
+                    .toLowerCase()
+                    .contains(_searchTerm.toLowerCase()))
+            .toList();
 
         return RefreshIndicator(
-          onRefresh: () async => ref.invalidate(sonarrCalendarProvider(instance)),
+          onRefresh: () async =>
+              ref.invalidate(sonarrCalendarProvider(widget.instance)),
+          color: AppColors.tealPrimary,
           child: CustomScrollView(
             slivers: [
-              for (final date in sortedDates) ...[
-                SliverToBoxAdapter(
-                  child: _DateHeader(date: date),
-                ),
-                if (displayMode == DisplayMode.grid)
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: Spacing.pageHorizontal),
-                    sliver: SliverGrid(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 3 : 2,
-                        crossAxisSpacing: Spacing.cardGap,
-                        mainAxisSpacing: Spacing.cardGap,
-                        childAspectRatio: 0.62,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final episode = grouped[date]![index];
-                          return _EpisodeGridCard(episode: episode);
-                        },
-                        childCount: grouped[date]!.length,
-                      ),
+              // Month calendar
+              SliverToBoxAdapter(
+                child: TableCalendar<SonarrCalendar>(
+                  firstDay: DateTime.utc(2020, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  focusedDay: _focusedDay,
+                  selectedDayPredicate: (day) =>
+                      isSameDay(_selectedDay, day),
+                  calendarFormat: CalendarFormat.month,
+                  availableCalendarFormats: const {
+                    CalendarFormat.month: 'Month',
+                  },
+                  eventLoader: (day) {
+                    final key = DateTime(day.year, day.month, day.day);
+                    return byDay[key] ?? [];
+                  },
+                  onDaySelected: (selected, focused) {
+                    setState(() {
+                      _selectedDay = selected;
+                      _focusedDay = focused;
+                    });
+                  },
+                  onPageChanged: (focused) {
+                    setState(() => _focusedDay = focused);
+                  },
+                  calendarStyle: CalendarStyle(
+                    todayDecoration: BoxDecoration(
+                      color: AppColors.tealPrimary.withAlpha(60),
+                      shape: BoxShape.circle,
                     ),
-                  )
-                else
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final episode = grouped[date]![index];
-                        return _EpisodeTile(episode: episode);
-                      },
-                      childCount: grouped[date]!.length,
+                    todayTextStyle: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    selectedDecoration: const BoxDecoration(
+                      color: AppColors.tealPrimary,
+                      shape: BoxShape.circle,
+                    ),
+                    selectedTextStyle:
+                        const TextStyle(color: Colors.white),
+                    markerDecoration: const BoxDecoration(
+                      color: AppColors.orangeAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    markersMaxCount: 1,
+                    outsideDaysVisible: false,
+                  ),
+                  headerStyle: HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                    titleTextStyle: theme.textTheme.titleMedium!
+                        .copyWith(fontWeight: FontWeight.w700),
+                    leftChevronIcon: const Icon(Icons.chevron_left,
+                        color: AppColors.tealPrimary),
+                    rightChevronIcon: const Icon(Icons.chevron_right,
+                        color: AppColors.tealPrimary),
+                  ),
+                  daysOfWeekStyle: DaysOfWeekStyle(
+                    weekdayStyle: theme.textTheme.bodySmall!
+                        .copyWith(color: AppColors.textSecondary),
+                    weekendStyle: theme.textTheme.bodySmall!
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ),
+              ),
+              // Divider
+              const SliverToBoxAdapter(child: Divider(height: 1)),
+              // Search bar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Spacing.pageHorizontal,
+                    Spacing.s12,
+                    Spacing.pageHorizontal,
+                    Spacing.s8,
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search episodes…',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _searchTerm.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchTerm = '');
+                              },
+                            )
+                          : null,
+                      isDense: true,
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(
+                          color: AppColors.tealPrimary.withAlpha(180),
+                          width: 1.5,
+                        ),
+                      ),
+                      filled: true,
+                    ),
+                    onChanged: (v) => setState(() => _searchTerm = v.trim()),
+                  ),
+                ),
+              ),
+              // Date label for selected day
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      Spacing.pageHorizontal, 4, Spacing.pageHorizontal, 8),
+                  child: Text(
+                    _selectedDayLabel(_selectedDay),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: AppColors.tealDark,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-              ],
+                ),
+              ),
+              // Episodes for selected day
+              if (dayEpisodes.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        'No episodes airing on this date',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (ctx, i) => _EpisodeTile(episode: dayEpisodes[i]),
+                    childCount: dayEpisodes.length,
+                  ),
+                ),
               const SliverToBoxAdapter(child: SizedBox(height: Spacing.s24)),
             ],
           ),
@@ -84,112 +225,14 @@ class SonarrCalendarScreen extends ConsumerWidget {
       },
     );
   }
-}
 
-class _DateHeader extends StatelessWidget {
-  const _DateHeader({required this.date});
-  final DateTime date;
-
-  @override
-  Widget build(BuildContext context) {
+  String _selectedDayLabel(DateTime day) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final isToday = date == today;
-    final isTomorrow = date == today.add(const Duration(days: 1));
-
-    String text;
-    if (isToday) {
-      text = 'Today';
-    } else if (isTomorrow) {
-      text = 'Tomorrow';
-    } else {
-      text = DateFormat('EEEE, MMMM d').format(date);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Spacing.pageHorizontal,
-        Spacing.s16,
-        Spacing.pageHorizontal,
-        Spacing.s8,
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.tealDark,
-              fontWeight: FontWeight.bold,
-            ),
-      ),
-    );
-  }
-}
-
-class _EpisodeGridCard extends StatelessWidget {
-  const _EpisodeGridCard({required this.episode});
-  final SonarrCalendar episode;
-
-  @override
-  Widget build(BuildContext context) {
-    final posterUrl = episode.series?.posterUrl;
-    final title = episode.series?.title ?? 'Unknown Series';
-    final epTitle = episode.title ?? 'Unknown Episode';
-    final epNum = 'S${episode.seasonNumber?.toString().padLeft(2, '0')}E${episode.episodeNumber?.toString().padLeft(2, '0')}';
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (posterUrl != null)
-            Image.network(posterUrl, fit: BoxFit.cover)
-          else
-            Container(color: AppColors.tealDark),
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withAlpha(200)],
-                  stops: const [0.6, 1.0],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 8,
-            left: 8,
-            right: 8,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '$epNum: $epTitle',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 10,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    final tomorrow = today.add(const Duration(days: 1));
+    if (isSameDay(day, today)) return 'Today';
+    if (isSameDay(day, tomorrow)) return 'Tomorrow';
+    return DateFormat('EEEE, MMMM d').format(day);
   }
 }
 
@@ -203,7 +246,11 @@ class _EpisodeTile extends StatelessWidget {
     final posterUrl = episode.series?.posterUrl;
     final title = episode.series?.title ?? 'Unknown Series';
     final epTitle = episode.title ?? 'Unknown Episode';
-    final epNum = 'S${episode.seasonNumber?.toString().padLeft(2, '0')}E${episode.episodeNumber?.toString().padLeft(2, '0')}';
+    final epNum =
+        'S${episode.seasonNumber?.toString().padLeft(2, '0')}E${episode.episodeNumber?.toString().padLeft(2, '0')}';
+    final airTime = episode.airDateUtc != null
+        ? DateFormat('h:mm a').format(episode.airDateUtc!.toLocal())
+        : '';
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
@@ -222,11 +269,24 @@ class _EpisodeTile extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+        style:
+            theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
-      subtitle: Text(
-        '$epNum: $epTitle',
-        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$epNum: $epTitle',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: AppColors.textSecondary),
+          ),
+          if (airTime.isNotEmpty)
+            Text(
+              airTime,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: AppColors.tealPrimary),
+            ),
+        ],
       ),
     );
   }

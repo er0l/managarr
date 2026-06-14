@@ -107,10 +107,18 @@ class _RTorrentTorrentDetailScreenState
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.orangeAccent,
+        foregroundColor: Colors.white,
+        tooltip: 'Reload',
+        onPressed: widget.onRefresh,
+        child: const Icon(Icons.refresh),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       body: TabBarView(
         controller: _tabController,
         children: [
-          _InfoTab(torrent: t),
+          _InfoTab(torrent: t, onRefresh: widget.onRefresh),
           _TrackersTab(instance: widget.instance, hash: t.hash),
           _FilesTab(instance: widget.instance, hash: t.hash),
         ],
@@ -260,8 +268,9 @@ class _RTorrentTorrentDetailScreenState
 enum _TorrentAction { remove }
 
 class _InfoTab extends StatelessWidget {
-  const _InfoTab({required this.torrent});
+  const _InfoTab({required this.torrent, required this.onRefresh});
   final RTorrentTorrent torrent;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -276,7 +285,10 @@ class _InfoTab extends StatelessWidget {
                     ? AppColors.statusWarning
                     : AppColors.statusUnknown;
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: AppColors.tealPrimary,
+      child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         ClipRRect(
@@ -312,7 +324,9 @@ class _InfoTab extends StatelessWidget {
         _Row('Hash', t.hash),
         if (t.isError)
           _Row('Error', t.message, valueColor: AppColors.statusOffline),
+        const SizedBox(height: 80),
       ],
+    ),
     );
   }
 
