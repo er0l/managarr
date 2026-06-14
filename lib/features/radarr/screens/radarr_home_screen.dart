@@ -260,23 +260,13 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
           onPressed: _openHistory,
         ),
       ],
-      bottomTrailingActions: [
-        IconButton(
-          icon: const Icon(Icons.calendar_month_outlined, color: muted),
-          tooltip: 'Upcoming',
-          onPressed: _openUpcoming,
-        ),
-        IconButton(
-          icon: const Icon(Icons.video_file_outlined, color: muted),
-          tooltip: 'Missing',
-          onPressed: _openMissing,
-        ),
+      appBarActions: [
         IconButton(
           icon: Icon(
             displayMode == DisplayMode.grid
                 ? Icons.view_list_outlined
                 : Icons.grid_view_outlined,
-            color: muted,
+            color: Colors.white,
           ),
           tooltip:
               'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
@@ -287,6 +277,18 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
                 ? DisplayMode.list
                 : DisplayMode.grid;
           },
+        ),
+      ],
+      bottomTrailingActions: [
+        IconButton(
+          icon: const Icon(Icons.calendar_month_outlined, color: muted),
+          tooltip: 'Upcoming',
+          onPressed: _openUpcoming,
+        ),
+        IconButton(
+          icon: const Icon(Icons.video_file_outlined, color: muted),
+          tooltip: 'Missing',
+          onPressed: _openMissing,
         ),
       ],
       bottomMoreItems: const [

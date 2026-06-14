@@ -276,7 +276,7 @@ class _MovieTile extends ConsumerWidget {
     ];
 
     return Opacity(
-      opacity: movie.hasFile ? 1.0 : 0.55,
+      opacity: (!movie.monitored && !movie.hasFile) ? 0.55 : 1.0,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: Spacing.pageHorizontal,

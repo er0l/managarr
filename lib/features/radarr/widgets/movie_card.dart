@@ -17,7 +17,7 @@ class MovieCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Opacity(
-      opacity: movie.hasFile ? 1.0 : 0.55,
+      opacity: (!movie.monitored && !movie.hasFile) ? 0.55 : 1.0,
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
