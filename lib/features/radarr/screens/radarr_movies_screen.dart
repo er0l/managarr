@@ -9,7 +9,6 @@ import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/movie.dart';
-import '../models/radarr_options.dart';
 import '../providers/radarr_providers.dart';
 import '../widgets/movie_card.dart';
 import 'radarr_movie_detail_screen.dart';
@@ -41,111 +40,16 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
     super.dispose();
   }
 
-  void _showSortBottomSheet() {
-    final currentSort = ref.read(radarrSortOptionProvider(widget.instance.id));
-    final ascending = ref.read(radarrSortAscendingProvider(widget.instance.id));
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(Spacing.s16),
-              child: Row(
-                children: [
-                  Text('Sort by', style: Theme.of(context).textTheme.titleLarge),
-                  const Spacer(),
-                  IconButton(
-                    icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
-                    onPressed: () {
-                      ref.read(radarrSortAscendingProvider(widget.instance.id).notifier).state = !ascending;
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: RadioGroup<RadarrSortOption>(
-                groupValue: currentSort,
-                onChanged: (val) {
-                  if (val != null) {
-                    ref.read(radarrSortOptionProvider(widget.instance.id).notifier).state = val;
-                    Navigator.pop(context);
-                  }
-                },
-                child: ListView(
-                  children: RadarrSortOption.values
-                      .map((option) => RadioListTile<RadarrSortOption>(
-                            title: Text(option.label),
-                            value: option,
-                          ))
-                      .toList(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showFilterBottomSheet() {
-    final currentFilter = ref.read(radarrFilterOptionProvider(widget.instance.id));
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(Spacing.s16),
-              child: Text('Filter by', style: Theme.of(context).textTheme.titleLarge),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: RadioGroup<RadarrFilterOption>(
-                groupValue: currentFilter,
-                onChanged: (val) {
-                  if (val != null) {
-                    ref.read(radarrFilterOptionProvider(widget.instance.id).notifier).state = val;
-                    Navigator.pop(context);
-                  }
-                },
-                child: ListView(
-                  shrinkWrap: true,
-                  children: RadarrFilterOption.values
-                      .map((option) => RadioListTile<RadarrFilterOption>(
-                            title: Text(option.label),
-                            value: option,
-                          ))
-                      .toList(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(radarrMoviesProvider(widget.instance));
     final filteredMovies = ref.watch(radarrFilteredMoviesProvider(widget.instance));
     final displayMode = ref.watch(radarrDisplayModeProvider(widget.instance.id));
     final query = ref.watch(radarrSearchQueryProvider(widget.instance.id));
-    final currentSort = ref.watch(radarrSortOptionProvider(widget.instance.id));
-    final currentFilter = ref.watch(radarrFilterOptionProvider(widget.instance.id));
 
     return Column(
       children: [
-        // Search & Controls bar
+        // Search bar
         Padding(
           padding: const EdgeInsets.fromLTRB(
             Spacing.pageHorizontal,
@@ -153,44 +57,31 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
             Spacing.pageHorizontal,
             Spacing.s8,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: moviesAsync.value?.length != null
-                        ? 'Search ${moviesAsync.value!.length} movies…'
-                        : 'Search movies…',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: query.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.read(radarrSearchQueryProvider(widget.instance.id).notifier).state = '';
-                            },
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  onChanged: (v) => ref.read(radarrSearchQueryProvider(widget.instance.id).notifier).state = v,
-                ),
-              ),
-              const SizedBox(width: Spacing.s8),
-              _ControlButton(
-                icon: Icons.filter_list,
-                isActive: currentFilter != RadarrFilterOption.all,
-                onTap: _showFilterBottomSheet,
-              ),
-              const SizedBox(width: Spacing.s4),
-              _ControlButton(
-                icon: Icons.sort,
-                isActive: currentSort != RadarrSortOption.alphabetical,
-                onTap: _showSortBottomSheet,
-              ),
-            ],
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: moviesAsync.value?.length != null
+                  ? 'Search ${moviesAsync.value!.length} movies…'
+                  : 'Search movies…',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: query.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        ref
+                            .read(radarrSearchQueryProvider(widget.instance.id)
+                                .notifier)
+                            .state = '';
+                      },
+                    )
+                  : null,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            onChanged: (v) => ref
+                .read(radarrSearchQueryProvider(widget.instance.id).notifier)
+                .state = v,
           ),
         ),
         // Movie list/grid
@@ -225,32 +116,6 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ControlButton extends StatelessWidget {
-  const _ControlButton({
-    required this.icon,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return IconButton.filledTonal(
-      onPressed: onTap,
-      iconSize: 20,
-      style: IconButton.styleFrom(
-        backgroundColor: isActive ? colorScheme.primaryContainer : null,
-        foregroundColor: isActive ? colorScheme.onPrimaryContainer : null,
-      ),
-      icon: Icon(icon),
     );
   }
 }
