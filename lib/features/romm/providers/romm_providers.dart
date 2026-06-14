@@ -23,6 +23,10 @@ final rommPlatformViewModeProvider = StateProvider<DisplayMode>(
   (ref) => DisplayMode.grid,
 );
 
+// Home-screen view mode (platforms list) — per instance.
+final rommHomeDisplayModeProvider =
+    StateProvider.family<DisplayMode, int>((ref, _) => DisplayMode.grid);
+
 // ---------------------------------------------------------------------------
 // Platforms
 // ---------------------------------------------------------------------------
