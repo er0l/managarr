@@ -19,6 +19,7 @@ class ServiceDetailShell extends ConsumerWidget {
     this.tabs = const [],
     required this.tabViews,
     this.floatingActionButton,
+    this.appBarActions,
     this.bottomLeadingActions,
     this.bottomTrailingActions,
     this.bottomMoreItems,
@@ -33,6 +34,9 @@ class ServiceDetailShell extends ConsumerWidget {
 
   /// Centre-docked FAB — shown in the BottomAppBar notch.
   final Widget? floatingActionButton;
+
+  /// Actions placed in the AppBar top-right (e.g. view toggle).
+  final List<Widget>? appBarActions;
 
   /// Widgets placed to the left of the FAB in the BottomAppBar (filter, sort…).
   final List<Widget>? bottomLeadingActions;
@@ -124,6 +128,7 @@ class ServiceDetailShell extends ConsumerWidget {
       elevation: 0,
       toolbarHeight: 60,
       automaticallyImplyLeading: false,
+      actions: appBarActions,
       leading: Builder(
         builder: (ctx) => IconButton(
           icon: const Icon(Icons.menu, color: fgColor),

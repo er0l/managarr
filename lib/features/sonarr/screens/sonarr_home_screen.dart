@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/config/byte_formatter.dart';
 import '../../../core/config/spacing.dart';
@@ -32,30 +33,7 @@ class SonarrHomeScreen extends ConsumerStatefulWidget {
   ConsumerState<SonarrHomeScreen> createState() => _SonarrHomeScreenState();
 }
 
-class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  int _currentTabIndex = 0;
-
-  static const _tabs = ['Library', 'Calendar', 'Missing', 'Cutoff', 'Activity'];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController.addListener(() {
-      if (_tabController.index != _currentTabIndex) {
-        setState(() => _currentTabIndex = _tabController.index);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
+class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
   Future<void> _runCommand(String name, String label) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -74,8 +52,10 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
   }
 
   void _showSortBottomSheet() {
-    final currentSort = ref.read(sonarrSortOptionProvider(widget.instance.id));
-    final ascending = ref.read(sonarrSortAscendingProvider(widget.instance.id));
+    final currentSort =
+        ref.read(sonarrSortOptionProvider(widget.instance.id));
+    final ascending =
+        ref.read(sonarrSortAscendingProvider(widget.instance.id));
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -94,7 +74,8 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
                         : Icons.arrow_downward),
                     onPressed: () {
                       ref
-                          .read(sonarrSortAscendingProvider(widget.instance.id)
+                          .read(sonarrSortAscendingProvider(
+                                  widget.instance.id)
                               .notifier)
                           .state = !ascending;
                       Navigator.pop(ctx);
@@ -177,6 +158,69 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
     );
   }
 
+  void _openUpcoming() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: AppColors.tealPrimary,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text(
+              'Upcoming',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+          body: SonarrCalendarScreen(instance: widget.instance),
+        ),
+      ),
+    );
+  }
+
+  void _openMissing() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: AppColors.tealPrimary,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text(
+              'Missing',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+          body: SonarrMissingScreen(instance: widget.instance),
+        ),
+      ),
+    );
+  }
+
+  void _openHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: AppColors.tealPrimary,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text(
+              'History',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+          body: SonarrActivityScreen(instance: widget.instance),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayMode =
@@ -193,48 +237,28 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'Sonarr',
-      tabs: _tabs,
-      tabController: _tabController,
-      floatingActionButton: _currentTabIndex == 0
-          ? FloatingActionButton(
-              backgroundColor: ServiceType.sonarr.brandColor,
-              foregroundColor: Colors.white,
-              tooltip: 'Add Series',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      SonarrAddSeriesScreen(instance: widget.instance),
-                ),
-              ),
-              child: const Icon(Icons.add),
-            )
-          : null,
-      bottomLeadingActions: [
-        IconButton(
-          icon: Icon(
-            Icons.filter_list,
-            color: filterActive ? AppColors.tealPrimary : muted,
+      tabs: const [],
+      tabViews: [SonarrSeriesScreen(instance: widget.instance)],
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: ServiceType.sonarr.brandColor,
+        foregroundColor: Colors.white,
+        tooltip: 'Add Series',
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                SonarrAddSeriesScreen(instance: widget.instance),
           ),
-          tooltip: 'Filter',
-          onPressed: _showFilterBottomSheet,
         ),
-        IconButton(
-          icon: Icon(
-            Icons.sort,
-            color: sortActive ? AppColors.tealPrimary : muted,
-          ),
-          tooltip: 'Sort',
-          onPressed: _showSortBottomSheet,
-        ),
-      ],
-      bottomTrailingActions: [
+        child: const Icon(Icons.add),
+      ),
+      appBarActions: [
         IconButton(
           icon: Icon(
             displayMode == DisplayMode.grid
                 ? Icons.view_list_outlined
                 : Icons.grid_view_outlined,
-            color: muted,
+            color: Colors.white,
           ),
           tooltip:
               'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
@@ -245,6 +269,37 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
                 ? DisplayMode.list
                 : DisplayMode.grid;
           },
+        ),
+      ],
+      bottomLeadingActions: [
+        IconButton(
+          icon: Icon(Icons.filter_list,
+              color: filterActive ? AppColors.tealPrimary : muted),
+          tooltip: 'Filter',
+          onPressed: _showFilterBottomSheet,
+        ),
+        IconButton(
+          icon: Icon(Icons.sort,
+              color: sortActive ? AppColors.tealPrimary : muted),
+          tooltip: 'Sort',
+          onPressed: _showSortBottomSheet,
+        ),
+        IconButton(
+          icon: const Icon(Icons.history, color: muted),
+          tooltip: 'History',
+          onPressed: _openHistory,
+        ),
+      ],
+      bottomTrailingActions: [
+        IconButton(
+          icon: const Icon(Icons.calendar_month_outlined, color: muted),
+          tooltip: 'Upcoming',
+          onPressed: _openUpcoming,
+        ),
+        IconButton(
+          icon: const Icon(Icons.video_file_outlined, color: muted),
+          tooltip: 'Missing',
+          onPressed: _openMissing,
         ),
       ],
       bottomMoreItems: const [
@@ -269,6 +324,15 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
           child: ListTile(
             leading: Icon(Icons.list_alt_outlined),
             title: Text('Import Lists'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'cutoff',
+          child: ListTile(
+            leading: Icon(Icons.hd_outlined),
+            title: Text('Cutoff Unmet'),
             contentPadding: EdgeInsets.zero,
           ),
         ),
@@ -310,11 +374,33 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
                     SonarrImportListsScreen(instance: widget.instance),
               ),
             );
+          case 'cutoff':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  backgroundColor:
+                      Theme.of(context).scaffoldBackgroundColor,
+                  appBar: AppBar(
+                    backgroundColor: AppColors.tealPrimary,
+                    iconTheme: const IconThemeData(color: Colors.white),
+                    title: const Text(
+                      'Cutoff Unmet',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  body: SonarrCutoffUnmetScreen(instance: widget.instance),
+                ),
+              ),
+            );
           case 'tags':
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => SonarrTagsScreen(instance: widget.instance),
+                builder: (_) =>
+                    SonarrTagsScreen(instance: widget.instance),
               ),
             );
           case 'systemStatus':
@@ -327,13 +413,6 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen>
             );
         }
       },
-      tabViews: [
-        SonarrSeriesScreen(instance: widget.instance),
-        SonarrCalendarScreen(instance: widget.instance),
-        SonarrMissingScreen(instance: widget.instance),
-        SonarrCutoffUnmetScreen(instance: widget.instance),
-        SonarrActivityScreen(instance: widget.instance),
-      ],
     );
   }
 }
@@ -346,7 +425,8 @@ class SonarrSeriesScreen extends ConsumerStatefulWidget {
   final Instance instance;
 
   @override
-  ConsumerState<SonarrSeriesScreen> createState() => _SonarrSeriesScreenState();
+  ConsumerState<SonarrSeriesScreen> createState() =>
+      _SonarrSeriesScreenState();
 }
 
 class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
@@ -356,7 +436,8 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchController.text = ref.read(sonarrSearchQueryProvider(widget.instance.id));
+      _searchController.text =
+          ref.read(sonarrSearchQueryProvider(widget.instance.id));
     });
   }
 
@@ -369,16 +450,20 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
   @override
   Widget build(BuildContext context) {
     final seriesAsync = ref.watch(sonarrSeriesProvider(widget.instance));
-    final filteredSeries = ref.watch(sonarrFilteredSeriesProvider(widget.instance));
-    final displayMode = ref.watch(sonarrDisplayModeProvider(widget.instance.id));
+    final filteredSeries =
+        ref.watch(sonarrFilteredSeriesProvider(widget.instance));
+    final displayMode =
+        ref.watch(sonarrDisplayModeProvider(widget.instance.id));
     final query = ref.watch(sonarrSearchQueryProvider(widget.instance.id));
 
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            Spacing.pageHorizontal, Spacing.s12,
-            Spacing.pageHorizontal, Spacing.s8,
+            Spacing.pageHorizontal,
+            Spacing.s12,
+            Spacing.pageHorizontal,
+            Spacing.s8,
           ),
           child: TextField(
             controller: _searchController,
@@ -393,7 +478,8 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
                       onPressed: () {
                         _searchController.clear();
                         ref
-                            .read(sonarrSearchQueryProvider(widget.instance.id)
+                            .read(sonarrSearchQueryProvider(
+                                    widget.instance.id)
                                 .notifier)
                             .state = '';
                       },
@@ -401,9 +487,26 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
                   : null,
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(
+                  color: AppColors.tealPrimary.withAlpha(180),
+                  width: 1.5,
+                ),
+              ),
+              filled: true,
             ),
             onChanged: (v) => ref
-                .read(sonarrSearchQueryProvider(widget.instance.id).notifier)
+                .read(
+                    sonarrSearchQueryProvider(widget.instance.id).notifier)
                 .state = v,
           ),
         ),
@@ -414,7 +517,8 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.cloud_off, size: 48, color: AppColors.statusOffline),
+                  const Icon(Icons.cloud_off,
+                      size: 48, color: AppColors.statusOffline),
                   const SizedBox(height: Spacing.s12),
                   Text(
                     'Could not connect',
@@ -438,7 +542,9 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
               if (filteredSeries.isEmpty) {
                 return Center(
                   child: Text(
-                    query.isNotEmpty ? 'No results for "$query"' : 'No series found',
+                    query.isNotEmpty
+                        ? 'No results for "$query"'
+                        : 'No series found',
                     style: Theme.of(context)
                         .textTheme
                         .bodyLarge
@@ -451,8 +557,12 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
                 onRefresh: () async =>
                     ref.invalidate(sonarrSeriesProvider(widget.instance)),
                 child: displayMode == DisplayMode.grid
-                    ? _SeriesGrid(series: filteredSeries, instance: widget.instance)
-                    : _SeriesList(series: filteredSeries, instance: widget.instance),
+                    ? _SeriesGrid(
+                        series: filteredSeries,
+                        instance: widget.instance)
+                    : _SeriesList(
+                        series: filteredSeries,
+                        instance: widget.instance),
               );
             },
           ),
@@ -461,6 +571,8 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
     );
   }
 }
+
+// ── Grid ────────────────────────────────────────────────────────────────────
 
 class _SeriesGrid extends StatelessWidget {
   const _SeriesGrid({required this.series, required this.instance});
@@ -471,8 +583,10 @@ class _SeriesGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(
-        Spacing.pageHorizontal, 0,
-        Spacing.pageHorizontal, Spacing.s24,
+        Spacing.pageHorizontal,
+        0,
+        Spacing.pageHorizontal,
+        Spacing.s24,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 3 : 2,
@@ -495,76 +609,110 @@ class _SeriesGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final posterUrl = series.posterUrl;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SonarrSeriesDetailScreen(
-              series: series,
-              instance: instance,
+    final isUnmonitored = !series.monitored &&
+        (series.statistics?.percentOfEpisodes ?? 100.0) < 100.0;
+
+    return Opacity(
+      opacity: isUnmonitored ? 0.55 : 1.0,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  SonarrSeriesDetailScreen(series: series, instance: instance),
             ),
-          ),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (posterUrl != null)
-              Image.network(posterUrl, fit: BoxFit.cover)
-            else
-              Container(
-                color: AppColors.tealDark,
-                alignment: Alignment.center,
-                child: Text(
-                  series.title[0],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Hero(
+                tag: 'sonarr-poster-${series.id}',
+                child: posterUrl != null
+                    ? Image.network(posterUrl, fit: BoxFit.cover)
+                    : Container(
+                        color: AppColors.tealDark,
+                        alignment: Alignment.center,
+                        child: Text(
+                          series.title.isNotEmpty ? series.title[0] : 'S',
+                          style: const TextStyle(
+                            color: Colors.white30,
+                            fontSize: 40,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
               ),
-            // Gradient overlay
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withAlpha(200),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(8, 24, 8, 8),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black87],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        series.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                      ),
+                      if (series.year != null && series.year! > 0)
+                        Text(
+                          series.year.toString(),
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.white70,
+                                  ),
+                        ),
                     ],
-                    stops: const [0.6, 1.0],
                   ),
                 ),
               ),
-            ),
-            // Title
-            Positioned(
-              bottom: 8,
-              left: 8,
-              right: 8,
-              child: Text(
-                series.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+              // Status dot
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: switch (series.status) {
+                      'continuing' => AppColors.statusOnline,
+                      'ended' => AppColors.statusOffline,
+                      _ => AppColors.statusUnknown,
+                    },
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+// ── List ────────────────────────────────────────────────────────────────────
 
 class _SeriesList extends StatelessWidget {
   const _SeriesList({required this.series, required this.instance});
@@ -582,57 +730,34 @@ class _SeriesList extends StatelessWidget {
   }
 }
 
+String _formatRuntime(int? minutes) {
+  if (minutes == null || minutes <= 0) return '';
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h == 0) return '${m}m';
+  if (m == 0) return '${h}h';
+  return '${h}h ${m}m';
+}
+
+String _formatSeriesStatus(String? status) {
+  if (status == null || status.isEmpty) return '';
+  switch (status.toLowerCase()) {
+    case 'continuing':
+      return 'Continuing';
+    case 'ended':
+      return 'Ended';
+    case 'upcoming':
+      return 'Upcoming';
+    default:
+      return status[0].toUpperCase() + status.substring(1);
+  }
+}
+
 class _SeriesTile extends ConsumerWidget {
   const _SeriesTile({required this.series, required this.instance});
 
   final SonarrSeries series;
   final Instance instance;
-
-  Future<void> _handleAction(BuildContext context, WidgetRef ref, String action) async {
-    final api = ref.read(sonarrApiProvider(instance));
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      switch (action) {
-        case 'monitor':
-          await api.toggleMonitorSeries(series.id, !series.monitored);
-          ref.invalidate(sonarrSeriesProvider(instance));
-        case 'search':
-          await api.searchSeries(series.id);
-          messenger.showSnackBar(const SnackBar(
-            content: Text('Search started'),
-            behavior: SnackBarBehavior.floating,
-          ));
-        case 'delete':
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Remove Series'),
-              content: Text('Remove "${series.title}" from Sonarr?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.statusOffline),
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Remove'),
-                ),
-              ],
-            ),
-          );
-          if (confirmed == true) {
-            await api.deleteSeries(series.id);
-            ref.invalidate(sonarrSeriesProvider(instance));
-          }
-      }
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(
-        content: Text('Error: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -642,264 +767,215 @@ class _SeriesTile extends ConsumerWidget {
     final fanartUrl = series.fanartUrl;
     final accentColor = ServiceType.sonarr.brandColor;
 
-    final statusColor = switch (series.status) {
-      'continuing' => AppColors.statusOnline,
-      'ended' => AppColors.statusOffline,
-      _ => AppColors.statusUnknown,
-    };
+    final profilesAsync =
+        ref.watch(sonarrQualityProfilesProvider(instance));
+    final profileName = profilesAsync.valueOrNull
+        ?.where((p) => p.id == series.qualityProfileId)
+        .map((p) => p.name)
+        .firstOrNull;
 
-    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg =
+        isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
 
     final sizeOnDisk = series.statistics?.sizeOnDisk ?? 0;
     final episodeFileCount = series.statistics?.episodeFileCount ?? 0;
     final episodeCount = series.statistics?.episodeCount ?? 0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.pageHorizontal,
-        vertical: 4,
-      ),
-      child: Material(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SonarrSeriesDetailScreen(
-                  series: series,
-                  instance: instance,
+    final isUnmonitored = !series.monitored &&
+        (series.statistics?.percentOfEpisodes ?? 100.0) < 100.0;
+
+    final line2Parts = [
+      if (series.year != null && series.year! > 0) '${series.year}',
+      if (series.runtime != null && series.runtime! > 0)
+        _formatRuntime(series.runtime),
+      if (series.network != null && series.network!.isNotEmpty)
+        series.network!,
+    ];
+
+    final line3Parts = [
+      if (profileName != null && profileName.isNotEmpty) profileName,
+      _formatSeriesStatus(series.status),
+      if (series.added != null)
+        'Added ${DateFormat('MMM y').format(series.added!)}',
+    ].where((s) => s.isNotEmpty).toList();
+
+    return Opacity(
+      opacity: isUnmonitored ? 0.55 : 1.0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.pageHorizontal,
+          vertical: 4,
+        ),
+        child: Material(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SonarrSeriesDetailScreen(
+                    series: series,
+                    instance: instance,
+                  ),
                 ),
-              ),
-            );
-          },
-          child: SizedBox(
-            height: 112,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Fanart backdrop bleed
-                if (fanartUrl != null)
+              );
+            },
+            child: SizedBox(
+              height: 120,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (fanartUrl != null)
+                    Positioned.fill(
+                      child: Image.network(
+                        fanartUrl,
+                        fit: BoxFit.cover,
+                        color: Colors.black
+                            .withAlpha(isDark ? 184 : 210),
+                        colorBlendMode: BlendMode.darken,
+                        errorBuilder: (context, e, st) =>
+                            const SizedBox.shrink(),
+                      ),
+                    ),
                   Positioned.fill(
-                    child: Image.network(
-                      fanartUrl,
-                      fit: BoxFit.cover,
-                      color: Colors.black.withAlpha(isDark ? 184 : 210),
-                      colorBlendMode: BlendMode.darken,
-                      errorBuilder: (context, e, st) =>
-                          const SizedBox.shrink(),
-                    ),
-                  ),
-                // Gradient overlay
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          cardBg,
-                          cardBg.withAlpha(isDark ? 200 : 230),
-                          cardBg.withAlpha(isDark ? 120 : 160),
-                        ],
-                        stops: const [0, 0.55, 1],
-                      ),
-                    ),
-                  ),
-                ),
-                // 3-dot context menu — top-right corner
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: PopupMenuButton<String>(
-                    icon: const Icon(
-                      Icons.more_vert,
-                      size: 18,
-                      color: Colors.white60,
-                    ),
-                    onSelected: (action) => _handleAction(context, ref, action),
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'monitor',
-                        child: ListTile(
-                          leading: Icon(
-                            series.monitored ? Icons.bookmark_remove_outlined : Icons.bookmark_add_outlined,
-                          ),
-                          title: Text(series.monitored ? 'Unmonitor' : 'Monitor'),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'search',
-                        child: ListTile(
-                          leading: Icon(Icons.search),
-                          title: Text('Search Monitored'),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
-                      ),
-                      const PopupMenuDivider(),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: ListTile(
-                          leading: Icon(Icons.delete_outline, color: AppColors.statusOffline),
-                          title: Text('Remove', style: TextStyle(color: AppColors.statusOffline)),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Foreground content
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      // Poster
-                      Hero(
-                        tag: 'sonarr-poster-${series.id}',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: SizedBox(
-                            width: 62,
-                            height: 92,
-                            child: posterUrl != null
-                                ? Image.network(posterUrl, fit: BoxFit.cover)
-                                : Container(
-                                    color: AppColors.tealDark,
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      series.title.isNotEmpty
-                                          ? series.title[0]
-                                          : 'S',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 22,
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Text content
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Title + status dot
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 7,
-                                  height: 7,
-                                  margin: const EdgeInsets.only(
-                                      right: 6, top: 1),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: statusColor,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: statusColor.withAlpha(100),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    series.title,
-                                    style: theme.textTheme.bodyLarge?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.2,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            // Year · Seasons · Network · Rating  [✓]
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    [
-                                      if (series.year != null && series.year! > 0)
-                                        '${series.year}',
-                                      if (series.seasonCount != null)
-                                        '${series.seasonCount} season${series.seasonCount == 1 ? '' : 's'}',
-                                      if (series.network != null &&
-                                          series.network!.isNotEmpty)
-                                        series.network!,
-                                      if (series.tmdbRating != null)
-                                        '★ ${series.tmdbRating!.toStringAsFixed(1)}',
-                                    ].join(' · '),
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                // Downloaded indicator
-                                if ((series.statistics?.percentOfEpisodes ?? 0) >= 100) ...[
-                                  const SizedBox(width: 6),
-                                  const Icon(
-                                    Icons.check_circle_outline,
-                                    size: 13,
-                                    color: AppColors.statusOnline,
-                                  ),
-                                ],
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            // Bottom chips row
-                            Row(
-                              children: [
-                                // File size chip
-                                if (sizeOnDisk > 0) ...[
-                                  _SeriesChip(
-                                    label: ByteFormatter.format(sizeOnDisk),
-                                    color: AppColors.statusOnline,
-                                  ),
-                                  const SizedBox(width: 6),
-                                ],
-                                // Episode progress badge
-                                if (episodeCount > 0)
-                                  _SeriesChip(
-                                    label: '$episodeFileCount/$episodeCount ep',
-                                    color: accentColor,
-                                  ),
-                                // Monitor icon
-                                const Spacer(),
-                                Icon(
-                                  series.monitored
-                                      ? Icons.bookmark
-                                      : Icons.bookmark_border,
-                                  size: 16,
-                                  color: series.monitored
-                                      ? accentColor
-                                      : AppColors.textSecondary,
-                                ),
-                              ],
-                            ),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            cardBg,
+                            cardBg.withAlpha(isDark ? 200 : 230),
+                            cardBg.withAlpha(isDark ? 120 : 160),
                           ],
+                          stops: const [0, 0.55, 1],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                      children: [
+                        // Poster
+                        Hero(
+                          tag: 'sonarr-poster-${series.id}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 60,
+                              height: 88,
+                              child: posterUrl != null
+                                  ? Image.network(posterUrl,
+                                      fit: BoxFit.cover)
+                                  : Container(
+                                      color: AppColors.tealDark,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        series.title.isNotEmpty
+                                            ? series.title[0]
+                                            : 'S',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 22,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Text content
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Line 1: Title
+                              Text(
+                                series.title,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 3),
+                              // Line 2: Year · Runtime · Network
+                              Text(
+                                line2Parts.join(' · '),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 3),
+                              // Line 3: Profile · Status · DateAdded
+                              Text(
+                                line3Parts.join(' · '),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textSecondary
+                                      .withAlpha(200),
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              // Line 4: icons + size + episodes
+                              Row(
+                                children: [
+                                  Icon(
+                                    series.monitored
+                                        ? Icons.bookmark
+                                        : Icons.bookmark_border,
+                                    size: 14,
+                                    color: series.monitored
+                                        ? accentColor
+                                        : AppColors.textSecondary,
+                                  ),
+                                  if ((series.statistics
+                                              ?.percentOfEpisodes ??
+                                          0) >=
+                                      100) ...[
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.check_circle_outline,
+                                      size: 14,
+                                      color: AppColors.statusOnline,
+                                    ),
+                                  ],
+                                  const Spacer(),
+                                  if (sizeOnDisk > 0) ...[
+                                    _Chip(
+                                      label: ByteFormatter.format(
+                                          sizeOnDisk),
+                                      color: AppColors.statusOnline,
+                                    ),
+                                    const SizedBox(width: 6),
+                                  ],
+                                  if (episodeCount > 0)
+                                    _Chip(
+                                      label:
+                                          '$episodeFileCount/$episodeCount ep',
+                                      color: accentColor,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -908,8 +984,8 @@ class _SeriesTile extends ConsumerWidget {
   }
 }
 
-class _SeriesChip extends StatelessWidget {
-  const _SeriesChip({required this.label, required this.color});
+class _Chip extends StatelessWidget {
+  const _Chip({required this.label, required this.color});
   final String label;
   final Color color;
 
