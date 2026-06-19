@@ -62,6 +62,20 @@ class _BasicAuthInterceptor extends Interceptor {
   }
 }
 
+/// Interceptor that injects a proxy/gateway Basic Auth header only if one
+/// isn't already set (e.g. by [_BasicAuthInterceptor] for service auth).
+class _ProxyAuthInterceptor extends Interceptor {
+  _ProxyAuthInterceptor(this._auth);
+
+  final String _auth;
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    options.headers.putIfAbsent('Authorization', () => _auth);
+    handler.next(options);
+  }
+}
+
 /// Interceptor that follows 307/308 redirects for non-GET requests.
 /// Dio only auto-follows redirects for GET; this handles POST/PUT/DELETE.
 class _RedirectInterceptor extends Interceptor {
@@ -112,10 +126,20 @@ final useLocalUrlProvider = StateProvider.family<bool, int>(
 );
 
 /// Creates a [Dio] instance configured for a given [Instance].
+///
+/// If [overrideBaseUrl] or [instance.baseUrl] contains embedded
+/// `user:pass@host` credentials, they are stripped from the URL and injected
+/// as an `Authorization: Basic` header. For services that already send their
+/// own Basic Auth (e.g. rTorrent, NZBGet), the service auth takes precedence
+/// via [_BasicAuthInterceptor]; the proxy auth is only set as a fallback via
+/// [_ProxyAuthInterceptor].
 Dio buildDioForInstance(Instance instance, {String? overrideBaseUrl}) {
+  final rawUrl = overrideBaseUrl ?? instance.baseUrl;
+  final (:url, :basicAuth) = extractUrlCredentials(rawUrl);
+
   final dio = Dio(
     BaseOptions(
-      baseUrl: overrideBaseUrl ?? instance.baseUrl,
+      baseUrl: url,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 30),
     ),
@@ -138,6 +162,7 @@ Dio buildDioForInstance(Instance instance, {String? overrideBaseUrl}) {
 
   dio.interceptors.addAll([
     authInterceptor,
+    if (basicAuth != null) _ProxyAuthInterceptor(basicAuth),
     _RedirectInterceptor(dio),
     _ErrorInterceptor(),
   ]);
