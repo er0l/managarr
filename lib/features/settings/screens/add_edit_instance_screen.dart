@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -40,15 +39,13 @@ class _AddEditInstanceScreenState
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _hostCtrl;
-  late final TextEditingController _portCtrl;
+  late final TextEditingController _remoteUrlCtrl;
   late final TextEditingController _apiKeyCtrl;
   late final TextEditingController _usernameCtrl;
   late final TextEditingController _passwordCtrl;
   late final TextEditingController _localUrlCtrl;
 
   ServiceType _serviceType = ServiceType.radarr;
-  String _protocol = 'http';
   bool _enabled = true;
 
   bool get _useUserPass =>
@@ -66,18 +63,12 @@ class _AddEditInstanceScreenState
     super.initState();
     final e = widget.existingInstance;
     _nameCtrl = TextEditingController(text: e?.name ?? '');
+    _remoteUrlCtrl = TextEditingController(text: e?.baseUrl ?? '');
     _localUrlCtrl = TextEditingController(text: e?.localUrl ?? '');
     _enabled = e?.enabled ?? true;
 
     if (e != null) {
       _serviceType = ServiceType.values.byName(e.serviceType);
-      final uri = Uri.tryParse(e.baseUrl);
-      _protocol = uri?.scheme ?? 'http';
-      _hostCtrl = TextEditingController(text: uri?.host ?? '');
-      _portCtrl = TextEditingController(
-        text: uri?.hasPort == true ? uri!.port.toString() : '',
-      );
-      // rTorrent stores credentials as "username:password" in apiKey column
       final storedKey = e.apiKey;
       if (_useUserPass) {
         final colonIdx = storedKey.indexOf(':');
@@ -97,8 +88,6 @@ class _AddEditInstanceScreenState
         _passwordCtrl = TextEditingController();
       }
     } else {
-      _hostCtrl = TextEditingController();
-      _portCtrl = TextEditingController();
       _apiKeyCtrl = TextEditingController();
       _usernameCtrl = TextEditingController();
       _passwordCtrl = TextEditingController();
@@ -108,8 +97,7 @@ class _AddEditInstanceScreenState
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _hostCtrl.dispose();
-    _portCtrl.dispose();
+    _remoteUrlCtrl.dispose();
     _apiKeyCtrl.dispose();
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
@@ -122,24 +110,11 @@ class _AddEditInstanceScreenState
   // ---------------------------------------------------------------------------
 
   String get _baseUrl {
-    final hostRaw = _hostCtrl.text.trim();
-    final port = _portCtrl.text.trim();
-
-    // If there's a path in the host field, split it to insert the port
-    String host = hostRaw;
-    String path = '';
-    if (hostRaw.contains('/')) {
-      final index = hostRaw.indexOf('/');
-      host = hostRaw.substring(0, index);
-      path = hostRaw.substring(index);
+    String url = _remoteUrlCtrl.text.trim();
+    while (url.endsWith('/')) {
+      url = url.substring(0, url.length - 1);
     }
-
-    final portSuffix = port.isNotEmpty ? ':$port' : '';
-    String result = '$_protocol://$host$portSuffix$path';
-    while (result.endsWith('/')) {
-      result = result.substring(0, result.length - 1);
-    }
-    return result;
+    return url;
   }
 
   Future<void> _testConnection() async {
@@ -152,7 +127,6 @@ class _AddEditInstanceScreenState
 
     try {
       if (_serviceType == ServiceType.rtorrent) {
-        // rTorrent: XML-RPC POST with Basic Auth
         final username = _usernameCtrl.text.trim();
         final password = _passwordCtrl.text;
         final credential = '$username:$password';
@@ -172,9 +146,6 @@ class _AddEditInstanceScreenState
             '<?xml version="1.0"?><methodCall><methodName>system.listMethods</methodName></methodCall>';
         await dio.post('$_baseUrl/RPC2', data: body);
       } else if (_serviceType == ServiceType.nzbget) {
-        // NZBGet: JSON-RPC POST with optional Basic Auth in URL or headers
-        // LunaSea uses user:pass in URL, but we can use headers for cleaner approach
-        // if user/pass are provided.
         final username = _usernameCtrl.text.trim();
         final password = _passwordCtrl.text;
         final credential = '$username:$password';
@@ -341,7 +312,6 @@ class _AddEditInstanceScreenState
                     _serviceType = t;
                     _testStatus = _TestStatus.idle;
                     _testMessage = null;
-                    // Clear credential fields when switching type
                     _apiKeyCtrl.clear();
                     _usernameCtrl.clear();
                     _passwordCtrl.clear();
@@ -381,44 +351,27 @@ class _AddEditInstanceScreenState
                         (v == null || v.trim().isEmpty) ? 'Required' : null,
                   ),
                 const SizedBox(height: Spacing.s16),
-                _ProtocolSelector(
-                  value: _protocol,
-                  onChanged: (p) => setState(() => _protocol = p),
+                _FormField(
+                  controller: _remoteUrlCtrl,
+                  label: 'Remote URL',
+                  hint: 'https://radarr.yourdomain.com',
+                  mono: true,
+                  keyboardType: TextInputType.url,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Required';
+                    final uri = Uri.tryParse(v.trim());
+                    if (uri == null ||
+                        (!uri.isScheme('http') && !uri.isScheme('https'))) {
+                      return 'Must start with http:// or https://';
+                    }
+                    return null;
+                  },
                 ),
-                const SizedBox(height: Spacing.s16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: _FormField(
-                        controller: _hostCtrl,
-                        label: 'Server Address',
-                        hint: '192.168.1.100',
-                        mono: true,
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? 'Required' : null,
-                      ),
-                    ),
-                    const SizedBox(width: Spacing.s12),
-                    Expanded(
-                      flex: 1,
-                      child: _FormField(
-                        controller: _portCtrl,
-                        label: 'Port',
-                        hint: '7878',
-                        mono: true,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Required';
-                          final n = int.tryParse(v);
-                          if (n == null || n < 1 || n > 65535) return 'Invalid';
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: Spacing.s4),
+                Text(
+                  'Full URL used when outside your home network.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: Spacing.s16),
                 _FormField(
@@ -426,14 +379,14 @@ class _AddEditInstanceScreenState
                   label: 'Local URL (optional)',
                   hint: 'http://192.168.1.100:7878',
                   mono: true,
+                  keyboardType: TextInputType.url,
                 ),
                 const SizedBox(height: Spacing.s4),
                 Text(
-                  'LAN address shown when on your home network. '
+                  'Direct LAN address for faster access on home Wi-Fi. '
                   'Toggle via the home icon in the service AppBar.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: Spacing.s16),
                 SwitchListTile(
@@ -518,7 +471,6 @@ class _FormField extends StatelessWidget {
     this.mono = false,
     this.obscureText = false,
     this.keyboardType,
-    this.inputFormatters,
     this.validator,
   });
 
@@ -528,7 +480,6 @@ class _FormField extends StatelessWidget {
   final bool mono;
   final bool obscureText;
   final TextInputType? keyboardType;
-  final List<TextInputFormatter>? inputFormatters;
   final FormFieldValidator<String>? validator;
 
   @override
@@ -536,11 +487,8 @@ class _FormField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
       obscureText: obscureText,
-      style: mono
-          ? GoogleFonts.jetBrainsMono(fontSize: 14)
-          : null,
+      style: mono ? GoogleFonts.jetBrainsMono(fontSize: 14) : null,
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
@@ -552,29 +500,6 @@ class _FormField extends StatelessWidget {
           borderRadius: BorderRadius.all(Radius.circular(8)),
           borderSide: BorderSide(color: AppColors.tealPrimary, width: 2),
         ),
-      ),
-    );
-  }
-}
-
-class _ProtocolSelector extends StatelessWidget {
-  const _ProtocolSelector({required this.value, required this.onChanged});
-
-  final String value;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SegmentedButton<String>(
-      segments: const [
-        ButtonSegment(value: 'http', label: Text('http')),
-        ButtonSegment(value: 'https', label: Text('https')),
-      ],
-      selected: {value},
-      onSelectionChanged: (s) => onChanged(s.first),
-      style: SegmentedButton.styleFrom(
-        selectedBackgroundColor: AppColors.tealPrimary,
-        selectedForegroundColor: AppColors.textOnPrimary,
       ),
     );
   }
