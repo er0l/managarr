@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../core/models/display_mode.dart';
 import '../api/models/romm_available_filters.dart';
 import '../api/models/romm_collection.dart';
@@ -10,8 +11,15 @@ import '../api/models/romm_search_filters.dart';
 import '../api/models/romm_stats.dart';
 import '../api/romm_api.dart';
 
-final rommApiProvider = Provider.family<RommApi, Instance>(
-    (ref, instance) => RommApi.fromInstance(instance));
+final rommApiProvider = Provider.family<RommApi, Instance>((ref, instance) {
+  final useLocal = ref.watch(useLocalUrlProvider(instance.id));
+  final localUrl = instance.localUrl;
+  final effectiveUrl =
+      (useLocal && localUrl != null && localUrl.isNotEmpty)
+          ? localUrl
+          : instance.baseUrl;
+  return RommApi.fromHost(effectiveUrl, instance.apiKey);
+});
 
 // ---------------------------------------------------------------------------
 // Platform screen view mode — persists for the app session.

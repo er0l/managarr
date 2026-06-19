@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/network/dio_client.dart';
 import '../api/seer_api.dart';
 import '../api/models/media_detail.dart';
 import '../api/models/media_request.dart';
@@ -36,9 +37,14 @@ enum SeerRequestStatusFilter {
 
 // ─── Core providers ──────────────────────────────────────────────────────────
 
-final seerApiProvider =
-    Provider.family<SeerApi, Instance>((ref, instance) {
-  return SeerApi.fromInstance(instance);
+final seerApiProvider = Provider.family<SeerApi, Instance>((ref, instance) {
+  final useLocal = ref.watch(useLocalUrlProvider(instance.id));
+  final localUrl = instance.localUrl;
+  final effectiveUrl =
+      (useLocal && localUrl != null && localUrl.isNotEmpty)
+          ? localUrl
+          : instance.baseUrl;
+  return SeerApi.fromHost(effectiveUrl, instance.apiKey);
 });
 
 /// Persists the display mode (Grid/List) for Seer.

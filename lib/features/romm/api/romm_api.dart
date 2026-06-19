@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/network/dio_client.dart';
 import 'models/romm_available_filters.dart';
 import 'models/romm_collection.dart';
 import 'models/romm_platform.dart';
@@ -18,12 +19,20 @@ class RommApi {
   final String _baseUrl;
   final String _authHeader;
 
-  factory RommApi.fromInstance(Instance instance) {
-    final encoded = base64.encode(utf8.encode(instance.apiKey));
+  factory RommApi.fromInstance(Instance instance) =>
+      RommApi.fromHost(instance.baseUrl, instance.apiKey);
+
+  factory RommApi.fromHost(String rawBaseUrl, String apiKey) {
+    final (:url, basicAuth: _) = extractUrlCredentials(rawBaseUrl.trim());
+    String baseUrl = url;
+    while (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+    }
+    final encoded = base64.encode(utf8.encode(apiKey));
     final authHeader = 'Basic $encoded';
     final dio = Dio(
       BaseOptions(
-        baseUrl: '${instance.baseUrl}/api',
+        baseUrl: '$baseUrl/api',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 60),
         headers: {'Authorization': authHeader},
@@ -38,7 +47,7 @@ class RommApi {
       ));
     }
 
-    return RommApi._(dio, instance.baseUrl, authHeader);
+    return RommApi._(dio, baseUrl, authHeader);
   }
 
   // ---------------------------------------------------------------------------

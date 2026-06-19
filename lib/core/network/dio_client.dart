@@ -7,6 +7,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
 import '../database/models/service_type.dart';
 
+/// Extracts `user:pass` credentials embedded in a URL
+/// (e.g. `https://user:pass@example.com`).
+/// Returns the cleaned URL (without credentials) and a ready-made
+/// `Authorization: Basic …` header value, or null if none present.
+({String url, String? basicAuth}) extractUrlCredentials(String raw) {
+  if (!raw.contains('@')) return (url: raw, basicAuth: null);
+  try {
+    final uri = Uri.parse(raw);
+    if (uri.userInfo.isNotEmpty) {
+      final auth =
+          'Basic ${base64.encode(utf8.encode(Uri.decodeComponent(uri.userInfo)))}';
+      final clean = uri.replace(userInfo: '').toString();
+      return (url: clean, basicAuth: auth);
+    }
+  } catch (_) {}
+  return (url: raw, basicAuth: null);
+}
+
 /// Typed API error wrapping a [DioException].
 class ApiError implements Exception {
   const ApiError({required this.message, this.statusCode});

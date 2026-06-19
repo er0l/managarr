@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/network/dio_client.dart';
 
 import 'models/tautulli_activity.dart';
 import 'models/tautulli_graph_data.dart';
@@ -18,22 +19,30 @@ class TautulliApi {
 
   TautulliApi(this._dio, this._baseUrl, this._apiKey);
 
-  static TautulliApi fromInstance(Instance instance) {
-    String host = instance.baseUrl.trim();
+  static TautulliApi fromInstance(Instance instance) =>
+      fromHost(instance.baseUrl, instance.apiKey);
+
+  static TautulliApi fromHost(String rawHost, String apiKey) {
+    final (:url, :basicAuth) = extractUrlCredentials(rawHost.trim());
+    String host = url;
     while (host.endsWith('/')) {
       host = host.substring(0, host.length - 1);
     }
     final baseUrl = host.contains('/api/v2') ? host : '$host/api/v2';
+    final headers = <String, dynamic>{
+      'Authorization': ?basicAuth,
+    };
     final dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        queryParameters: {'apikey': instance.apiKey},
+        queryParameters: {'apikey': apiKey},
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 30),
         responseType: ResponseType.json,
+        headers: headers,
       ),
     );
-    return TautulliApi(dio, host, instance.apiKey);
+    return TautulliApi(dio, host, apiKey);
   }
 
   Future<Map<String, dynamic>> _get(

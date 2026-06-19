@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/network/dio_client.dart';
 import '../api/models/tautulli_activity.dart';
 import '../api/models/tautulli_graph_data.dart';
 import '../api/models/tautulli_history.dart';
@@ -14,7 +15,13 @@ import '../api/tautulli_api.dart';
 
 final tautulliApiProvider =
     Provider.family<TautulliApi, Instance>((ref, instance) {
-  return TautulliApi.fromInstance(instance);
+  final useLocal = ref.watch(useLocalUrlProvider(instance.id));
+  final localUrl = instance.localUrl;
+  final effectiveUrl =
+      (useLocal && localUrl != null && localUrl.isNotEmpty)
+          ? localUrl
+          : instance.baseUrl;
+  return TautulliApi.fromHost(effectiveUrl, instance.apiKey);
 });
 
 // ─── Existing providers ───────────────────────────────────────────────────

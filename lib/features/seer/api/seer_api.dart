@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/network/dio_client.dart';
 import 'models/media_detail.dart';
 import 'models/media_request.dart';
 import 'models/search_result.dart';
@@ -12,20 +13,26 @@ class SeerApi {
 
   final Dio _dio;
 
-  static SeerApi fromInstance(Instance instance) {
-    String host = instance.baseUrl.trim();
+  static SeerApi fromInstance(Instance instance) =>
+      fromHost(instance.baseUrl, instance.apiKey);
+
+  static SeerApi fromHost(String rawHost, String apiKey) {
+    final (:url, :basicAuth) = extractUrlCredentials(rawHost.trim());
+    String host = url;
     while (host.endsWith('/')) {
       host = host.substring(0, host.length - 1);
     }
+    final headers = <String, dynamic>{
+      'Content-Type': 'application/json',
+      'X-Api-Key': apiKey,
+      'Authorization': ?basicAuth,
+    };
     final dio = Dio(
       BaseOptions(
         baseUrl: '$host/api/v1',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 30),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Api-Key': instance.apiKey,
-        },
+        headers: headers,
         responseType: ResponseType.json,
       ),
     );

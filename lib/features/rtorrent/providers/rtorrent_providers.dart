@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/network/dio_client.dart';
 import '../../settings/providers/instances_provider.dart';
 import '../api/models/torrent.dart';
 import '../api/rtorrent_api.dart';
@@ -33,11 +34,23 @@ final rtorrentStatusFilterProvider =
 final rtorrentLabelFilterProvider =
     StateProvider.family<String, int>((ref, id) => '');
 
+// API client — rebuilds when local URL toggle changes
+final rtorrentApiProvider = Provider.family<RTorrentApi, Instance>(
+    (ref, instance) {
+  final useLocal = ref.watch(useLocalUrlProvider(instance.id));
+  final localUrl = instance.localUrl;
+  final effectiveInstance =
+      (useLocal && localUrl != null && localUrl.isNotEmpty)
+          ? instance.copyWith(baseUrl: localUrl)
+          : instance;
+  return RTorrentApi.fromInstance(effectiveInstance);
+});
+
 // Raw torrent list from API
 final rtorrentTorrentsProvider =
     FutureProvider.autoDispose.family<List<RTorrentTorrent>, Instance>(
         (ref, instance) async {
-  final api = RTorrentApi.fromInstance(instance);
+  final api = ref.watch(rtorrentApiProvider(instance));
   return api.getTorrents();
 });
 
