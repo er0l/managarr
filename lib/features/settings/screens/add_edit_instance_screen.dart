@@ -44,6 +44,8 @@ class _AddEditInstanceScreenState
   late final TextEditingController _usernameCtrl;
   late final TextEditingController _passwordCtrl;
   late final TextEditingController _localUrlCtrl;
+  late final TextEditingController _proxyUsernameCtrl;
+  late final TextEditingController _proxyPasswordCtrl;
 
   ServiceType _serviceType = ServiceType.radarr;
   bool _enabled = true;
@@ -65,6 +67,8 @@ class _AddEditInstanceScreenState
     _nameCtrl = TextEditingController(text: e?.name ?? '');
     _remoteUrlCtrl = TextEditingController(text: e?.baseUrl ?? '');
     _localUrlCtrl = TextEditingController(text: e?.localUrl ?? '');
+    _proxyUsernameCtrl = TextEditingController(text: e?.proxyUsername ?? '');
+    _proxyPasswordCtrl = TextEditingController(text: e?.proxyPassword ?? '');
     _enabled = e?.enabled ?? true;
 
     if (e != null) {
@@ -102,6 +106,8 @@ class _AddEditInstanceScreenState
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
     _localUrlCtrl.dispose();
+    _proxyUsernameCtrl.dispose();
+    _proxyPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -115,6 +121,15 @@ class _AddEditInstanceScreenState
       url = url.substring(0, url.length - 1);
     }
     return url;
+  }
+
+  /// Returns a ready-made `Authorization: Basic …` header for the proxy,
+  /// or null if the user hasn't filled in the proxy credentials fields.
+  String? get _proxyAuth {
+    final u = _proxyUsernameCtrl.text.trim();
+    if (u.isEmpty) return null;
+    final p = _proxyPasswordCtrl.text;
+    return 'Basic ${base64.encode(utf8.encode('$u:$p'))}';
   }
 
   Future<void> _testConnection() async {
@@ -181,11 +196,15 @@ class _AddEditInstanceScreenState
         );
         await dio.get('/api/platforms');
       } else {
+        final proxyAuth = _proxyAuth;
         final dio = Dio(
           BaseOptions(
             baseUrl: _baseUrl,
             connectTimeout: const Duration(seconds: 10),
             receiveTimeout: const Duration(seconds: 10),
+            headers: {
+              'Authorization': ?proxyAuth,
+            },
           ),
         );
         if (_serviceType.usesSabnzbdAuth) {
@@ -213,7 +232,9 @@ class _AddEditInstanceScreenState
         } else {
           await dio.get(
             _serviceType.healthPath,
-            options: Options(headers: {'X-Api-Key': _apiKeyCtrl.text.trim()}),
+            options: Options(
+              headers: {'X-Api-Key': _apiKeyCtrl.text.trim()},
+            ),
           );
         }
       }
@@ -245,6 +266,8 @@ class _AddEditInstanceScreenState
         : _apiKeyCtrl.text.trim();
 
     final localUrlRaw = _localUrlCtrl.text.trim();
+    final proxyU = _proxyUsernameCtrl.text.trim();
+    final proxyP = _proxyPasswordCtrl.text;
     final companion = InstancesCompanion(
       id: _isEdit ? Value(widget.existingInstance!.id) : const Value.absent(),
       name: Value(_nameCtrl.text.trim()),
@@ -253,6 +276,8 @@ class _AddEditInstanceScreenState
       apiKey: Value(storedApiKey),
       enabled: Value(_enabled),
       localUrl: Value(localUrlRaw.isEmpty ? null : localUrlRaw),
+      proxyUsername: Value(proxyU.isEmpty ? null : proxyU),
+      proxyPassword: Value(proxyP.isEmpty ? null : proxyP),
     );
 
     if (_isEdit) {
@@ -387,6 +412,33 @@ class _AddEditInstanceScreenState
                   'Toggle via the home icon in the service AppBar.',
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: Spacing.s24),
+                Text(
+                  'Reverse Proxy Auth (optional)',
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: Spacing.s4),
+                Text(
+                  'If your reverse proxy requires HTTP Basic Auth when '
+                  'accessed externally, enter the credentials here.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: Spacing.s12),
+                _FormField(
+                  controller: _proxyUsernameCtrl,
+                  label: 'Proxy Username',
+                  hint: 'admin',
+                  mono: true,
+                ),
+                const SizedBox(height: Spacing.s16),
+                _FormField(
+                  controller: _proxyPasswordCtrl,
+                  label: 'Proxy Password',
+                  hint: '••••••••',
+                  mono: true,
+                  obscureText: true,
                 ),
                 const SizedBox(height: Spacing.s16),
                 SwitchListTile(

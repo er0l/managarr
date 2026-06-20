@@ -62,8 +62,10 @@ class _BasicAuthInterceptor extends Interceptor {
   }
 }
 
-/// Interceptor that injects a proxy/gateway Basic Auth header only if one
-/// isn't already set (e.g. by [_BasicAuthInterceptor] for service auth).
+/// Interceptor that injects a reverse-proxy Basic Auth header.
+/// Uses [putIfAbsent] so that service Basic Auth (ROMM, NZBGet, rTorrent)
+/// set by [_BasicAuthInterceptor] takes precedence — the proxy creds are
+/// only injected for X-Api-Key services that don't set Authorization themselves.
 class _ProxyAuthInterceptor extends Interceptor {
   _ProxyAuthInterceptor(this._auth);
 
@@ -119,6 +121,23 @@ class _ErrorInterceptor extends Interceptor {
   }
 }
 
+/// Returns a ready-made `Authorization: Basic …` header value for the
+/// reverse proxy in front of [instance], or null if no proxy credentials
+/// are configured.
+///
+/// Instance-level [Instance.proxyUsername] / [Instance.proxyPassword] fields
+/// take priority. Falls back to credentials embedded in [rawUrl] (the
+/// `user:pass@host` form supported before explicit fields were added).
+String? proxyAuthFor(Instance instance, String rawUrl) {
+  final u = instance.proxyUsername;
+  final p = instance.proxyPassword;
+  if (u != null && u.isNotEmpty) {
+    final creds = (p != null && p.isNotEmpty) ? '$u:$p' : u;
+    return 'Basic ${base64.encode(utf8.encode(creds))}';
+  }
+  return extractUrlCredentials(rawUrl).basicAuth;
+}
+
 /// Toggles between local (LAN) and remote URL for a given instance id.
 /// `true` = use localUrl (home network); `false` = use baseUrl (remote).
 final useLocalUrlProvider = StateProvider.family<bool, int>(
@@ -135,7 +154,9 @@ final useLocalUrlProvider = StateProvider.family<bool, int>(
 /// [_ProxyAuthInterceptor].
 Dio buildDioForInstance(Instance instance, {String? overrideBaseUrl}) {
   final rawUrl = overrideBaseUrl ?? instance.baseUrl;
-  final (:url, :basicAuth) = extractUrlCredentials(rawUrl);
+  // Strip any URL-embedded credentials so they don't appear in the base URL.
+  final (:url, basicAuth: _) = extractUrlCredentials(rawUrl);
+  final basicAuth = proxyAuthFor(instance, rawUrl);
 
   final dio = Dio(
     BaseOptions(

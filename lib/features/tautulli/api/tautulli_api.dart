@@ -20,17 +20,21 @@ class TautulliApi {
   TautulliApi(this._dio, this._baseUrl, this._apiKey);
 
   static TautulliApi fromInstance(Instance instance) =>
-      fromHost(instance.baseUrl, instance.apiKey);
+      fromHost(instance.baseUrl, instance.apiKey,
+          proxyAuth: proxyAuthFor(instance, instance.baseUrl));
 
-  static TautulliApi fromHost(String rawHost, String apiKey) {
-    final (:url, :basicAuth) = extractUrlCredentials(rawHost.trim());
+  static TautulliApi fromHost(String rawHost, String apiKey,
+      {String? proxyAuth}) {
+    final (:url, basicAuth: urlAuth) = extractUrlCredentials(rawHost.trim());
+    // Explicit proxyAuth takes priority over URL-embedded credentials.
+    final auth = proxyAuth ?? urlAuth;
     String host = url;
     while (host.endsWith('/')) {
       host = host.substring(0, host.length - 1);
     }
     final baseUrl = host.contains('/api/v2') ? host : '$host/api/v2';
     final headers = <String, dynamic>{
-      'Authorization': ?basicAuth,
+      'Authorization': ?auth,
     };
     final dio = Dio(
       BaseOptions(

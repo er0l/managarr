@@ -21,7 +21,8 @@ final tautulliApiProvider =
       (useLocal && localUrl != null && localUrl.isNotEmpty)
           ? localUrl
           : instance.baseUrl;
-  return TautulliApi.fromHost(effectiveUrl, instance.apiKey);
+  return TautulliApi.fromHost(effectiveUrl, instance.apiKey,
+      proxyAuth: proxyAuthFor(instance, effectiveUrl));
 });
 
 // ─── Existing providers ───────────────────────────────────────────────────

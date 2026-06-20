@@ -44,7 +44,8 @@ final seerApiProvider = Provider.family<SeerApi, Instance>((ref, instance) {
       (useLocal && localUrl != null && localUrl.isNotEmpty)
           ? localUrl
           : instance.baseUrl;
-  return SeerApi.fromHost(effectiveUrl, instance.apiKey);
+  return SeerApi.fromHost(effectiveUrl, instance.apiKey,
+      proxyAuth: proxyAuthFor(instance, effectiveUrl));
 });
 
 /// Persists the display mode (Grid/List) for Seer.

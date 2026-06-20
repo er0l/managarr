@@ -14,10 +14,12 @@ class SeerApi {
   final Dio _dio;
 
   static SeerApi fromInstance(Instance instance) =>
-      fromHost(instance.baseUrl, instance.apiKey);
+      fromHost(instance.baseUrl, instance.apiKey,
+          proxyAuth: proxyAuthFor(instance, instance.baseUrl));
 
-  static SeerApi fromHost(String rawHost, String apiKey) {
-    final (:url, :basicAuth) = extractUrlCredentials(rawHost.trim());
+  static SeerApi fromHost(String rawHost, String apiKey, {String? proxyAuth}) {
+    final (:url, basicAuth: urlAuth) = extractUrlCredentials(rawHost.trim());
+    final auth = proxyAuth ?? urlAuth;
     String host = url;
     while (host.endsWith('/')) {
       host = host.substring(0, host.length - 1);
@@ -25,7 +27,7 @@ class SeerApi {
     final headers = <String, dynamic>{
       'Content-Type': 'application/json',
       'X-Api-Key': apiKey,
-      'Authorization': ?basicAuth,
+      'Authorization': ?auth,
     };
     final dio = Dio(
       BaseOptions(

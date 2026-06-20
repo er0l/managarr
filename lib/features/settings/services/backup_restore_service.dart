@@ -25,6 +25,9 @@ abstract final class BackupRestoreService {
                   'baseUrl': i.baseUrl,
                   'apiKey': i.apiKey,
                   'enabled': i.enabled,
+                  if (i.localUrl != null) 'localUrl': i.localUrl,
+                  if (i.proxyUsername != null) 'proxyUsername': i.proxyUsername,
+                  if (i.proxyPassword != null) 'proxyPassword': i.proxyPassword,
                 })
             .toList(),
       });
@@ -88,6 +91,9 @@ abstract final class BackupRestoreService {
           baseUrl: Value(m['baseUrl'] as String),
           apiKey: Value(m['apiKey'] as String),
           enabled: Value((m['enabled'] as bool?) ?? true),
+          localUrl: Value(m['localUrl'] as String?),
+          proxyUsername: Value(m['proxyUsername'] as String?),
+          proxyPassword: Value(m['proxyPassword'] as String?),
         ));
       }
       if (context.mounted) {

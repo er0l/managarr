@@ -88,6 +88,28 @@ class $InstancesTable extends Instances
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _proxyUsernameMeta = const VerificationMeta(
+    'proxyUsername',
+  );
+  @override
+  late final GeneratedColumn<String> proxyUsername = GeneratedColumn<String>(
+    'proxy_username',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _proxyPasswordMeta = const VerificationMeta(
+    'proxyPassword',
+  );
+  @override
+  late final GeneratedColumn<String> proxyPassword = GeneratedColumn<String>(
+    'proxy_password',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -97,6 +119,8 @@ class $InstancesTable extends Instances
     apiKey,
     enabled,
     localUrl,
+    proxyUsername,
+    proxyPassword,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -160,6 +184,24 @@ class $InstancesTable extends Instances
         localUrl.isAcceptableOrUnknown(data['local_url']!, _localUrlMeta),
       );
     }
+    if (data.containsKey('proxy_username')) {
+      context.handle(
+        _proxyUsernameMeta,
+        proxyUsername.isAcceptableOrUnknown(
+          data['proxy_username']!,
+          _proxyUsernameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('proxy_password')) {
+      context.handle(
+        _proxyPasswordMeta,
+        proxyPassword.isAcceptableOrUnknown(
+          data['proxy_password']!,
+          _proxyPasswordMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -197,6 +239,14 @@ class $InstancesTable extends Instances
         DriftSqlType.string,
         data['${effectivePrefix}local_url'],
       ),
+      proxyUsername: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}proxy_username'],
+      ),
+      proxyPassword: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}proxy_password'],
+      ),
     );
   }
 
@@ -219,6 +269,13 @@ class Instance extends DataClass implements Insertable<Instance> {
   /// Optional LAN URL used when the device is on the home network.
   /// When non-null the app probes this URL first; falls back to [baseUrl].
   final String? localUrl;
+
+  /// Optional HTTP Basic Auth credentials for a reverse proxy that sits
+  /// in front of this service when accessed externally. When set, every
+  /// outgoing request includes an `Authorization: Basic` header so the
+  /// proxy lets it through before the service validates its own API key.
+  final String? proxyUsername;
+  final String? proxyPassword;
   const Instance({
     required this.id,
     required this.name,
@@ -227,6 +284,8 @@ class Instance extends DataClass implements Insertable<Instance> {
     required this.apiKey,
     required this.enabled,
     this.localUrl,
+    this.proxyUsername,
+    this.proxyPassword,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -239,6 +298,12 @@ class Instance extends DataClass implements Insertable<Instance> {
     map['enabled'] = Variable<bool>(enabled);
     if (!nullToAbsent || localUrl != null) {
       map['local_url'] = Variable<String>(localUrl);
+    }
+    if (!nullToAbsent || proxyUsername != null) {
+      map['proxy_username'] = Variable<String>(proxyUsername);
+    }
+    if (!nullToAbsent || proxyPassword != null) {
+      map['proxy_password'] = Variable<String>(proxyPassword);
     }
     return map;
   }
@@ -254,6 +319,12 @@ class Instance extends DataClass implements Insertable<Instance> {
       localUrl: localUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(localUrl),
+      proxyUsername: proxyUsername == null && nullToAbsent
+          ? const Value.absent()
+          : Value(proxyUsername),
+      proxyPassword: proxyPassword == null && nullToAbsent
+          ? const Value.absent()
+          : Value(proxyPassword),
     );
   }
 
@@ -270,6 +341,8 @@ class Instance extends DataClass implements Insertable<Instance> {
       apiKey: serializer.fromJson<String>(json['apiKey']),
       enabled: serializer.fromJson<bool>(json['enabled']),
       localUrl: serializer.fromJson<String?>(json['localUrl']),
+      proxyUsername: serializer.fromJson<String?>(json['proxyUsername']),
+      proxyPassword: serializer.fromJson<String?>(json['proxyPassword']),
     );
   }
   @override
@@ -283,6 +356,8 @@ class Instance extends DataClass implements Insertable<Instance> {
       'apiKey': serializer.toJson<String>(apiKey),
       'enabled': serializer.toJson<bool>(enabled),
       'localUrl': serializer.toJson<String?>(localUrl),
+      'proxyUsername': serializer.toJson<String?>(proxyUsername),
+      'proxyPassword': serializer.toJson<String?>(proxyPassword),
     };
   }
 
@@ -294,6 +369,8 @@ class Instance extends DataClass implements Insertable<Instance> {
     String? apiKey,
     bool? enabled,
     Value<String?> localUrl = const Value.absent(),
+    Value<String?> proxyUsername = const Value.absent(),
+    Value<String?> proxyPassword = const Value.absent(),
   }) => Instance(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -302,6 +379,12 @@ class Instance extends DataClass implements Insertable<Instance> {
     apiKey: apiKey ?? this.apiKey,
     enabled: enabled ?? this.enabled,
     localUrl: localUrl.present ? localUrl.value : this.localUrl,
+    proxyUsername: proxyUsername.present
+        ? proxyUsername.value
+        : this.proxyUsername,
+    proxyPassword: proxyPassword.present
+        ? proxyPassword.value
+        : this.proxyPassword,
   );
   Instance copyWithCompanion(InstancesCompanion data) {
     return Instance(
@@ -314,6 +397,12 @@ class Instance extends DataClass implements Insertable<Instance> {
       apiKey: data.apiKey.present ? data.apiKey.value : this.apiKey,
       enabled: data.enabled.present ? data.enabled.value : this.enabled,
       localUrl: data.localUrl.present ? data.localUrl.value : this.localUrl,
+      proxyUsername: data.proxyUsername.present
+          ? data.proxyUsername.value
+          : this.proxyUsername,
+      proxyPassword: data.proxyPassword.present
+          ? data.proxyPassword.value
+          : this.proxyPassword,
     );
   }
 
@@ -326,14 +415,25 @@ class Instance extends DataClass implements Insertable<Instance> {
           ..write('baseUrl: $baseUrl, ')
           ..write('apiKey: $apiKey, ')
           ..write('enabled: $enabled, ')
-          ..write('localUrl: $localUrl')
+          ..write('localUrl: $localUrl, ')
+          ..write('proxyUsername: $proxyUsername, ')
+          ..write('proxyPassword: $proxyPassword')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, serviceType, baseUrl, apiKey, enabled, localUrl);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    serviceType,
+    baseUrl,
+    apiKey,
+    enabled,
+    localUrl,
+    proxyUsername,
+    proxyPassword,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -344,7 +444,9 @@ class Instance extends DataClass implements Insertable<Instance> {
           other.baseUrl == this.baseUrl &&
           other.apiKey == this.apiKey &&
           other.enabled == this.enabled &&
-          other.localUrl == this.localUrl);
+          other.localUrl == this.localUrl &&
+          other.proxyUsername == this.proxyUsername &&
+          other.proxyPassword == this.proxyPassword);
 }
 
 class InstancesCompanion extends UpdateCompanion<Instance> {
@@ -355,6 +457,8 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
   final Value<String> apiKey;
   final Value<bool> enabled;
   final Value<String?> localUrl;
+  final Value<String?> proxyUsername;
+  final Value<String?> proxyPassword;
   const InstancesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -363,6 +467,8 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     this.apiKey = const Value.absent(),
     this.enabled = const Value.absent(),
     this.localUrl = const Value.absent(),
+    this.proxyUsername = const Value.absent(),
+    this.proxyPassword = const Value.absent(),
   });
   InstancesCompanion.insert({
     this.id = const Value.absent(),
@@ -372,6 +478,8 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     required String apiKey,
     this.enabled = const Value.absent(),
     this.localUrl = const Value.absent(),
+    this.proxyUsername = const Value.absent(),
+    this.proxyPassword = const Value.absent(),
   }) : name = Value(name),
        serviceType = Value(serviceType),
        baseUrl = Value(baseUrl),
@@ -384,6 +492,8 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     Expression<String>? apiKey,
     Expression<bool>? enabled,
     Expression<String>? localUrl,
+    Expression<String>? proxyUsername,
+    Expression<String>? proxyPassword,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -393,6 +503,8 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
       if (apiKey != null) 'api_key': apiKey,
       if (enabled != null) 'enabled': enabled,
       if (localUrl != null) 'local_url': localUrl,
+      if (proxyUsername != null) 'proxy_username': proxyUsername,
+      if (proxyPassword != null) 'proxy_password': proxyPassword,
     });
   }
 
@@ -404,6 +516,8 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     Value<String>? apiKey,
     Value<bool>? enabled,
     Value<String?>? localUrl,
+    Value<String?>? proxyUsername,
+    Value<String?>? proxyPassword,
   }) {
     return InstancesCompanion(
       id: id ?? this.id,
@@ -413,6 +527,8 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
       apiKey: apiKey ?? this.apiKey,
       enabled: enabled ?? this.enabled,
       localUrl: localUrl ?? this.localUrl,
+      proxyUsername: proxyUsername ?? this.proxyUsername,
+      proxyPassword: proxyPassword ?? this.proxyPassword,
     );
   }
 
@@ -440,6 +556,12 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
     if (localUrl.present) {
       map['local_url'] = Variable<String>(localUrl.value);
     }
+    if (proxyUsername.present) {
+      map['proxy_username'] = Variable<String>(proxyUsername.value);
+    }
+    if (proxyPassword.present) {
+      map['proxy_password'] = Variable<String>(proxyPassword.value);
+    }
     return map;
   }
 
@@ -452,7 +574,9 @@ class InstancesCompanion extends UpdateCompanion<Instance> {
           ..write('baseUrl: $baseUrl, ')
           ..write('apiKey: $apiKey, ')
           ..write('enabled: $enabled, ')
-          ..write('localUrl: $localUrl')
+          ..write('localUrl: $localUrl, ')
+          ..write('proxyUsername: $proxyUsername, ')
+          ..write('proxyPassword: $proxyPassword')
           ..write(')'))
         .toString();
   }
@@ -687,6 +811,8 @@ typedef $$InstancesTableCreateCompanionBuilder =
       required String apiKey,
       Value<bool> enabled,
       Value<String?> localUrl,
+      Value<String?> proxyUsername,
+      Value<String?> proxyPassword,
     });
 typedef $$InstancesTableUpdateCompanionBuilder =
     InstancesCompanion Function({
@@ -697,6 +823,8 @@ typedef $$InstancesTableUpdateCompanionBuilder =
       Value<String> apiKey,
       Value<bool> enabled,
       Value<String?> localUrl,
+      Value<String?> proxyUsername,
+      Value<String?> proxyPassword,
     });
 
 class $$InstancesTableFilterComposer
@@ -740,6 +868,16 @@ class $$InstancesTableFilterComposer
 
   ColumnFilters<String> get localUrl => $composableBuilder(
     column: $table.localUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get proxyUsername => $composableBuilder(
+    column: $table.proxyUsername,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get proxyPassword => $composableBuilder(
+    column: $table.proxyPassword,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -787,6 +925,16 @@ class $$InstancesTableOrderingComposer
     column: $table.localUrl,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get proxyUsername => $composableBuilder(
+    column: $table.proxyUsername,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get proxyPassword => $composableBuilder(
+    column: $table.proxyPassword,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InstancesTableAnnotationComposer
@@ -820,6 +968,16 @@ class $$InstancesTableAnnotationComposer
 
   GeneratedColumn<String> get localUrl =>
       $composableBuilder(column: $table.localUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get proxyUsername => $composableBuilder(
+    column: $table.proxyUsername,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get proxyPassword => $composableBuilder(
+    column: $table.proxyPassword,
+    builder: (column) => column,
+  );
 }
 
 class $$InstancesTableTableManager
@@ -857,6 +1015,8 @@ class $$InstancesTableTableManager
                 Value<String> apiKey = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
                 Value<String?> localUrl = const Value.absent(),
+                Value<String?> proxyUsername = const Value.absent(),
+                Value<String?> proxyPassword = const Value.absent(),
               }) => InstancesCompanion(
                 id: id,
                 name: name,
@@ -865,6 +1025,8 @@ class $$InstancesTableTableManager
                 apiKey: apiKey,
                 enabled: enabled,
                 localUrl: localUrl,
+                proxyUsername: proxyUsername,
+                proxyPassword: proxyPassword,
               ),
           createCompanionCallback:
               ({
@@ -875,6 +1037,8 @@ class $$InstancesTableTableManager
                 required String apiKey,
                 Value<bool> enabled = const Value.absent(),
                 Value<String?> localUrl = const Value.absent(),
+                Value<String?> proxyUsername = const Value.absent(),
+                Value<String?> proxyPassword = const Value.absent(),
               }) => InstancesCompanion.insert(
                 id: id,
                 name: name,
@@ -883,6 +1047,8 @@ class $$InstancesTableTableManager
                 apiKey: apiKey,
                 enabled: enabled,
                 localUrl: localUrl,
+                proxyUsername: proxyUsername,
+                proxyPassword: proxyPassword,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
