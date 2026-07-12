@@ -8,6 +8,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/search_result.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import '../providers/seer_providers.dart';
 import '../widgets/media_card.dart';
 import 'seer_media_detail_screen.dart';
@@ -350,8 +351,8 @@ class _PaginatedTabState extends ConsumerState<_PaginatedTab> {
       controller: _scrollController,
       padding: const EdgeInsets.all(Spacing.s8),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount:
-            MediaQuery.of(context).size.width >= 600 ? 3 : 2,
+        crossAxisCount: ref.watch(gridColumnsProvider) +
+            (MediaQuery.of(context).size.width >= 600 ? 1 : 0),
         childAspectRatio: 0.65,
         crossAxisSpacing: Spacing.s8,
         mainAxisSpacing: Spacing.s8,

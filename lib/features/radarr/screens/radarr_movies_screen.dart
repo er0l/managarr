@@ -10,6 +10,7 @@ import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/models/movie.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import '../providers/radarr_providers.dart';
 import '../widgets/movie_card.dart';
 import 'radarr_movie_detail_screen.dart';
@@ -143,13 +144,13 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
   }
 }
 
-class _MovieGrid extends StatelessWidget {
+class _MovieGrid extends ConsumerWidget {
   const _MovieGrid({required this.movies, required this.instance});
   final List<RadarrMovie> movies;
   final Instance instance;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(
         Spacing.pageHorizontal,
@@ -158,7 +159,8 @@ class _MovieGrid extends StatelessWidget {
         Spacing.s24,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 3 : 2,
+        crossAxisCount: ref.watch(gridColumnsProvider) +
+            (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0),
         crossAxisSpacing: Spacing.cardGap,
         mainAxisSpacing: Spacing.cardGap,
         childAspectRatio: 0.62,

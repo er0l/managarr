@@ -9,9 +9,11 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/bottom_bar_button.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../api/models/series.dart';
 import '../models/sonarr_options.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import '../providers/sonarr_providers.dart';
 import 'sonarr_activity_screen.dart';
 import 'sonarr_add_series_screen.dart';
@@ -232,7 +234,6 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
     final filterActive = currentFilter != SonarrFilterOption.all;
     final sortActive = currentSort != SonarrSortOption.alphabetical;
 
-    const muted = Color(0xA0FFFFFF);
 
     return ServiceDetailShell(
       instance: widget.instance,
@@ -272,34 +273,34 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
         ),
       ],
       bottomLeadingActions: [
-        IconButton(
-          icon: Icon(Icons.filter_list,
-              color: filterActive ? AppColors.tealPrimary : muted),
-          tooltip: 'Filter',
-          onPressed: _showFilterBottomSheet,
+        BottomBarButton(
+          icon: Icons.filter_list,
+          label: 'Filter',
+          active: filterActive,
+          onTap: _showFilterBottomSheet,
         ),
-        IconButton(
-          icon: Icon(Icons.sort,
-              color: sortActive ? AppColors.tealPrimary : muted),
-          tooltip: 'Sort',
-          onPressed: _showSortBottomSheet,
+        BottomBarButton(
+          icon: Icons.sort,
+          label: 'Sort',
+          active: sortActive,
+          onTap: _showSortBottomSheet,
         ),
-        IconButton(
-          icon: const Icon(Icons.history, color: muted),
-          tooltip: 'History',
-          onPressed: _openHistory,
+        BottomBarButton(
+          icon: Icons.history,
+          label: 'History',
+          onTap: _openHistory,
         ),
       ],
       bottomTrailingActions: [
-        IconButton(
-          icon: const Icon(Icons.calendar_month_outlined, color: muted),
-          tooltip: 'Upcoming',
-          onPressed: _openUpcoming,
+        BottomBarButton(
+          icon: Icons.calendar_month_outlined,
+          label: 'Upcoming',
+          onTap: _openUpcoming,
         ),
-        IconButton(
-          icon: const Icon(Icons.video_file_outlined, color: muted),
-          tooltip: 'Missing',
-          onPressed: _openMissing,
+        BottomBarButton(
+          icon: Icons.video_file_outlined,
+          label: 'Missing',
+          onTap: _openMissing,
         ),
       ],
       bottomMoreItems: const [
@@ -574,13 +575,13 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
 
 // ── Grid ────────────────────────────────────────────────────────────────────
 
-class _SeriesGrid extends StatelessWidget {
+class _SeriesGrid extends ConsumerWidget {
   const _SeriesGrid({required this.series, required this.instance});
   final List<SonarrSeries> series;
   final Instance instance;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(
         Spacing.pageHorizontal,
@@ -589,7 +590,8 @@ class _SeriesGrid extends StatelessWidget {
         Spacing.s24,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 3 : 2,
+        crossAxisCount: ref.watch(gridColumnsProvider) +
+            (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0),
         crossAxisSpacing: Spacing.cardGap,
         mainAxisSpacing: Spacing.cardGap,
         childAspectRatio: 0.62,

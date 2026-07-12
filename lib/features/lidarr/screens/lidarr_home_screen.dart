@@ -9,9 +9,11 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/bottom_bar_button.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../api/models/artist.dart';
 import '../models/lidarr_options.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import '../providers/lidarr_providers.dart';
 import 'lidarr_add_artist_screen.dart';
 import 'lidarr_artist_detail_screen.dart';
@@ -205,7 +207,6 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
     final filterActive = currentFilter != LidarrFilterOption.all;
     final sortActive = currentSort != LidarrSortOption.alphabetical;
 
-    const muted = Color(0xA0FFFFFF);
 
     return ServiceDetailShell(
       instance: widget.instance,
@@ -245,29 +246,29 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
         ),
       ],
       bottomLeadingActions: [
-        IconButton(
-          icon: Icon(Icons.filter_list,
-              color: filterActive ? AppColors.tealPrimary : muted),
-          tooltip: 'Filter',
-          onPressed: _showFilterBottomSheet,
+        BottomBarButton(
+          icon: Icons.filter_list,
+          label: 'Filter',
+          active: filterActive,
+          onTap: _showFilterBottomSheet,
         ),
-        IconButton(
-          icon: Icon(Icons.sort,
-              color: sortActive ? AppColors.tealPrimary : muted),
-          tooltip: 'Sort',
-          onPressed: _showSortBottomSheet,
+        BottomBarButton(
+          icon: Icons.sort,
+          label: 'Sort',
+          active: sortActive,
+          onTap: _showSortBottomSheet,
         ),
-        IconButton(
-          icon: const Icon(Icons.history, color: muted),
-          tooltip: 'History',
-          onPressed: _openHistory,
+        BottomBarButton(
+          icon: Icons.history,
+          label: 'History',
+          onTap: _openHistory,
         ),
       ],
       bottomTrailingActions: [
-        IconButton(
-          icon: const Icon(Icons.album_outlined, color: muted),
-          tooltip: 'Missing',
-          onPressed: _openMissing,
+        BottomBarButton(
+          icon: Icons.album_outlined,
+          label: 'Missing',
+          onTap: _openMissing,
         ),
       ],
       bottomMoreItems: const [
@@ -468,7 +469,8 @@ class _ArtistGrid extends ConsumerWidget {
         Spacing.s24,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 3 : 2,
+        crossAxisCount: ref.watch(gridColumnsProvider) +
+            (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0),
         crossAxisSpacing: Spacing.cardGap,
         mainAxisSpacing: Spacing.cardGap,
         childAspectRatio: 0.7,

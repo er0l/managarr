@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/bottom_bar_button.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../providers/seer_providers.dart';
 import 'seer_discover_screen.dart';
@@ -98,8 +99,6 @@ class _SeerHomeScreenState extends ConsumerState<SeerHomeScreen> {
     final sort = ref.watch(seerDiscoverSortProvider(widget.instance.id));
     final sortActive = sort != SeerDiscoverSort.popularityDesc;
 
-    const muted = Color(0xA0FFFFFF);
-
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'Seer',
@@ -134,39 +133,39 @@ class _SeerHomeScreenState extends ConsumerState<SeerHomeScreen> {
         ),
         child: const Icon(Icons.playlist_add_check_outlined),
       ),
+      // Order: Sort far left, Movies hugging the FAB's left, TV Shows on
+      // its right, Users far right. Spacers spread them around the FAB.
       bottomLeadingActions: [
-        IconButton(
-          icon: Icon(
-            Icons.movie_outlined,
-            color: mediaType == 'movie' ? AppColors.tealPrimary : muted,
-          ),
-          tooltip: 'Movies',
-          onPressed: () => ref
+        BottomBarButton(
+          icon: Icons.sort,
+          label: 'Sort',
+          active: sortActive,
+          onTap: _showSortSheet,
+        ),
+        const Spacer(),
+        BottomBarButton(
+          icon: Icons.movie_outlined,
+          label: 'Movies',
+          active: mediaType == 'movie',
+          onTap: () => ref
               .read(seerDiscoverMediaTypeProvider(widget.instance.id).notifier)
               .state = 'movie',
         ),
-        IconButton(
-          icon: Icon(
-            Icons.tv_outlined,
-            color: mediaType == 'tv' ? AppColors.tealPrimary : muted,
-          ),
-          tooltip: 'TV Shows',
-          onPressed: () => ref
+      ],
+      bottomTrailingActions: [
+        BottomBarButton(
+          icon: Icons.tv_outlined,
+          label: 'TV Shows',
+          active: mediaType == 'tv',
+          onTap: () => ref
               .read(seerDiscoverMediaTypeProvider(widget.instance.id).notifier)
               .state = 'tv',
         ),
-        IconButton(
-          icon: Icon(Icons.sort,
-              color: sortActive ? AppColors.tealPrimary : muted),
-          tooltip: 'Sort',
-          onPressed: _showSortSheet,
-        ),
-      ],
-      bottomTrailingActions: [
-        IconButton(
-          icon: const Icon(Icons.people_outline, color: muted),
-          tooltip: 'Users',
-          onPressed: () => _openSubScreen(
+        const Spacer(),
+        BottomBarButton(
+          icon: Icons.people_outline,
+          label: 'Users',
+          onTap: () => _openSubScreen(
             'Users',
             SeerUsersScreen(instance: widget.instance),
           ),

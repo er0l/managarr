@@ -12,6 +12,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/bottom_bar_button.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../api/models/romm_available_filters.dart';
 import '../api/models/romm_collection.dart';
@@ -118,7 +119,6 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
     final displayMode =
         ref.watch(rommHomeDisplayModeProvider(widget.instance.id));
     final filters = ref.watch(rommHomeFiltersProvider(widget.instance.id));
-    const muted = Color(0xA0FFFFFF);
 
     return ServiceDetailShell(
       instance: widget.instance,
@@ -156,22 +156,18 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
         child: const Icon(Icons.refresh),
       ),
       bottomLeadingActions: [
-        IconButton(
-          icon: Icon(
-            Icons.tune_outlined,
-            color: filters.hasActiveFilters
-                ? AppColors.tealPrimary
-                : muted,
-          ),
-          tooltip: 'Filter',
-          onPressed: _showFilterSheet,
+        BottomBarButton(
+          icon: Icons.tune_outlined,
+          label: 'Filter',
+          active: filters.hasActiveFilters,
+          onTap: _showFilterSheet,
         ),
       ],
       bottomTrailingActions: [
-        IconButton(
-          icon: const Icon(Icons.folder_outlined, color: muted),
-          tooltip: 'Collections',
-          onPressed: _openCollections,
+        BottomBarButton(
+          icon: Icons.folder_outlined,
+          label: 'Collections',
+          onTap: _openCollections,
         ),
       ],
       bottomMoreItems: const [

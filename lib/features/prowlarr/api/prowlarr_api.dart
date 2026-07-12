@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/network/dio_client.dart';
 import 'models/indexer.dart';
 import 'models/prowlarr_history.dart';
 import 'models/prowlarr_search_result.dart';
@@ -10,8 +11,15 @@ class ProwlarrApi {
 
   final Dio _dio;
 
-  factory ProwlarrApi.fromInstance(Instance instance) {
-    String host = instance.baseUrl.trim();
+  factory ProwlarrApi.fromInstance(Instance instance) =>
+      ProwlarrApi.fromHost(instance.baseUrl, instance.apiKey,
+          proxyAuth: proxyAuthFor(instance, instance.baseUrl));
+
+  factory ProwlarrApi.fromHost(String rawHost, String apiKey,
+      {String? proxyAuth}) {
+    final (:url, basicAuth: urlAuth) = extractUrlCredentials(rawHost.trim());
+    final auth = proxyAuth ?? urlAuth;
+    String host = url;
     while (host.endsWith('/')) {
       host = host.substring(0, host.length - 1);
     }
@@ -20,7 +28,10 @@ class ProwlarrApi {
         baseUrl: '$host/api/v1',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 30),
-        headers: {'X-Api-Key': instance.apiKey},
+        headers: {
+          'X-Api-Key': apiKey,
+          'Authorization': ?auth,
+        },
         responseType: ResponseType.json,
       ),
     );
@@ -88,5 +99,21 @@ class ProwlarrApi {
   Future<bool> grabRelease(String guid, int indexerId) async {
     await _dio.post('/search', data: {'guid': guid, 'indexerId': indexerId});
     return true;
+  }
+
+  /// All indexer definitions Prowlarr supports (GET /indexer/schema).
+  Future<List<Map<String, dynamic>>> getIndexerSchemas() async {
+    final res = await _dio.get('/indexer/schema');
+    return (res.data as List).cast<Map<String, dynamic>>();
+  }
+
+  /// Adds an indexer from a schema definition. Public indexers usually work
+  /// with their schema defaults; private ones may fail validation (API key
+  /// required) — the error message is surfaced to the caller.
+  Future<void> addIndexer(Map<String, dynamic> schema) async {
+    final body = Map<String, dynamic>.from(schema)
+      ..['enable'] = true
+      ..['appProfileId'] = schema['appProfileId'] ?? 1;
+    await _dio.post('/indexer', data: body);
   }
 }

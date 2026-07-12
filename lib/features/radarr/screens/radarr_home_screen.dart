@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/bottom_bar_button.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../models/radarr_options.dart';
 import '../providers/radarr_providers.dart';
@@ -222,7 +223,6 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
     final filterActive = currentFilter != RadarrFilterOption.all;
     final sortActive = currentSort != RadarrSortOption.alphabetical;
 
-    const muted = Color(0xA0FFFFFF);
 
     return ServiceDetailShell(
       instance: widget.instance,
@@ -242,22 +242,22 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
         child: const Icon(Icons.add),
       ),
       bottomLeadingActions: [
-        IconButton(
-          icon: Icon(Icons.filter_list,
-              color: filterActive ? AppColors.tealPrimary : muted),
-          tooltip: 'Filter',
-          onPressed: _showFilterBottomSheet,
+        BottomBarButton(
+          icon: Icons.filter_list,
+          label: 'Filter',
+          active: filterActive,
+          onTap: _showFilterBottomSheet,
         ),
-        IconButton(
-          icon: Icon(Icons.sort,
-              color: sortActive ? AppColors.tealPrimary : muted),
-          tooltip: 'Sort',
-          onPressed: _showSortBottomSheet,
+        BottomBarButton(
+          icon: Icons.sort,
+          label: 'Sort',
+          active: sortActive,
+          onTap: _showSortBottomSheet,
         ),
-        IconButton(
-          icon: const Icon(Icons.history, color: muted),
-          tooltip: 'History',
-          onPressed: _openHistory,
+        BottomBarButton(
+          icon: Icons.history,
+          label: 'History',
+          onTap: _openHistory,
         ),
       ],
       appBarActions: [
@@ -280,15 +280,15 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
         ),
       ],
       bottomTrailingActions: [
-        IconButton(
-          icon: const Icon(Icons.calendar_month_outlined, color: muted),
-          tooltip: 'Upcoming',
-          onPressed: _openUpcoming,
+        BottomBarButton(
+          icon: Icons.calendar_month_outlined,
+          label: 'Upcoming',
+          onTap: _openUpcoming,
         ),
-        IconButton(
-          icon: const Icon(Icons.video_file_outlined, color: muted),
-          tooltip: 'Missing',
-          onPressed: _openMissing,
+        BottomBarButton(
+          icon: Icons.video_file_outlined,
+          label: 'Missing',
+          onTap: _openMissing,
         ),
       ],
       bottomMoreItems: const [
