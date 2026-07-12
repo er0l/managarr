@@ -26,16 +26,13 @@ class SeerDiscoverScreen extends ConsumerStatefulWidget {
       _SeerDiscoverScreenState();
 }
 
-class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen> {
   final _searchController = TextEditingController();
   Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     // Restore any previously typed query into the text field.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchController.text =
@@ -45,7 +42,6 @@ class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
@@ -68,69 +64,16 @@ class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen>
         .state = '';
   }
 
-  void _showSortSheet() {
-    final current =
-        ref.read(seerDiscoverSortProvider(widget.instance.id));
-
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(Spacing.s16),
-              child: Text('Sort by',
-                  style: Theme.of(ctx).textTheme.titleLarge),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: RadioGroup<SeerDiscoverSort>(
-                groupValue: current,
-                onChanged: (val) {
-                  if (val != null) {
-                    ref
-                        .read(seerDiscoverSortProvider(
-                                widget.instance.id)
-                            .notifier)
-                        .state = val;
-                    Navigator.pop(ctx);
-                  }
-                },
-                child: ListView(
-                  shrinkWrap: true,
-                  children: SeerDiscoverSort.values
-                      .map((opt) => RadioListTile<SeerDiscoverSort>(
-                            title: Text(opt.label),
-                            value: opt,
-                          ))
-                      .toList(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final query =
         ref.watch(seerDiscoverSearchQueryProvider(widget.instance.id));
-    final sort = ref.watch(seerDiscoverSortProvider(widget.instance.id));
+    final mediaType =
+        ref.watch(seerDiscoverMediaTypeProvider(widget.instance.id));
 
     return Column(
       children: [
-        TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Movies'),
-            Tab(text: 'TV Shows'),
-          ],
-        ),
-        // ── Search & sort bar ──────────────────────────────────────────
+        // ── Search bar ─────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(
             Spacing.pageHorizontal,
@@ -138,78 +81,34 @@ class _SeerDiscoverScreenState extends ConsumerState<SeerDiscoverScreen>
             Spacing.pageHorizontal,
             Spacing.s4,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search movies & shows…',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: query.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: _clearSearch,
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  onChanged: _onSearchChanged,
-                ),
-              ),
-              const SizedBox(width: Spacing.s8),
-              _SortButton(
-                isActive: sort != SeerDiscoverSort.popularityDesc,
-                onTap: _showSortSheet,
-              ),
-            ],
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: mediaType == 'movie'
+                  ? 'Search movies…'
+                  : 'Search TV shows…',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: query.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: _clearSearch,
+                    )
+                  : null,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            onChanged: _onSearchChanged,
           ),
         ),
-        // ── Tab content ────────────────────────────────────────────────
+        // ── Content — keyed so switching media type resets pagination ──
         Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _PaginatedTab(
-                instance: widget.instance,
-                mediaType: 'movie',
-              ),
-              _PaginatedTab(
-                instance: widget.instance,
-                mediaType: 'tv',
-              ),
-            ],
+          child: _PaginatedTab(
+            key: ValueKey(mediaType),
+            instance: widget.instance,
+            mediaType: mediaType,
           ),
         ),
       ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Sort button
-// ---------------------------------------------------------------------------
-
-class _SortButton extends StatelessWidget {
-  const _SortButton({required this.isActive, required this.onTap});
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return IconButton.filledTonal(
-      onPressed: onTap,
-      iconSize: 20,
-      style: IconButton.styleFrom(
-        backgroundColor:
-            isActive ? colorScheme.primaryContainer : null,
-        foregroundColor:
-            isActive ? colorScheme.onPrimaryContainer : null,
-      ),
-      icon: const Icon(Icons.sort),
     );
   }
 }
@@ -220,6 +119,7 @@ class _SortButton extends StatelessWidget {
 
 class _PaginatedTab extends ConsumerStatefulWidget {
   const _PaginatedTab({
+    super.key,
     required this.instance,
     required this.mediaType,
   });

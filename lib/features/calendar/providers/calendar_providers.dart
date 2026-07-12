@@ -107,7 +107,7 @@ class CalendarEntry {
 }
 
 /// Persists whether the Calendar tab shows the month-grid (true) or list (false).
-final calendarViewModeProvider = StateProvider<bool>((ref) => false);
+final calendarViewModeProvider = StateProvider<bool>((ref) => true);
 
 final unifiedCalendarProvider =
     FutureProvider.autoDispose<List<CalendarEntry>>((ref) async {

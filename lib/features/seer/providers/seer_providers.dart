@@ -52,6 +52,10 @@ final seerApiProvider = Provider.family<SeerApi, Instance>((ref, instance) {
 final seerDisplayModeProvider =
     StateProvider.family<DisplayMode, int>((ref, instanceId) => DisplayMode.grid);
 
+/// Discover media type: 'movie' or 'tv'. Switched from the bottom bar.
+final seerDiscoverMediaTypeProvider =
+    StateProvider.family<String, int>((ref, instanceId) => 'movie');
+
 // ─── Requests providers ──────────────────────────────────────────────────────
 
 final seerRequestsProvider =

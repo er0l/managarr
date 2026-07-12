@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/service_avatar.dart';
 import '../providers/instances_provider.dart';
+import '../providers/ui_prefs_provider.dart';
 import '../repositories/instance_repository.dart';
 import '../services/image_cache_service.dart';
 import '../widgets/instance_list_tile.dart';
@@ -29,7 +30,11 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           // ── Appearance ──────────────────────────────────────────────────
           const SectionHeader(title: 'Appearance'),
-          const _SettingsCard(children: [_ThemeSelector()]),
+          const _SettingsCard(children: [
+            _ThemeSelector(),
+            Divider(height: 1),
+            _GridColumnsSelector(),
+          ]),
 
           // ── Instances ───────────────────────────────────────────────────
           if (populated.isNotEmpty) const SectionHeader(title: 'Instances'),
@@ -200,6 +205,57 @@ class _ThemeSelector extends ConsumerWidget {
             ],
             selected: {currentMode},
             onSelectionChanged: (s) => notifier.setMode(s.first),
+            style: SegmentedButton.styleFrom(
+              selectedBackgroundColor: AppColors.tealPrimary,
+              selectedForegroundColor: AppColors.textOnPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Grid columns selector
+// ---------------------------------------------------------------------------
+
+class _GridColumnsSelector extends ConsumerWidget {
+  const _GridColumnsSelector();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final columns = ref.watch(gridColumnsProvider);
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Library grid columns',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<int>(
+            segments: const [
+              ButtonSegment(
+                value: 2,
+                icon: Icon(Icons.grid_view_outlined),
+                label: Text('2 per row'),
+              ),
+              ButtonSegment(
+                value: 3,
+                icon: Icon(Icons.grid_on_outlined),
+                label: Text('3 per row'),
+              ),
+            ],
+            selected: {columns},
+            onSelectionChanged: (s) =>
+                ref.read(gridColumnsProvider.notifier).setColumns(s.first),
             style: SegmentedButton.styleFrom(
               selectedBackgroundColor: AppColors.tealPrimary,
               selectedForegroundColor: AppColors.textOnPrimary,

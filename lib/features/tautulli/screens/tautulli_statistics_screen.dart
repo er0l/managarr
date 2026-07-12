@@ -17,70 +17,90 @@ class TautulliStatisticsScreen extends ConsumerWidget {
     final statsAsync = ref.watch(tautulliHomeStatsProvider(instance));
     final api = ref.read(tautulliApiProvider(instance));
 
-    return statsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: AppColors.statusOffline),
-            const SizedBox(height: 12),
-            const Text('Failed to load statistics'),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () =>
-                  ref.invalidate(tautulliHomeStatsProvider(instance)),
-              child: const Text('Retry'),
-            ),
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: AppColors.tealPrimary,
+        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+        title: const Text(
+          'Statistics',
+          style: TextStyle(color: AppColors.textOnPrimary),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
+            onPressed: () =>
+                ref.invalidate(tautulliHomeStatsProvider(instance)),
+          ),
+        ],
       ),
-      data: (stats) {
-        if (stats.isEmpty) {
-          return const Center(child: Text('No statistics available'));
-        }
-        return RefreshIndicator(
-          color: AppColors.tealPrimary,
-          onRefresh: () async =>
-              ref.invalidate(tautulliHomeStatsProvider(instance)),
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+      body: statsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, s) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (stats.topMovies.isNotEmpty)
-                _StatSection(
-                  title: 'Top Movies',
-                  icon: Icons.movie_outlined,
-                  rows: stats.topMovies,
-                  api: api,
-                ),
-              if (stats.topTv.isNotEmpty)
-                _StatSection(
-                  title: 'Top TV Shows',
-                  icon: Icons.tv_outlined,
-                  rows: stats.topTv,
-                  api: api,
-                ),
-              if (stats.topMusic.isNotEmpty)
-                _StatSection(
-                  title: 'Top Music',
-                  icon: Icons.music_note_outlined,
-                  rows: stats.topMusic,
-                  api: api,
-                ),
-              if (stats.topUsers.isNotEmpty)
-                _StatSection(
-                  title: 'Top Users',
-                  icon: Icons.people_outline,
-                  rows: stats.topUsers,
-                  api: api,
-                  isUsers: true,
-                ),
-              const SizedBox(height: 16),
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.statusOffline,
+              ),
+              const SizedBox(height: 12),
+              const Text('Failed to load statistics'),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () =>
+                    ref.invalidate(tautulliHomeStatsProvider(instance)),
+                child: const Text('Retry'),
+              ),
             ],
           ),
-        );
-      },
+        ),
+        data: (stats) {
+          if (stats.isEmpty) {
+            return const Center(child: Text('No statistics available'));
+          }
+          return RefreshIndicator(
+            color: AppColors.tealPrimary,
+            onRefresh: () async =>
+                ref.invalidate(tautulliHomeStatsProvider(instance)),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              children: [
+                if (stats.topMovies.isNotEmpty)
+                  _StatSection(
+                    title: 'Top Movies',
+                    icon: Icons.movie_outlined,
+                    rows: stats.topMovies,
+                    api: api,
+                  ),
+                if (stats.topTv.isNotEmpty)
+                  _StatSection(
+                    title: 'Top TV Shows',
+                    icon: Icons.tv_outlined,
+                    rows: stats.topTv,
+                    api: api,
+                  ),
+                if (stats.topMusic.isNotEmpty)
+                  _StatSection(
+                    title: 'Top Music',
+                    icon: Icons.music_note_outlined,
+                    rows: stats.topMusic,
+                    api: api,
+                  ),
+                if (stats.topUsers.isNotEmpty)
+                  _StatSection(
+                    title: 'Top Users',
+                    icon: Icons.people_outline,
+                    rows: stats.topUsers,
+                    api: api,
+                    isUsers: true,
+                  ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -128,11 +148,8 @@ class _StatSection extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             itemCount: rows.length,
-            itemBuilder: (ctx, i) => _StatCard(
-              row: rows[i],
-              api: api,
-              isUser: isUsers,
-            ),
+            itemBuilder: (ctx, i) =>
+                _StatCard(row: rows[i], api: api, isUser: isUsers),
           ),
         ),
       ],
@@ -141,8 +158,7 @@ class _StatSection extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  const _StatCard(
-      {required this.row, required this.api, required this.isUser});
+  const _StatCard({required this.row, required this.api, required this.isUser});
 
   final TautulliStatRow row;
   final TautulliApi api;
@@ -151,8 +167,9 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final thumbUrl =
-        row.thumb != null && row.thumb!.isNotEmpty ? api.thumbUrl(row.thumb!) : null;
+    final thumbUrl = row.thumb != null && row.thumb!.isNotEmpty
+        ? api.thumbUrl(row.thumb!)
+        : null;
 
     return Container(
       width: 90,
@@ -168,7 +185,8 @@ class _StatCard extends StatelessWidget {
                   ? Image.network(
                       thumbUrl,
                       fit: isUser ? BoxFit.cover : BoxFit.cover,
-                      errorBuilder: (c, e, s) => _StatCardPlaceholder(isUser: isUser),
+                      errorBuilder: (c, e, s) =>
+                          _StatCardPlaceholder(isUser: isUser),
                     )
                   : _StatCardPlaceholder(isUser: isUser),
             ),
@@ -179,13 +197,15 @@ class _StatCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: theme.textTheme.labelSmall
-                ?.copyWith(fontWeight: FontWeight.w600),
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           Text(
             '${row.count} plays',
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: AppColors.textSecondary),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

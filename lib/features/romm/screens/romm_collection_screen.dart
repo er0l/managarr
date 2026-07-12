@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../api/models/romm_collection.dart';
 import '../api/models/romm_rom.dart';
 import '../api/romm_api.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import '../providers/romm_providers.dart';
 import 'romm_rom_detail_screen.dart';
 
@@ -354,11 +355,13 @@ class _RommCollectionScreenState
   }
 
   Widget _buildGridView(RommApi api) {
+    final columns = ref.watch(gridColumnsProvider) +
+        (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0);
     return GridView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         childAspectRatio: 0.62,

@@ -79,8 +79,10 @@ class TautulliApi {
   }
 
   Future<List<TautulliLibrary>> getLibraries() async {
-    final response = await _get('get_libraries');
-    final data = response['response']?['data'] as List? ?? [];
+    // get_libraries_table includes plays/duration/last_accessed;
+    // get_libraries does not.
+    final response = await _get('get_libraries_table', {'length': 100});
+    final data = response['response']?['data']?['data'] as List? ?? [];
     return data
         .map((l) => TautulliLibrary.fromJson(l as Map<String, dynamic>))
         .toList();

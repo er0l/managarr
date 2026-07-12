@@ -9,6 +9,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/service_detail_shell.dart';
@@ -76,31 +77,35 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
   }
 
   Future<void> _showFilterSheet() async {
-    RommAvailableFilters filtersData;
-    try {
-      // Call API directly to avoid autoDispose provider recycling the future
-      final api = ref.read(rommApiProvider(widget.instance));
-      filtersData = await api.getAvailableFilters();
-    } catch (e) {
-      filtersData = const RommAvailableFilters();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Could not load filter options: $e'),
-          backgroundColor: AppColors.statusOffline,
-          duration: const Duration(seconds: 4),
-        ));
-      }
-    }
-    if (!mounted) return;
-
-    final current =
-        ref.read(rommHomeFiltersProvider(widget.instance.id));
+    // Open the sheet immediately; filter options load inside it so the
+    // button gives instant feedback even on a slow connection.
+    final api = ref.read(rommApiProvider(widget.instance));
+    final current = ref.read(rommHomeFiltersProvider(widget.instance.id));
     final updated = await showModalBottomSheet<RommSearchFilters>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          _FilterSheet(current: current, available: filtersData),
+      builder: (_) => FutureBuilder<RommAvailableFilters>(
+        // Called directly to avoid autoDispose provider recycling the future.
+        future: api.getAvailableFilters(),
+        builder: (context, snap) {
+          if (!snap.hasData && !snap.hasError) {
+            return Container(
+              height: 200,
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          return _FilterSheet(
+            current: current,
+            available: snap.data ?? const RommAvailableFilters(),
+          );
+        },
+      ),
     );
     if (updated != null && mounted) {
       ref.read(rommHomeFiltersProvider(widget.instance.id).notifier).state =
@@ -139,12 +144,18 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
           },
         ),
       ],
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: ServiceType.romm.brandColor,
+        foregroundColor: Colors.white,
+        tooltip: 'Refresh',
+        onPressed: () {
+          ref.invalidate(rommPlatformsProvider(widget.instance));
+          ref.invalidate(rommStatsProvider(widget.instance));
+          ref.invalidate(rommCollectionsProvider(widget.instance));
+        },
+        child: const Icon(Icons.refresh),
+      ),
       bottomLeadingActions: [
-        IconButton(
-          icon: const Icon(Icons.refresh_outlined, color: muted),
-          tooltip: 'Rescan Library',
-          onPressed: _rescan,
-        ),
         IconButton(
           icon: Icon(
             Icons.tune_outlined,
@@ -165,15 +176,18 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
       ],
       bottomMoreItems: const [
         PopupMenuItem(
-          value: 'placeholder',
-          enabled: false,
+          value: 'rescan',
           child: ListTile(
-            leading: Icon(Icons.more_horiz_outlined),
-            title: Text('More options coming soon'),
+            leading: Icon(Icons.radar_outlined),
+            title: Text('Rescan Library'),
             contentPadding: EdgeInsets.zero,
+            dense: true,
           ),
         ),
       ],
+      onMoreSelected: (value) {
+        if (value == 'rescan') _rescan();
+      },
     );
   }
 }

@@ -501,9 +501,42 @@ class _MonthBody extends StatelessWidget {
             ),
           ),
         ],
+        // Upcoming panel — shown while no specific day is selected.
+        if (selectedDate == null) ..._upcomingPanel(context),
         const SizedBox(height: 24),
       ],
     );
+  }
+
+  /// Upcoming releases from today onward, listed below the month grid.
+  List<Widget> _upcomingPanel(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final upcoming =
+        entries.where((e) => !e.date.isBefore(today)).take(15).toList();
+    if (upcoming.isEmpty) return const [];
+
+    final widgets = <Widget>[const SizedBox(height: 12)];
+    DateTime? lastDate;
+    for (final entry in upcoming) {
+      if (entry.date != lastDate) {
+        lastDate = entry.date;
+        widgets.add(Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+          child: Text(
+            entry.date == today
+                ? 'Today'
+                : DateFormat('EEEE, MMMM d').format(entry.date),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppColors.tealPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ));
+      }
+      widgets.add(_EntryTile(entry: entry));
+    }
+    return widgets;
   }
 }
 
