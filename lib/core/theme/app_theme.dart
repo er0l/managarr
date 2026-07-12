@@ -59,6 +59,24 @@ class _ThemeModeNotifier extends Notifier<ThemeMode> {
 // ---------------------------------------------------------------------------
 
 abstract final class AppTheme {
+  /// Stronger heading hierarchy applied on top of the Inter text theme.
+  static TextTheme _applyHierarchy(TextTheme t) => t.copyWith(
+        titleLarge: t.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+        ),
+        titleMedium: t.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      );
+
+  /// Flat cards with a subtle hairline border instead of elevation shadows.
+  static CardThemeData _cardTheme(Color borderColor) => CardThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: borderColor),
+        ),
+      );
+
   static const _colors = FlexSchemeColor(
     primary:            AppColors.tealPrimary,
     primaryContainer:   AppColors.tealLight,
@@ -83,39 +101,44 @@ abstract final class AppTheme {
         surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
         blendLevel: 4,
         subThemesData: _subThemes,
-        textTheme: GoogleFonts.interTextTheme(),
+        textTheme: _applyHierarchy(GoogleFonts.interTextTheme()),
         primaryTextTheme: GoogleFonts.interTextTheme(),
         appBarElevation: 0,
         visualDensity: FlexColorScheme.comfortablePlatformDensity,
         useMaterial3: true,
+      ).copyWith(
+        cardTheme: _cardTheme(AppColors.divider),
       );
 
-  static ThemeData get dark => FlexThemeData.dark(
-        colors: _colors,
-        surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-        blendLevel: 8,
-        subThemesData: _subThemes,
-        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-        primaryTextTheme:
-            GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-        appBarElevation: 0,
-        useMaterial3: true,
-        // Apply v2 cinematic dark surface palette.
-      ).copyWith(
-        scaffoldBackgroundColor: AppColors.backgroundDark,
-        cardColor: AppColors.surfaceCardDark,
-        dividerColor: AppColors.borderDark,
-        colorScheme: FlexThemeData.dark(
-          colors: _colors,
-          blendLevel: 8,
-          useMaterial3: true,
-        ).colorScheme.copyWith(
-          surface:          AppColors.surfaceCardDark,
-          surfaceContainerHighest: AppColors.surfaceElevatedDark,
-          surfaceContainer: AppColors.surfaceElevatedDark,
-          outlineVariant:   AppColors.borderDark,
-          secondary:        AppColors.orangeAccent,
-          secondaryContainer: AppColors.orangeAccent.withAlpha(45),
-        ),
-      );
+  static ThemeData get dark {
+    final base = FlexThemeData.dark(
+      colors: _colors,
+      surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
+      blendLevel: 8,
+      subThemesData: _subThemes,
+      textTheme:
+          _applyHierarchy(GoogleFonts.interTextTheme(ThemeData.dark().textTheme)),
+      primaryTextTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+      appBarElevation: 0,
+      useMaterial3: true,
+    );
+    // Apply v2 cinematic dark surface palette.
+    return base.copyWith(
+      scaffoldBackgroundColor: AppColors.backgroundDark,
+      cardColor: AppColors.surfaceCardDark,
+      cardTheme: _cardTheme(AppColors.borderDark),
+      dividerColor: AppColors.borderDark,
+      navigationBarTheme: base.navigationBarTheme.copyWith(
+        backgroundColor: AppColors.chromeDark,
+      ),
+      colorScheme: base.colorScheme.copyWith(
+        surface:          AppColors.surfaceCardDark,
+        surfaceContainerHighest: AppColors.surfaceElevatedDark,
+        surfaceContainer: AppColors.surfaceElevatedDark,
+        outlineVariant:   AppColors.borderDark,
+        secondary:        AppColors.orangeAccent,
+        secondaryContainer: AppColors.orangeAccent.withAlpha(45),
+      ),
+    );
+  }
 }

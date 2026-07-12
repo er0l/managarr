@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
-import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -9,9 +10,15 @@ import '../../../features/rtorrent/api/rtorrent_api.dart';
 import '../models/health_result.dart';
 
 /// Checks connectivity for a single [Instance].
-/// Auto-disposed so it re-runs whenever the instance changes.
+///
+/// Results are kept alive for a short window so opening the drawer or
+/// switching tabs reuses the dashboard's cached checks instead of
+/// re-firing a request per instance. Pull-to-refresh invalidates.
 final healthCheckProvider = FutureProvider.autoDispose
     .family<HealthResult, Instance>((ref, instance) async {
+  final link = ref.keepAlive();
+  Timer(const Duration(minutes: 2), link.close);
+
   final type = ServiceType.values.byName(instance.serviceType);
   final stopwatch = Stopwatch()..start();
 
@@ -66,22 +73,4 @@ final healthCheckProvider = FutureProvider.autoDispose
     stopwatch.stop();
     return HealthResult.offline(DateTime.now());
   }
-});
-
-/// All enabled instances with their health status, grouped for the dashboard.
-final dashboardHealthProvider = Provider.autoDispose<
-    Map<Instance, AsyncValue<HealthResult>>>((ref) {
-  final instances = ref.watch(instancesStreamProvider).valueOrNull ?? [];
-  return {
-    for (final i in instances.where((i) => i.enabled))
-      i: ref.watch(healthCheckProvider(i)),
-  };
-});
-
-// Re-export so dashboard_screen only needs one import.
-final instancesStreamProvider = StreamProvider.autoDispose<List<Instance>>((ref) {
-  final db = ref.watch(dbProvider);
-  return (db.select(db.instances)
-        ..orderBy([(t) => OrderingTerm.asc(t.serviceType)]))
-      .watch();
 });

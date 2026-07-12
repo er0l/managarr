@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/service_avatar.dart';
+import '../../../core/widgets/status_dot.dart';
+import '../../dashboard/providers/health_check_provider.dart';
 
-class InstanceListTile extends StatelessWidget {
+class InstanceListTile extends ConsumerWidget {
   const InstanceListTile({
     super.key,
     required this.instance,
@@ -17,28 +21,19 @@ class InstanceListTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final type = ServiceType.values.byName(instance.serviceType);
     final theme = Theme.of(context);
 
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: CircleAvatar(
-        backgroundColor: AppColors.tealPrimary.withAlpha(20),
-        child: Text(
-          type.displayName[0],
-          style: const TextStyle(
-            color: AppColors.tealPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+      leading: ServiceAvatar(type: type, size: 40),
       title: Text(instance.name, style: theme.textTheme.bodyLarge),
       subtitle: Text(
         instance.baseUrl,
         style: theme.textTheme.bodySmall?.copyWith(
-          color: AppColors.textSecondary,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -46,7 +41,13 @@ class InstanceListTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (!instance.enabled)
+          if (instance.enabled)
+            StatusDot(
+              healthAsync: ref.watch(healthCheckProvider(instance)),
+            )
+          else ...[
+            const DisabledDot(),
+            const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
@@ -56,10 +57,12 @@ class InstanceListTile extends StatelessWidget {
               child: Text(
                 'disabled',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
+          ],
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.delete_outline, size: 20),
             color: AppColors.statusOffline,

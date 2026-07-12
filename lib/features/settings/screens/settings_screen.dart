@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/spacing.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/section_header.dart';
+import '../../../core/widgets/service_avatar.dart';
 import '../providers/instances_provider.dart';
 import '../repositories/instance_repository.dart';
 import '../services/image_cache_service.dart';
@@ -18,40 +21,54 @@ class SettingsScreen extends ConsumerWidget {
     final grouped = ref.watch(instancesByServiceProvider);
     final repo = ref.read(instanceRepositoryProvider);
     final serviceOrder = ServiceType.values;
-    final populated = serviceOrder.where((t) => grouped.containsKey(t)).toList();
+    final populated =
+        serviceOrder.where((t) => grouped.containsKey(t)).toList();
 
     return Scaffold(
       body: ListView(
         children: [
           // ── Appearance ──────────────────────────────────────────────────
-          _SectionHeader(label: 'Appearance'),
-          _ThemeSelector(),
+          const SectionHeader(title: 'Appearance'),
+          const _SettingsCard(children: [_ThemeSelector()]),
 
           // ── Instances ───────────────────────────────────────────────────
-          if (populated.isNotEmpty) _SectionHeader(label: 'Instances'),
+          if (populated.isNotEmpty) const SectionHeader(title: 'Instances'),
           if (populated.isEmpty)
             _EmptyState(onAdd: () => context.push('/settings/add-instance'))
           else
-            for (final type in populated) ...[
-              _ServiceTypeHeader(type: type),
-              for (final instance in grouped[type]!)
-                InstanceListTile(
-                  instance: instance,
-                  onTap: () => context.push(
-                    '/settings/edit-instance/${instance.id}',
-                  ),
-                  onDelete: () => _confirmDelete(
-                    context,
-                    name: instance.name,
-                    onConfirm: () => repo.delete(instance.id),
-                  ),
+            for (final type in populated)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Spacing.cardGap),
+                child: _SettingsCard(
+                  children: [
+                    _ServiceGroupHeader(type: type),
+                    for (final instance in grouped[type]!) ...[
+                      const Divider(height: 1, indent: 60),
+                      InstanceListTile(
+                        instance: instance,
+                        onTap: () => context.push(
+                          '/settings/edit-instance/${instance.id}',
+                        ),
+                        onDelete: () => _confirmDelete(
+                          context,
+                          name: instance.name,
+                          onConfirm: () => repo.delete(instance.id),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-            ],
+              ),
 
           // ── Storage ─────────────────────────────────────────────────────
-          _SectionHeader(label: 'Storage'),
-          const _InMemoryCacheTile(),
-          const _TempFilesTile(),
+          const SectionHeader(title: 'Storage'),
+          const _SettingsCard(
+            children: [
+              _InMemoryCacheTile(),
+              Divider(height: 1, indent: 60),
+              _TempFilesTile(),
+            ],
+          ),
           const SizedBox(height: 80),
         ],
       ),
@@ -95,10 +112,56 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Grouped settings card — rounded bordered card containing a column of tiles.
+// ---------------------------------------------------------------------------
+
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: Spacing.pageHorizontal),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: children),
+    );
+  }
+}
+
+class _ServiceGroupHeader extends StatelessWidget {
+  const _ServiceGroupHeader({required this.type});
+
+  final ServiceType type;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+      child: Row(
+        children: [
+          ServiceAvatar(type: type, size: 28),
+          const SizedBox(width: Spacing.s12),
+          Text(
+            type.displayName,
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Theme selector widget
 // ---------------------------------------------------------------------------
 
 class _ThemeSelector extends ConsumerWidget {
+  const _ThemeSelector();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentMode = ref.watch(themeModeProvider);
@@ -106,13 +169,16 @@ class _ThemeSelector extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('App Theme', style: theme.textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-          )),
+          Text(
+            'App Theme',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 8),
           SegmentedButton<ThemeMode>(
             segments: const [
@@ -140,50 +206,6 @@ class _ThemeSelector extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Section header
-// ---------------------------------------------------------------------------
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
-      child: Text(
-        label.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppColors.tealPrimary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
-            ),
-      ),
-    );
-  }
-}
-
-class _ServiceTypeHeader extends StatelessWidget {
-  const _ServiceTypeHeader({required this.type});
-  final ServiceType type;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Text(
-        type.displayName,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.tealPrimary,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
       ),
     );
   }
@@ -242,7 +264,7 @@ class _InMemoryCacheTileState extends State<_InMemoryCacheTile> {
       subtitle: Text(
         subtitle,
         style: theme.textTheme.bodySmall?.copyWith(
-          color: AppColors.textSecondary,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
       trailing: TextButton(
@@ -325,7 +347,7 @@ class _TempFilesTileState extends State<_TempFilesTile> {
           subtitle: Text(
             subtitle,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           trailing: loading

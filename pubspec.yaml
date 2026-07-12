@@ -2,7 +2,7 @@ name: managarr
 description: A Flutter app for managing self-hosted *Arr media automation services.
 publish_to: 'none'
 
-version: 1.5.11+46
+version: 1.6.0+47
 
 environment:
   sdk: ^3.11.0

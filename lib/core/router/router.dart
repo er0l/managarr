@@ -11,7 +11,6 @@ import '../../features/radarr/screens/radarr_home_screen.dart';
 import '../../features/radarr/screens/radarr_movie_detail_screen.dart';
 import '../../features/rtorrent/screens/rtorrent_home_screen.dart';
 import '../../features/sabnzbd/screens/sabnzbd_home_screen.dart';
-import '../../features/services/screens/services_screen.dart';
 import '../../features/settings/screens/add_edit_instance_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/repositories/instance_repository.dart';
@@ -119,7 +118,7 @@ class _AppShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   List<Widget> _actionsForTab(BuildContext context, WidgetRef ref, int index) {
-    if (index != 3) return [];
+    if (index != 2) return [];
     return [
       PopupMenuButton<_SettingsAction>(
         icon: const Icon(Icons.more_vert, color: AppColors.textOnPrimary),
@@ -174,25 +173,9 @@ class _AppShell extends ConsumerWidget {
         ),
         iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
         actions: [
-          // Dashboard: grid ↔ list density toggle
-          if (navigationShell.currentIndex == 0)
-            IconButton(
-              icon: Icon(
-                ref.watch(dashboardListModeProvider)
-                    ? Icons.grid_view_outlined
-                    : Icons.view_list_outlined,
-                color: AppColors.textOnPrimary,
-              ),
-              tooltip: ref.watch(dashboardListModeProvider)
-                  ? 'Grid view'
-                  : 'List view',
-              onPressed: () => ref
-                  .read(dashboardListModeProvider.notifier)
-                  .state = !ref.read(dashboardListModeProvider),
-            ),
           ..._actionsForTab(context, ref, navigationShell.currentIndex),
           // Calendar: month ↔ list view
-          if (navigationShell.currentIndex == 2)
+          if (navigationShell.currentIndex == 1)
             IconButton(
               icon: Icon(
                 ref.watch(calendarViewModeProvider)
@@ -235,11 +218,6 @@ class _AppShell extends ConsumerWidget {
             label: 'Dashboard',
           ),
           NavigationDestination(
-            icon: Icon(Icons.apps_outlined),
-            selectedIcon: Icon(Icons.apps),
-            label: 'Services',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
             label: 'Calendar',
@@ -277,15 +255,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Services
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/services',
-                builder: (context, state) => const ServicesScreen(),
-              ),
-            ],
-          ),
           // Calendar
           StatefulShellBranch(
             routes: [
@@ -319,6 +288,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+
+      // Legacy tab location — the Services tab was merged into the drawer.
+      GoRoute(path: '/services', redirect: (_, _) => '/'),
 
       // ── Module routes (outside shell — full-screen) ────────────────────
       GoRoute(

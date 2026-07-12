@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../database/app_database.dart';
 import '../database/models/service_type.dart';
+import '../router/module_routes.dart';
 import '../theme/app_colors.dart';
-import '../../features/dashboard/models/health_result.dart';
+import 'service_avatar.dart';
+import 'status_dot.dart';
 import '../../features/dashboard/providers/health_check_provider.dart';
 import '../../features/settings/providers/instances_provider.dart';
 import '../../features/search/screens/global_search_screen.dart';
 
+/// Module launcher drawer — branded entries per service with per-instance
+/// health dots. Health results come from the shared (kept-alive)
+/// [healthCheckProvider] cache; opening the drawer fires no new checks
+/// while the dashboard's results are fresh.
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
@@ -22,7 +28,7 @@ class AppDrawer extends ConsumerWidget {
     return Drawer(
       child: Column(
         children: [
-          // ── Compact header ─────────────────────────────────────────────
+          // ── Header ─────────────────────────────────────────────────────
           Container(
             color: AppColors.tealPrimary,
             padding: EdgeInsets.fromLTRB(16, top + 14, 16, 14),
@@ -48,83 +54,21 @@ class AppDrawer extends ConsumerWidget {
             ),
           ),
 
-          // ── Instance list ───────────────────────────────────────────────
+          // ── Modules ─────────────────────────────────────────────────────
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.only(top: 4, bottom: 4),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
                 for (final type in ServiceType.values)
-                  if (grouped.containsKey(type) &&
-                      grouped[type]!.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
-                      child: Text(
-                        type.displayName,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.tealPrimary,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ),
-                    for (final instance in grouped[type]!)
-                      ListTile(
-                        dense: true,
-                        visualDensity: VisualDensity.compact,
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 16),
-                        leading: _ServiceIcon(type: type),
-                        title: Text(
-                          instance.name,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        trailing: _DrawerStatusDot(
-                          healthAsync: ref.watch(healthCheckProvider(instance)),
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          final path = switch (type) {
-                            ServiceType.radarr =>
-                              '/radarr/${instance.id}',
-                            ServiceType.sonarr =>
-                              '/sonarr/${instance.id}',
-                            ServiceType.lidarr =>
-                              '/lidarr/${instance.id}',
-                            ServiceType.seer => '/seer/${instance.id}',
-                            ServiceType.rtorrent =>
-                              '/rtorrent/${instance.id}',
-                            ServiceType.sabnzbd =>
-                              '/sabnzbd/${instance.id}',
-                            ServiceType.prowlarr =>
-                              '/prowlarr/${instance.id}',
-                            ServiceType.nzbget =>
-                              '/nzbget/${instance.id}',
-                            ServiceType.tautulli =>
-                              '/tautulli/${instance.id}',
-                            ServiceType.romm =>
-                              '/romm/${instance.id}',
-                          };
-                          context.push(path);
-                        },
-                      ),
-                    const Divider(height: 1),
-                  ],
+                  if (grouped[type]?.isNotEmpty ?? false)
+                    ..._moduleEntries(context, ref, theme, type,
+                        grouped[type]!),
               ],
             ),
           ),
 
           // ── Footer ─────────────────────────────────────────────────────
           const Divider(height: 1),
-          ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
-            leading: const Icon(Icons.dashboard_outlined, size: 20),
-            title: const Text('Dashboard'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/');
-            },
-          ),
           ListTile(
             dense: true,
             visualDensity: VisualDensity.compact,
@@ -143,17 +87,6 @@ class AppDrawer extends ConsumerWidget {
           ListTile(
             dense: true,
             visualDensity: VisualDensity.compact,
-            leading: const Icon(Icons.calendar_month_outlined, size: 20),
-            title: const Text('Calendar'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/calendar');
-            },
-          ),
-          const Divider(height: 1),
-          ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
             leading: const Icon(Icons.settings_outlined, size: 20),
             title: const Text('Settings'),
             onTap: () {
@@ -166,68 +99,69 @@ class AppDrawer extends ConsumerWidget {
       ),
     );
   }
-}
 
-class _ServiceIcon extends StatelessWidget {
-  const _ServiceIcon({required this.type});
-  final ServiceType type;
+  /// Module row (branded avatar + name). A single instance makes the row
+  /// itself the navigation target; multiple instances get indented sub-rows.
+  List<Widget> _moduleEntries(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    ServiceType type,
+    List<Instance> instances,
+  ) {
+    void open(Instance instance) {
+      Navigator.pop(context);
+      context.push(moduleRouteFor(type, instance.id));
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurfaceVariant;
-    return SvgPicture.asset(
-      _assetForType(type),
-      width: 20,
-      height: 20,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-    );
-  }
+    Widget trailingFor(Instance instance) => instance.enabled
+        ? StatusDot(healthAsync: ref.watch(healthCheckProvider(instance)))
+        : const DisabledDot();
 
-  String _assetForType(ServiceType type) => switch (type) {
-        ServiceType.radarr   => 'assets/brands/radarr.svg',
-        ServiceType.sonarr   => 'assets/brands/sonarr.svg',
-        ServiceType.lidarr   => 'assets/brands/lidarr.svg',
-        ServiceType.seer     => 'assets/brands/overseerr.svg',
-        ServiceType.sabnzbd  => 'assets/brands/sabnzbd.svg',
-        ServiceType.nzbget   => 'assets/brands/nzbget.svg',
-        ServiceType.tautulli => 'assets/brands/tautulli.svg',
-        ServiceType.romm     => 'assets/brands/romm.svg',
-        ServiceType.rtorrent => 'assets/brands/rtorrent.svg',
-        ServiceType.prowlarr => 'assets/brands/prowlarr.svg',
-      };
-}
+    if (instances.length == 1) {
+      final instance = instances.first;
+      return [
+        ListTile(
+          visualDensity: VisualDensity.compact,
+          leading: ServiceAvatar(type: type, size: 32),
+          title: Text(
+            type.displayName,
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            instance.name,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: trailingFor(instance),
+          onTap: () => open(instance),
+        ),
+      ];
+    }
 
-/// Tiny glowing status dot shown in the drawer next to each instance.
-class _DrawerStatusDot extends StatelessWidget {
-  const _DrawerStatusDot({required this.healthAsync});
-  final AsyncValue<HealthResult> healthAsync;
-
-  @override
-  Widget build(BuildContext context) {
-    return healthAsync.when(
-      loading: () => const SizedBox(
-        width: 8,
-        height: 8,
-        child: CircularProgressIndicator(
-          strokeWidth: 1.5,
-          color: AppColors.statusUnknown,
+    return [
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: ServiceAvatar(type: type, size: 32),
+        title: Text(
+          type.displayName,
+          style: theme.textTheme.titleSmall
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
-      error: (e, st) => _dot(AppColors.statusOffline, AppColors.statusOfflineGlow),
-      data: (r) => _dot(
-        r.online ? AppColors.statusOnline : AppColors.statusOffline,
-        r.online ? AppColors.statusOnlineGlow : AppColors.statusOfflineGlow,
-      ),
-    );
-  }
-
-  Widget _dot(Color color, Color glow) => Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          boxShadow: [BoxShadow(color: glow, blurRadius: 6, spreadRadius: 1)],
+      for (final instance in instances)
+        ListTile(
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: const EdgeInsets.only(left: 56, right: 16),
+          title: Text(instance.name, style: theme.textTheme.bodyMedium),
+          trailing: trailingFor(instance),
+          onTap: () => open(instance),
         ),
-      );
+    ];
+  }
 }
