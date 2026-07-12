@@ -37,17 +37,7 @@ final healthCheckProvider = FutureProvider.autoDispose
     final dio = ref.read(dioProvider(instance));
     final Response response;
 
-    if (type.usesSabnzbdAuth) {
-      response = await dio.get(
-        type.healthPath,
-        queryParameters: {
-          'mode': 'version',
-          'output': 'json',
-          'apikey': instance.apiKey,
-        },
-        options: Options(headers: {}), // strip X-Api-Key added by interceptor
-      );
-    } else if (type == ServiceType.tautulli) {
+    if (type == ServiceType.tautulli) {
       response = await dio.get(
         type.healthPath,
         queryParameters: {'apikey': instance.apiKey},

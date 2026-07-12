@@ -63,7 +63,7 @@ class _BasicAuthInterceptor extends Interceptor {
 }
 
 /// Interceptor that injects a reverse-proxy Basic Auth header.
-/// Uses [putIfAbsent] so that service Basic Auth (ROMM, NZBGet, rTorrent)
+/// Uses [putIfAbsent] so that service Basic Auth (ROMM, rTorrent)
 /// set by [_BasicAuthInterceptor] takes precedence — the proxy creds are
 /// only injected for X-Api-Key services that don't set Authorization themselves.
 class _ProxyAuthInterceptor extends Interceptor {
@@ -149,7 +149,7 @@ final useLocalUrlProvider = StateProvider.family<bool, int>(
 /// If [overrideBaseUrl] or [instance.baseUrl] contains embedded
 /// `user:pass@host` credentials, they are stripped from the URL and injected
 /// as an `Authorization: Basic` header. For services that already send their
-/// own Basic Auth (e.g. rTorrent, NZBGet), the service auth takes precedence
+/// own Basic Auth (e.g. rTorrent, ROMM), the service auth takes precedence
 /// via [_BasicAuthInterceptor]; the proxy auth is only set as a fallback via
 /// [_ProxyAuthInterceptor].
 Dio buildDioForInstance(Instance instance, {String? overrideBaseUrl}) {

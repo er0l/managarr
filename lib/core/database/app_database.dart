@@ -15,7 +15,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(driftDatabase(name: 'managarr'));
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -38,6 +38,13 @@ class AppDatabase extends _$AppDatabase {
           if (from < 5) {
             await m.addColumn(instances, instances.proxyUsername);
             await m.addColumn(instances, instances.proxyPassword);
+          }
+          if (from < 6) {
+            // SABnzbd and NZBGet modules were removed in v1.6.1; leftover
+            // rows would crash ServiceType.values.byName.
+            await customStatement(
+              "DELETE FROM instances WHERE service_type IN ('sabnzbd', 'nzbget')",
+            );
           }
         },
       );

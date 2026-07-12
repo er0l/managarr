@@ -217,17 +217,25 @@ class _TautulliHomeScreenState extends ConsumerState<TautulliHomeScreen> {
         ],
       );
     } else {
-      // Section navigation
+      // Section navigation — split around the center-docked refresh FAB
+      // so no button sits underneath it.
       bottomContent = Row(
         children: [
-          for (int i = 0; i < _navItems.length; i++)
+          for (int i = 0; i < 3; i++)
             _navBtn(
               _navItems[i].$1,
               _navItems[i].$2,
               i,
               muted,
             ),
-          const Spacer(),
+          const SizedBox(width: 72), // clearance for the docked FAB
+          for (int i = 3; i < _navItems.length; i++)
+            _navBtn(
+              _navItems[i].$1,
+              _navItems[i].$2,
+              i,
+              muted,
+            ),
           moreBtn,
         ],
       );

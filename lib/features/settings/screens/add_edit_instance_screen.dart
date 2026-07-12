@@ -52,7 +52,6 @@ class _AddEditInstanceScreenState
 
   bool get _useUserPass =>
       _serviceType == ServiceType.rtorrent ||
-      _serviceType == ServiceType.nzbget ||
       _serviceType == ServiceType.romm;
 
   _TestStatus _testStatus = _TestStatus.idle;
@@ -160,28 +159,6 @@ class _AddEditInstanceScreenState
         const body =
             '<?xml version="1.0"?><methodCall><methodName>system.listMethods</methodName></methodCall>';
         await dio.post('$_baseUrl/RPC2', data: body);
-      } else if (_serviceType == ServiceType.nzbget) {
-        final username = _usernameCtrl.text.trim();
-        final password = _passwordCtrl.text;
-        final credential = '$username:$password';
-        final encoded = base64.encode(utf8.encode(credential));
-        final dio = Dio(
-          BaseOptions(
-            baseUrl: _baseUrl,
-            connectTimeout: const Duration(seconds: 10),
-            receiveTimeout: const Duration(seconds: 10),
-            headers: {
-              if (credential != ':') 'Authorization': 'Basic $encoded',
-            },
-          ),
-        );
-        final body = {
-          "jsonrpc": "2.0",
-          "method": "version",
-          "params": [],
-          "id": 1,
-        };
-        await dio.post('/jsonrpc', data: body);
       } else if (_serviceType == ServiceType.romm) {
         final credential =
             '${_usernameCtrl.text.trim()}:${_passwordCtrl.text}';
@@ -207,16 +184,7 @@ class _AddEditInstanceScreenState
             },
           ),
         );
-        if (_serviceType.usesSabnzbdAuth) {
-          await dio.get(
-            _serviceType.healthPath,
-            queryParameters: {
-              'mode': 'version',
-              'output': 'json',
-              'apikey': _apiKeyCtrl.text.trim(),
-            },
-          );
-        } else if (_serviceType == ServiceType.tautulli) {
+        if (_serviceType == ServiceType.tautulli) {
           final res = await dio.get(
             _serviceType.healthPath,
             queryParameters: {

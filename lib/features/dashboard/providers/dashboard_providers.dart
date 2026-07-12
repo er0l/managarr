@@ -4,10 +4,8 @@ import '../../../core/config/byte_formatter.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../lidarr/providers/lidarr_providers.dart';
-import '../../nzbget/providers/nzbget_providers.dart';
 import '../../radarr/providers/radarr_providers.dart';
 import '../../rtorrent/providers/rtorrent_providers.dart';
-import '../../sabnzbd/providers/sabnzbd_providers.dart';
 import '../../settings/providers/instances_provider.dart';
 import '../../sonarr/providers/sonarr_providers.dart';
 
@@ -43,7 +41,7 @@ class InstanceDownloads {
   final ServiceType type;
   final AsyncValue<List<DashboardDownload>> items;
 
-  /// Client-level download speed (SABnzbd/NZBGet/rTorrent), when known.
+  /// Client-level download speed (rTorrent), when known.
   final String? speedLabel;
 }
 
@@ -100,53 +98,6 @@ final dashboardDownloadsProvider =
                   title: r.title ?? 'Unknown',
                   progress: _arrProgress(r.size, r.sizeleft),
                   detail: _arrDetail(r.sizeleft, r.status),
-                ),
-            ],
-          ),
-    ));
-  }
-
-  for (final instance in _enabled(grouped[ServiceType.sabnzbd])) {
-    final queueAsync = ref.watch(sabnzbdQueueProvider(instance));
-    final speed = queueAsync.valueOrNull?.speed.trim();
-    result.add(InstanceDownloads(
-      instance: instance,
-      type: ServiceType.sabnzbd,
-      speedLabel: (speed == null || speed.isEmpty || speed == '0')
-          ? null
-          : '$speed KB/s',
-      items: queueAsync.whenData(
-        (q) => [
-          for (final item in q.items)
-            DashboardDownload(
-              title: item.filename,
-              progress: (item.percentage / 100).clamp(0.0, 1.0),
-              detail: item.timeLeft.isEmpty ? item.status : item.timeLeft,
-            ),
-        ],
-      ),
-    ));
-  }
-
-  for (final instance in _enabled(grouped[ServiceType.nzbget])) {
-    final status = ref.watch(nzbgetStatusProvider(instance)).valueOrNull;
-    result.add(InstanceDownloads(
-      instance: instance,
-      type: ServiceType.nzbget,
-      speedLabel: (status == null || status.speed <= 0)
-          ? null
-          : '${ByteFormatter.format(status.speed)}/s',
-      items: ref.watch(nzbgetQueueProvider(instance)).whenData(
-            (q) => [
-              for (final item in q.items)
-                DashboardDownload(
-                  title: item.name,
-                  progress: item.fileSize > 0
-                      ? (1 - item.remainingSize / item.fileSize)
-                          .clamp(0.0, 1.0)
-                      : null,
-                  detail:
-                      '${ByteFormatter.format(item.remainingSize)} left',
                 ),
             ],
           ),

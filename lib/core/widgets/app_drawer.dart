@@ -72,6 +72,16 @@ class AppDrawer extends ConsumerWidget {
           ListTile(
             dense: true,
             visualDensity: VisualDensity.compact,
+            leading: const Icon(Icons.dashboard_outlined, size: 20),
+            title: const Text('Dashboard'),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/');
+            },
+          ),
+          ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
             leading: const Icon(Icons.search, size: 20),
             title: const Text('Search'),
             onTap: () {

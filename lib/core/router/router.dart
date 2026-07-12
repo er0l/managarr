@@ -10,14 +10,12 @@ import '../../features/prowlarr/screens/prowlarr_home_screen.dart';
 import '../../features/radarr/screens/radarr_home_screen.dart';
 import '../../features/radarr/screens/radarr_movie_detail_screen.dart';
 import '../../features/rtorrent/screens/rtorrent_home_screen.dart';
-import '../../features/sabnzbd/screens/sabnzbd_home_screen.dart';
 import '../../features/settings/screens/add_edit_instance_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/repositories/instance_repository.dart';
 import '../../features/sonarr/screens/sonarr_home_screen.dart';
 import '../../features/sonarr/screens/sonarr_series_detail_screen.dart';
 import '../../features/lidarr/screens/lidarr_home_screen.dart';
-import '../../features/nzbget/screens/nzbget_home_screen.dart';
 import '../../features/tautulli/screens/tautulli_home_screen.dart';
 import '../../features/romm/screens/romm_home_screen.dart';
 import '../../features/radarr/providers/radarr_providers.dart';
@@ -340,24 +338,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: '/sabnzbd/:instanceId',
-        builder: (context, state) {
-          final id = int.parse(state.pathParameters['instanceId']!);
-          return _SabnzbdLoader(instanceId: id);
-        },
-      ),
-      GoRoute(
         path: '/prowlarr/:instanceId',
         builder: (context, state) {
           final id = int.parse(state.pathParameters['instanceId']!);
           return _ProwlarrLoader(instanceId: id);
-        },
-      ),
-      GoRoute(
-        path: '/nzbget/:instanceId',
-        builder: (context, state) {
-          final id = int.parse(state.pathParameters['instanceId']!);
-          return _NzbgetLoader(instanceId: id);
         },
       ),
       GoRoute(
@@ -463,29 +447,6 @@ class _RTorrentLoader extends ConsumerWidget {
   }
 }
 
-class _SabnzbdLoader extends ConsumerWidget {
-  const _SabnzbdLoader({required this.instanceId});
-  final int instanceId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final repo = ref.read(instanceRepositoryProvider);
-    return FutureBuilder<Instance?>(
-      future: repo.getById(instanceId),
-      builder: (context, snap) {
-        if (!snap.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        final instance = snap.data;
-        if (instance == null) {
-          return const Scaffold(body: Center(child: Text('Instance not found')));
-        }
-        return SabnzbdHomeScreen(instance: instance);
-      },
-    );
-  }
-}
-
 class _ProwlarrLoader extends ConsumerWidget {
   const _ProwlarrLoader({required this.instanceId});
   final int instanceId;
@@ -504,29 +465,6 @@ class _ProwlarrLoader extends ConsumerWidget {
           return const Scaffold(body: Center(child: Text('Instance not found')));
         }
         return ProwlarrHomeScreen(instance: instance);
-      },
-    );
-  }
-}
-
-class _NzbgetLoader extends ConsumerWidget {
-  const _NzbgetLoader({required this.instanceId});
-  final int instanceId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final repo = ref.read(instanceRepositoryProvider);
-    return FutureBuilder<Instance?>(
-      future: repo.getById(instanceId),
-      builder: (context, snap) {
-        if (!snap.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        final instance = snap.data;
-        if (instance == null) {
-          return const Scaffold(body: Center(child: Text('Instance not found')));
-        }
-        return NzbgetHomeScreen(instance: instance);
       },
     );
   }

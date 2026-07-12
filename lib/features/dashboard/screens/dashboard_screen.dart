@@ -8,10 +8,8 @@ import '../../../core/database/models/service_type.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../calendar/providers/calendar_providers.dart';
 import '../../lidarr/providers/lidarr_providers.dart';
-import '../../nzbget/providers/nzbget_providers.dart';
 import '../../radarr/providers/radarr_providers.dart';
 import '../../rtorrent/providers/rtorrent_providers.dart';
-import '../../sabnzbd/providers/sabnzbd_providers.dart';
 import '../../seer/providers/seer_providers.dart';
 import '../../settings/providers/instances_provider.dart';
 import '../../sonarr/providers/sonarr_providers.dart';
@@ -41,11 +39,6 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(sonarrQueueProvider(instance));
         case ServiceType.lidarr:
           ref.invalidate(lidarrQueueProvider(instance));
-        case ServiceType.sabnzbd:
-          ref.invalidate(sabnzbdQueueProvider(instance));
-        case ServiceType.nzbget:
-          ref.invalidate(nzbgetQueueProvider(instance));
-          ref.invalidate(nzbgetStatusProvider(instance));
         case ServiceType.rtorrent:
           ref.invalidate(rtorrentTorrentsProvider(instance));
         case ServiceType.tautulli:

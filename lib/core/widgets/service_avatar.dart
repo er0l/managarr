@@ -17,8 +17,6 @@ class ServiceAvatar extends StatelessWidget {
         ServiceType.sonarr   => 'assets/brands/sonarr.svg',
         ServiceType.lidarr   => 'assets/brands/lidarr.svg',
         ServiceType.seer     => 'assets/brands/overseerr.svg',
-        ServiceType.sabnzbd  => 'assets/brands/sabnzbd.svg',
-        ServiceType.nzbget   => 'assets/brands/nzbget.svg',
         ServiceType.tautulli => 'assets/brands/tautulli.svg',
         ServiceType.romm     => 'assets/brands/romm.svg',
         ServiceType.rtorrent => 'assets/brands/rtorrent.svg',
