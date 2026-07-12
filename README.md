@@ -2,7 +2,7 @@
 
 # managarr
 
-A Flutter mobile client for managing your self-hosted media automation stack. Connect to Radarr, Sonarr, Lidarr, Prowlarr, Overseerr/Jellyseerr, SABnzbd, NZBGet, rTorrent, Tautulli, and ROMM from a single app.
+A Flutter mobile client for managing your self-hosted media automation stack. Connect to Radarr, Sonarr, Lidarr, Prowlarr, Overseerr/Jellyseerr, rTorrent, Tautulli, and ROMM from a single app.
 
 ## Features
 
@@ -14,8 +14,6 @@ A Flutter mobile client for managing your self-hosted media automation stack. Co
 | **Lidarr** | Browse music library, artist & album details |
 | **Prowlarr** | Indexer status and management |
 | **Overseerr / Jellyseerr** | Browse and manage media requests |
-| **SABnzbd** | Download queue, history, speed monitoring |
-| **NZBGet** | Download queue, history, status |
 | **rTorrent** | Torrent list, status, speed monitoring |
 | **Tautulli** | Plex activity, history, libraries, users, statistics, logs |
 | **ROMM** | Browse ROM library by platform, search ROMs, view game metadata, download ROMs to device |
@@ -23,7 +21,7 @@ A Flutter mobile client for managing your self-hosted media automation stack. Co
 ### App-wide
 - **Unified Calendar** — month and list view of upcoming movies and episodes across all Radarr and Sonarr instances; Downloaded/quality and Unaired status badges
 - **Global Search** — search movies and series across all Radarr and Sonarr instances simultaneously; tap to open detail or add screen
-- **Dashboard** — at-a-glance status cards for every connected service
+- **Dashboard** — content hub with a service status strip, Plex Now Playing, active downloads, upcoming releases, and pending requests
 - **Android home-screen widget** — upcoming calendar entries on your home screen
 - **Multiple instances** — add as many instances of each service as you need
 - **Light / Dark / System theme**
@@ -113,11 +111,9 @@ lib/
     ├── calendar/        # Unified calendar across Radarr + Sonarr
     ├── dashboard/       # Service status overview
     ├── lidarr/          # Lidarr integration
-    ├── nzbget/          # NZBGet integration
     ├── prowlarr/        # Prowlarr integration
     ├── radarr/          # Radarr integration
     ├── rtorrent/        # rTorrent integration
-    ├── sabnzbd/         # SABnzbd integration
     ├── search/          # Global search screen
     ├── seer/            # Overseerr / Jellyseerr integration
     ├── settings/        # Instance management, backup/restore, theme
