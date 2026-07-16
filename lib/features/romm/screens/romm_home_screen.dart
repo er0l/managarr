@@ -21,9 +21,13 @@ import '../api/models/romm_rom.dart';
 import '../api/models/romm_search_filters.dart';
 import '../api/romm_api.dart';
 import '../providers/romm_providers.dart';
+import '../widgets/rom_rail.dart';
 import 'romm_collection_screen.dart';
+import 'romm_downloads_screen.dart';
 import 'romm_platform_screen.dart';
 import 'romm_rom_detail_screen.dart';
+import 'romm_stats_screen.dart';
+import 'romm_virtual_collection_screen.dart';
 
 class RommHomeScreen extends ConsumerStatefulWidget {
   const RommHomeScreen({super.key, required this.instance});
@@ -172,6 +176,25 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
       ],
       bottomMoreItems: const [
         PopupMenuItem(
+          value: 'stats',
+          child: ListTile(
+            leading: Icon(Icons.leaderboard_outlined),
+            title: Text('Statistics'),
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'downloads',
+          child: ListTile(
+            leading: Icon(Icons.download_done_outlined),
+            title: Text('Downloads'),
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+        ),
+        PopupMenuDivider(),
+        PopupMenuItem(
           value: 'rescan',
           child: ListTile(
             leading: Icon(Icons.radar_outlined),
@@ -182,7 +205,24 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
         ),
       ],
       onMoreSelected: (value) {
-        if (value == 'rescan') _rescan();
+        switch (value) {
+          case 'rescan':
+            _rescan();
+          case 'stats':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RommStatsScreen(instance: widget.instance),
+              ),
+            );
+          case 'downloads':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RommDownloadsScreen(instance: widget.instance),
+              ),
+            );
+        }
       },
     );
   }
@@ -352,13 +392,53 @@ class _PlatformsView extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(rommPlatformsProvider(instance));
+            ref.invalidate(rommRecentlyPlayedProvider(instance));
+            ref.invalidate(rommRecentlyAddedProvider(instance));
           },
           color: AppColors.tealPrimary,
-          child: displayMode == DisplayMode.grid
-              ? _PlatformsGrid(
-                  platforms: visible, instance: instance, api: api)
-              : _PlatformsList(
-                  platforms: visible, instance: instance, api: api),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: RomRail(
+                  title: 'Continue Playing',
+                  instance: instance,
+                  romsAsync: ref.watch(rommRecentlyPlayedProvider(instance)),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: RomRail(
+                  title: 'Recently Added',
+                  instance: instance,
+                  romsAsync: ref.watch(rommRecentlyAddedProvider(instance)),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Spacing.pageHorizontal,
+                    Spacing.s12,
+                    Spacing.pageHorizontal,
+                    0,
+                  ),
+                  child: Text(
+                    'Platforms',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              if (displayMode == DisplayMode.grid)
+                _PlatformsGrid(
+                    platforms: visible, instance: instance, api: api)
+              else
+                _PlatformsList(
+                    platforms: visible, instance: instance, api: api),
+              const SliverToBoxAdapter(
+                  child: SizedBox(height: Spacing.s24)),
+            ],
+          ),
         );
       },
     );
@@ -374,19 +454,23 @@ class _PlatformsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
+    return SliverPadding(
       padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.4,
-      ),
-      itemCount: platforms.length,
-      itemBuilder: (ctx, i) => _PlatformCard(
-        platform: platforms[i],
-        instance: instance,
-        api: api,
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.4,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (ctx, i) => _PlatformCard(
+            platform: platforms[i],
+            instance: instance,
+            api: api,
+          ),
+          childCount: platforms.length,
+        ),
       ),
     );
   }
@@ -401,13 +485,17 @@ class _PlatformsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: Spacing.s24),
-      itemCount: platforms.length,
-      itemBuilder: (ctx, i) => _PlatformListTile(
-        platform: platforms[i],
-        instance: instance,
-        api: api,
+    return SliverPadding(
+      padding: const EdgeInsets.only(top: 4, bottom: Spacing.s24),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (ctx, i) => _PlatformListTile(
+            platform: platforms[i],
+            instance: instance,
+            api: api,
+          ),
+          childCount: platforms.length,
+        ),
       ),
     );
   }
@@ -649,6 +737,17 @@ class _CollectionsScreenState extends ConsumerState<_CollectionsScreen> {
   final _searchController = TextEditingController();
   String _searchTerm = '';
 
+  /// false = manual collections, true = auto (virtual) collections.
+  bool _showVirtual = false;
+  String _virtualType = 'collection';
+
+  static const _virtualTypes = {
+    'collection': 'Series',
+    'genre': 'Genres',
+    'franchise': 'Franchises',
+    'company': 'Companies',
+  };
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -771,6 +870,71 @@ class _CollectionsScreenState extends ConsumerState<_CollectionsScreen> {
                     setState(() => _searchTerm = v.toLowerCase()),
               ),
             ),
+            // Manual vs auto-generated collections
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.pageHorizontal, vertical: 4),
+              child: SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(
+                    value: false,
+                    icon: Icon(Icons.folder_outlined, size: 16),
+                    label: Text('Manual'),
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    icon: Icon(Icons.auto_awesome_outlined, size: 16),
+                    label: Text('Auto'),
+                  ),
+                ],
+                selected: {_showVirtual},
+                onSelectionChanged: (s) =>
+                    setState(() => _showVirtual = s.first),
+                style: SegmentedButton.styleFrom(
+                  selectedBackgroundColor: AppColors.tealPrimary,
+                  selectedForegroundColor: AppColors.textOnPrimary,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+            if (_showVirtual)
+              SizedBox(
+                height: 40,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.pageHorizontal),
+                  children: [
+                    for (final entry in _virtualTypes.entries)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(entry.value,
+                              style: const TextStyle(fontSize: 12)),
+                          selected: _virtualType == entry.key,
+                          showCheckmark: false,
+                          selectedColor: AppColors.tealPrimary,
+                          labelStyle: TextStyle(
+                            color: _virtualType == entry.key
+                                ? Colors.white
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
+                          onSelected: (_) =>
+                              setState(() => _virtualType = entry.key),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            if (_showVirtual)
+              Expanded(
+                child: _VirtualCollectionsList(
+                  instance: widget.instance,
+                  type: _virtualType,
+                  searchTerm: _searchTerm,
+                ),
+              )
+            else
             Expanded(
               child: collectionsAsync.when(
                 loading: () =>
@@ -837,19 +1001,107 @@ class _CollectionsScreenState extends ConsumerState<_CollectionsScreen> {
             ),
           ],
         ),
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton.extended(
-            heroTag: 'create_collection_fab',
-            backgroundColor: AppColors.tealPrimary,
-            foregroundColor: AppColors.textOnPrimary,
-            icon: const Icon(Icons.add),
-            label: const Text('New Collection'),
-            onPressed: () => _showCreateDialog(api),
+        if (!_showVirtual)
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.extended(
+              heroTag: 'create_collection_fab',
+              backgroundColor: AppColors.tealPrimary,
+              foregroundColor: AppColors.textOnPrimary,
+              icon: const Icon(Icons.add),
+              label: const Text('New Collection'),
+              onPressed: () => _showCreateDialog(api),
+            ),
           ),
-        ),
       ],
+    );
+  }
+}
+
+// ── Auto (virtual) collections ────────────────────────────────────────────────
+
+class _VirtualCollectionsList extends ConsumerWidget {
+  const _VirtualCollectionsList({
+    required this.instance,
+    required this.type,
+    required this.searchTerm,
+  });
+
+  final Instance instance;
+  final String type;
+  final String searchTerm;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final virtualAsync = ref
+        .watch(rommVirtualCollectionsProvider((instance: instance, type: type)));
+
+    return virtualAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline,
+                size: 48, color: AppColors.statusOffline),
+            const SizedBox(height: 12),
+            Text('$e', textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => ref.invalidate(rommVirtualCollectionsProvider(
+                  (instance: instance, type: type))),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+      data: (virtuals) {
+        final filtered = searchTerm.isEmpty
+            ? virtuals
+            : virtuals
+                .where((v) => v.name.toLowerCase().contains(searchTerm))
+                .toList();
+        if (filtered.isEmpty) {
+          return const Center(child: Text('No auto collections found'));
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.only(bottom: 24),
+          itemCount: filtered.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (ctx, i) {
+            final virtual = filtered[i];
+            return ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.tealPrimary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.auto_awesome_outlined,
+                    color: AppColors.tealPrimary, size: 20),
+              ),
+              title: Text(virtual.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(
+                '${virtual.romCount} ROMs',
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RommVirtualCollectionScreen(
+                    instance: instance,
+                    collection: virtual,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -1106,6 +1358,11 @@ class _ActiveFilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final allFilters = [
+      if (filters.favourite == true) 'Favorites',
+      if (filters.matched == true) 'Matched',
+      if (filters.duplicate == true) 'Duplicates',
+      if (filters.playable == true) 'Playable',
+      if (filters.missing == true) 'Missing',
       ...filters.genres,
       ...filters.franchises,
       ...filters.companies,
@@ -1158,6 +1415,42 @@ class _FilterSheet extends StatefulWidget {
 
   @override
   State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+/// On/off chip for boolean ROM filters (null = inactive, true = required).
+class _QuickToggleChip extends StatelessWidget {
+  const _QuickToggleChip({
+    required this.label,
+    required this.icon,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool? value;
+  final ValueChanged<bool?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = value == true;
+    return FilterChip(
+      avatar: Icon(icon,
+          size: 16,
+          color: active ? Colors.white : AppColors.tealPrimary),
+      label: Text(label),
+      selected: active,
+      showCheckmark: false,
+      selectedColor: AppColors.tealPrimary,
+      labelStyle: TextStyle(
+        fontSize: 12,
+        color: active
+            ? Colors.white
+            : Theme.of(context).colorScheme.onSurface,
+      ),
+      onSelected: (selected) => onChanged(selected ? true : null),
+    );
+  }
 }
 
 class _FilterSheetState extends State<_FilterSheet> {
@@ -1231,19 +1524,73 @@ class _FilterSheetState extends State<_FilterSheet> {
             ),
             const Divider(height: 1),
             Expanded(
-              child: noFiltersFromServer
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'No filter options available from server.',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    )
-                  : ListView(
+              child: ListView(
                       controller: controller,
                       children: [
+                        // Quick toggles — always available, no server options
+                        // required.
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: Text(
+                            'Quick filters',
+                            style: theme.textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 16),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              _QuickToggleChip(
+                                label: 'Favorites',
+                                icon: Icons.favorite_outline,
+                                value: _filters.favourite,
+                                onChanged: (v) => setState(() =>
+                                    _filters = _filters.copyWith(favourite: v)),
+                              ),
+                              _QuickToggleChip(
+                                label: 'Matched',
+                                icon: Icons.verified_outlined,
+                                value: _filters.matched,
+                                onChanged: (v) => setState(() =>
+                                    _filters = _filters.copyWith(matched: v)),
+                              ),
+                              _QuickToggleChip(
+                                label: 'Duplicates',
+                                icon: Icons.copy_outlined,
+                                value: _filters.duplicate,
+                                onChanged: (v) => setState(() =>
+                                    _filters = _filters.copyWith(duplicate: v)),
+                              ),
+                              _QuickToggleChip(
+                                label: 'Playable',
+                                icon: Icons.play_circle_outline,
+                                value: _filters.playable,
+                                onChanged: (v) => setState(() =>
+                                    _filters = _filters.copyWith(playable: v)),
+                              ),
+                              _QuickToggleChip(
+                                label: 'Missing',
+                                icon: Icons.help_outline,
+                                value: _filters.missing,
+                                onChanged: (v) => setState(() =>
+                                    _filters = _filters.copyWith(missing: v)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (noFiltersFromServer)
+                          const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text(
+                              'No metadata filter options available from '
+                              'server.',
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                         if (widget.available.genres.isNotEmpty)
                           _FilterCategory(
                             title: 'Genres',

@@ -11,6 +11,7 @@ import 'models/romm_platform.dart';
 import 'models/romm_rom.dart';
 import 'models/romm_search_filters.dart';
 import 'models/romm_stats.dart';
+import 'models/romm_virtual_collection.dart';
 
 class RommApi {
   RommApi._(this._dio, this._baseUrl, this._authHeader);
@@ -69,6 +70,45 @@ class RommApi {
     final res = await _dio.get<List>('/collections');
     return (res.data ?? [])
         .map((j) => RommCollection.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Auto-generated collections derived from ROM metadata.
+  /// [type] is one of: collection, genre, franchise, company, mode.
+  Future<List<RommVirtualCollection>> getVirtualCollections(
+      String type) async {
+    final res = await _dio
+        .get<List>('/collections/virtual', queryParameters: {'type': type});
+    return (res.data ?? [])
+        .map((j) => RommVirtualCollection.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<RommRom>> getVirtualCollectionRoms(
+    String virtualCollectionId, {
+    String? searchTerm,
+    int limit = 50,
+    int offset = 0,
+    String? orderBy,
+    String? orderDir,
+  }) async {
+    final params = <String, dynamic>{
+      'virtual_collection_id': virtualCollectionId,
+      'limit': limit,
+      'offset': offset,
+    };
+    if (searchTerm != null && searchTerm.isNotEmpty) {
+      params['search_term'] = searchTerm;
+    }
+    if (orderBy != null) params['order_by'] = orderBy;
+    if (orderDir != null) params['order_dir'] = orderDir;
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/roms',
+      queryParameters: params,
+    );
+    final items = res.data?['items'] as List? ?? [];
+    return items
+        .map((j) => RommRom.fromJson(j as Map<String, dynamic>))
         .toList();
   }
 
@@ -166,6 +206,11 @@ class RommApi {
     if (filters.languages.isNotEmpty) {
       params['languages'] = filters.languages.join(',');
     }
+    if (filters.favourite != null) params['favorite'] = filters.favourite;
+    if (filters.matched != null) params['matched'] = filters.matched;
+    if (filters.duplicate != null) params['duplicate'] = filters.duplicate;
+    if (filters.playable != null) params['playable'] = filters.playable;
+    if (filters.missing != null) params['missing'] = filters.missing;
     final res = await _dio.get<Map<String, dynamic>>(
       '/roms',
       queryParameters: params,
@@ -174,6 +219,57 @@ class RommApi {
     return items
         .map((j) => RommRom.fromJson(j as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Latest additions to the library, newest first.
+  Future<List<RommRom>> getRecentlyAdded({int limit = 15}) async {
+    final res = await _dio.get<Map<String, dynamic>>('/roms', queryParameters: {
+      'order_by': 'created_at',
+      'order_dir': 'desc',
+      'limit': limit,
+    });
+    final items = res.data?['items'] as List? ?? [];
+    return items
+        .map((j) => RommRom.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// ROMs the user has played, for a "Continue Playing" rail.
+  Future<List<RommRom>> getRecentlyPlayed({int limit = 15}) async {
+    final res = await _dio.get<Map<String, dynamic>>('/roms', queryParameters: {
+      'last_played': true,
+      'limit': limit,
+    });
+    final items = res.data?['items'] as List? ?? [];
+    return items
+        .map((j) => RommRom.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Fetches one name-ordered page plus the A–Z character index
+  /// (letter → offset) used by the fast scroller.
+  Future<({List<RommRom> roms, Map<String, int> charIndex})>
+      getRomsWithCharIndex(
+    int platformId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final res = await _dio.get<Map<String, dynamic>>('/roms', queryParameters: {
+      'platform_ids': platformId,
+      'with_char_index': true,
+      'order_by': 'name',
+      'order_dir': 'asc',
+      'limit': limit,
+      'offset': offset,
+    });
+    final items = res.data?['items'] as List? ?? [];
+    final rawIndex = res.data?['char_index'] as Map<String, dynamic>? ?? {};
+    return (
+      roms: items
+          .map((j) => RommRom.fromJson(j as Map<String, dynamic>))
+          .toList(),
+      charIndex: rawIndex.map((k, v) => MapEntry(k, (v as num).toInt())),
+    );
   }
 
   Future<RommRom> getRomDetail(int id) async {
@@ -274,6 +370,9 @@ class RommApi {
   /// Direct download URL for a ROM file.
   String downloadUrl(int romId, String fileName) =>
       '$_baseUrl/api/roms/$romId/content/${Uri.encodeComponent(fileName)}';
+
+  /// URL for a RomM-hosted resource asset (screenshots, manuals, covers).
+  String rawAssetUrl(String path) => '$_baseUrl/api/raw/assets/$path';
 
   /// Base URL (without /api suffix) for asset requests.
   String get baseUrl => _baseUrl;

@@ -45,6 +45,14 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
   bool _hasMore = true;
   String? _error;
 
+  /// Letter → list offset, from the server's char index. Only available
+  /// when browsing by name ascending without a search term.
+  Map<String, int>? _charIndex;
+  String? _activeLetter;
+
+  bool get _charIndexApplies =>
+      _searchTerm.isEmpty && _orderBy == 'name' && _orderDir == 'asc';
+
   @override
   void initState() {
     super.initState();
@@ -70,29 +78,46 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
     }
   }
 
-  Future<void> _loadPage({bool reset = false}) async {
+  Future<void> _loadPage({
+    bool reset = false,
+    int startOffset = 0,
+    bool fromLetterJump = false,
+  }) async {
     if (_isLoading) return;
     if (mounted) {
       setState(() {
         if (reset) {
           _roms = [];
-          _offset = 0;
+          _offset = startOffset;
           _hasMore = true;
           _error = null;
+          if (!fromLetterJump) _activeLetter = null;
         }
         _isLoading = true;
       });
     }
     try {
       final api = ref.read(rommApiProvider(widget.instance));
-      final results = await api.getRoms(
-        widget.platform.id,
-        searchTerm: _searchTerm.isEmpty ? null : _searchTerm,
-        limit: _pageSize,
-        offset: reset ? 0 : _offset,
-        orderBy: _orderBy,
-        orderDir: _orderDir,
-      );
+      final List<RommRom> results;
+      if (reset && _charIndexApplies) {
+        // Name-ordered browse: fetch the page together with the A–Z index.
+        final page = await api.getRomsWithCharIndex(
+          widget.platform.id,
+          limit: _pageSize,
+          offset: startOffset,
+        );
+        results = page.roms;
+        if (page.charIndex.isNotEmpty) _charIndex = page.charIndex;
+      } else {
+        results = await api.getRoms(
+          widget.platform.id,
+          searchTerm: _searchTerm.isEmpty ? null : _searchTerm,
+          limit: _pageSize,
+          offset: reset ? startOffset : _offset,
+          orderBy: _orderBy,
+          orderDir: _orderDir,
+        );
+      }
       if (mounted) {
         setState(() {
           if (reset) {
@@ -100,7 +125,7 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
           } else {
             _roms = [..._roms, ...results];
           }
-          _offset = (reset ? 0 : _offset) + results.length;
+          _offset = (reset ? startOffset : _offset) + results.length;
           _hasMore = results.length == _pageSize;
           _isLoading = false;
         });
@@ -113,6 +138,15 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
         });
       }
     }
+  }
+
+  /// Jumps the name-ordered list to the given letter's server offset.
+  void _jumpToLetter(String letter) {
+    final offset = _charIndex?[letter];
+    if (offset == null) return;
+    setState(() => _activeLetter = letter);
+    if (_scrollController.hasClients) _scrollController.jumpTo(0);
+    _loadPage(reset: true, startOffset: offset, fromLetterJump: true);
   }
 
   Future<void> _loadMore() async {
@@ -246,8 +280,27 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
               onChanged: _onSearchChanged,
             ),
           ),
-          // Results
-          Expanded(child: _buildBody(api, viewMode)),
+          // Results — with the A–Z rail overlaid on name-ordered browse.
+          Expanded(
+            child: Stack(
+              children: [
+                _buildBody(api, viewMode),
+                if (_charIndexApplies &&
+                    (_charIndex?.isNotEmpty ?? false) &&
+                    _roms.isNotEmpty)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: _LetterRail(
+                      letters: _charIndex!.keys.toList(),
+                      active: _activeLetter,
+                      onTap: _jumpToLetter,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: BottomAppBar(
@@ -651,4 +704,64 @@ class _SortOption {
   const _SortOption(this.orderBy, this.orderDir);
   final String orderBy;
   final String orderDir;
+}
+
+// ── A–Z fast-scroll rail ──────────────────────────────────────────────────────
+
+class _LetterRail extends StatelessWidget {
+  const _LetterRail({
+    required this.letters,
+    required this.active,
+    required this.onTap,
+  });
+
+  final List<String> letters;
+  final String? active;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 24,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withAlpha(200),
+        borderRadius:
+            const BorderRadius.horizontal(left: Radius.circular(12)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Shrink font when many letters must fit the available height.
+          final perLetter = constraints.maxHeight / letters.length;
+          final fontSize = perLetter.clamp(8.0, 12.0) * 0.82;
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (final letter in letters)
+                Expanded(
+                  child: InkWell(
+                    onTap: () => onTap(letter),
+                    child: Center(
+                      child: Text(
+                        letter.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: fontSize,
+                          fontWeight: letter == active
+                              ? FontWeight.w800
+                              : FontWeight.w500,
+                          color: letter == active
+                              ? AppColors.tealPrimary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }

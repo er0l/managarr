@@ -3,12 +3,18 @@ class RommStats {
     this.totalRoms = 0,
     this.totalPlatforms = 0,
     this.totalCollections = 0,
+    this.totalSaves = 0,
+    this.totalStates = 0,
+    this.totalScreenshots = 0,
     this.totalSizeBytes = 0,
   });
 
   final int totalRoms;
   final int totalPlatforms;
   final int totalCollections;
+  final int totalSaves;
+  final int totalStates;
+  final int totalScreenshots;
   final int totalSizeBytes;
 
   String get formattedSize {
@@ -30,7 +36,12 @@ class RommStats {
       totalRoms: get('ROMS', 'roms'),
       totalPlatforms: get('PLATFORMS', 'platforms'),
       totalCollections: get('COLLECTIONS', 'collections'),
-      totalSizeBytes: get('FILESIZE', 'total_filesize'),
+      totalSaves: get('SAVES', 'saves'),
+      totalStates: get('STATES', 'states'),
+      totalScreenshots: get('SCREENSHOTS', 'screenshots'),
+      // Current servers return TOTAL_FILESIZE_BYTES; FILESIZE kept for old ones.
+      totalSizeBytes: (json['TOTAL_FILESIZE_BYTES'] as num?)?.toInt() ??
+          get('FILESIZE', 'total_filesize'),
     );
   }
 }

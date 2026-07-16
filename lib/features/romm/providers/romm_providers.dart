@@ -9,6 +9,7 @@ import '../api/models/romm_platform.dart';
 import '../api/models/romm_rom.dart';
 import '../api/models/romm_search_filters.dart';
 import '../api/models/romm_stats.dart';
+import '../api/models/romm_virtual_collection.dart';
 import '../api/romm_api.dart';
 
 final rommApiProvider = Provider.family<RommApi, Instance>((ref, instance) {
@@ -137,3 +138,44 @@ final rommStatsProvider =
     FutureProvider.autoDispose.family<RommStats, Instance>(
         (ref, instance) =>
             ref.watch(rommApiProvider(instance)).getStats());
+
+// ---------------------------------------------------------------------------
+// Home rails
+// ---------------------------------------------------------------------------
+
+final rommRecentlyAddedProvider =
+    FutureProvider.autoDispose.family<List<RommRom>, Instance>(
+        (ref, instance) =>
+            ref.watch(rommApiProvider(instance)).getRecentlyAdded());
+
+final rommRecentlyPlayedProvider =
+    FutureProvider.autoDispose.family<List<RommRom>, Instance>(
+        (ref, instance) =>
+            ref.watch(rommApiProvider(instance)).getRecentlyPlayed());
+
+// ---------------------------------------------------------------------------
+// Virtual collections
+// ---------------------------------------------------------------------------
+
+typedef RommVirtualCollectionsKey = ({Instance instance, String type});
+
+final rommVirtualCollectionsProvider = FutureProvider.autoDispose
+    .family<List<RommVirtualCollection>, RommVirtualCollectionsKey>(
+        (ref, key) => ref
+            .watch(rommApiProvider(key.instance))
+            .getVirtualCollections(key.type));
+
+typedef RommVirtualRomsKey = ({
+  Instance instance,
+  String virtualCollectionId,
+  String searchTerm,
+});
+
+final rommVirtualCollectionRomsProvider = FutureProvider.autoDispose
+    .family<List<RommRom>, RommVirtualRomsKey>((ref, key) {
+  final api = ref.watch(rommApiProvider(key.instance));
+  return api.getVirtualCollectionRoms(
+    key.virtualCollectionId,
+    searchTerm: key.searchTerm.isEmpty ? null : key.searchTerm,
+  );
+});

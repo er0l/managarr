@@ -25,6 +25,8 @@ class RommRom {
     this.files = const [],
     this.pathScreenshots = const [],
     this.isFavourite = false,
+    this.hasManual = false,
+    this.pathManual,
   });
 
   final int id;
@@ -54,6 +56,10 @@ class RommRom {
   final List<RommRomFile> files;
   final List<String> pathScreenshots;
   final bool isFavourite;
+
+  /// Whether the ROM has a game manual (PDF) stored in RomM.
+  final bool hasManual;
+  final String? pathManual;
 
   int? get releaseYear {
     if (firstReleaseDate == null) return null;
@@ -146,6 +152,9 @@ class RommRom {
       isFavourite: json['is_favourite'] as bool? ??
           json['favourite'] as bool? ??
           false,
+      hasManual: json['has_manual'] as bool? ??
+          (json['path_manual'] as String?)?.isNotEmpty == true,
+      pathManual: json['path_manual'] as String?,
     );
   }
 }

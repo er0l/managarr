@@ -5,14 +5,17 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
+import '../api/models/romm_collection.dart';
 import '../api/models/romm_rom.dart';
 import '../api/romm_api.dart';
 import '../providers/romm_providers.dart';
+import '../services/romm_download_history.dart';
 import 'romm_edit_rom_screen.dart';
 
 class RommRomDetailScreen extends ConsumerStatefulWidget {
@@ -125,6 +128,17 @@ class _RommRomDetailScreenState extends ConsumerState<RommRomDetailScreen> {
                       ));
                     }
                   },
+                ),
+                if (rom.hasManual && rom.pathManual != null)
+                  IconButton(
+                    icon: const Icon(Icons.menu_book_outlined, color: muted),
+                    tooltip: 'Game Manual',
+                    onPressed: () => _openManual(api, rom),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.bookmark_add_outlined, color: muted),
+                  tooltip: 'Collections',
+                  onPressed: () => _showCollectionPicker(api, rom),
                 ),
                 const Spacer(),
                 // Right: ···
@@ -348,6 +362,19 @@ class _RommRomDetailScreenState extends ConsumerState<RommRomDetailScreen> {
       if (!mounted) return;
 
       if (result != null) {
+        await RommDownloadHistory.add(
+          ref.read(dbProvider),
+          RommDownloadRecord(
+            romName: rom.name,
+            fileName: fileName,
+            sizeBytes: bytes.length,
+            savedAt: DateTime.now(),
+            instanceName: widget.instance.name,
+            savedPath: result,
+          ),
+        );
+        ref.invalidate(rommDownloadHistoryProvider);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Saved: $fileName'),
           backgroundColor: AppColors.statusOnline,
@@ -376,6 +403,127 @@ class _RommRomDetailScreenState extends ConsumerState<RommRomDetailScreen> {
           _progress = 0;
         });
       }
+    }
+  }
+
+  /// Downloads the game manual PDF to a temp file and opens it with the
+  /// system PDF viewer.
+  Future<void> _openManual(RommApi api, RommRom rom) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(const SnackBar(
+      content: Text('Loading manual…'),
+      duration: Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+    ));
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final path = '${tempDir.path}/manual_${rom.id}.pdf';
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(minutes: 5),
+        headers: {'Authorization': api.authHeader},
+      ));
+      await dio.download(api.rawAssetUrl(rom.pathManual!), path);
+      final result = await OpenFilex.open(path, type: 'application/pdf');
+      if (result.type != ResultType.done) {
+        messenger.showSnackBar(SnackBar(
+          content: Text('Could not open manual: ${result.message}'),
+          backgroundColor: AppColors.statusOffline,
+        ));
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('Failed to load manual: $e'),
+        backgroundColor: AppColors.statusOffline,
+      ));
+    }
+  }
+
+  /// Bottom sheet with a checkbox per collection; changes apply immediately.
+  Future<void> _showCollectionPicker(RommApi api, RommRom rom) async {
+    var changed = false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: FutureBuilder<List<RommCollection>>(
+          future: api.getCollections(),
+          builder: (ctx, snap) {
+            if (!snap.hasData && !snap.hasError) {
+              return const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final collections = snap.data ?? const <RommCollection>[];
+            if (collections.isEmpty) {
+              return const SizedBox(
+                height: 160,
+                child: Center(
+                  child: Text('No collections yet — create one from '
+                      'the Collections screen.'),
+                ),
+              );
+            }
+            // Membership by name — the ROM payload lists collection names.
+            final memberNames = rom.collections.toSet();
+            return StatefulBuilder(
+              builder: (ctx, setSheetState) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Add to collection',
+                        style: Theme.of(ctx).textTheme.titleLarge),
+                  ),
+                  const Divider(height: 1),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final collection in collections)
+                          CheckboxListTile(
+                            title: Text(collection.name),
+                            value: memberNames.contains(collection.name),
+                            activeColor: AppColors.tealPrimary,
+                            onChanged: (checked) async {
+                              final messenger = ScaffoldMessenger.of(context);
+                              try {
+                                if (checked == true) {
+                                  await api.addRomsToCollection(
+                                      collection.id, [rom.id]);
+                                  memberNames.add(collection.name);
+                                } else {
+                                  await api.removeRomFromCollection(
+                                      collection.id, rom.id);
+                                  memberNames.remove(collection.name);
+                                }
+                                changed = true;
+                                setSheetState(() {});
+                              } catch (e) {
+                                messenger.showSnackBar(SnackBar(
+                                  content:
+                                      Text('Failed to update collection: $e'),
+                                  backgroundColor: AppColors.statusOffline,
+                                ));
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    if (changed && mounted) {
+      ref.invalidate(rommRomDetailProvider(
+          (instance: widget.instance, romId: widget.romId)));
+      ref.invalidate(rommCollectionsProvider(widget.instance));
     }
   }
 }
