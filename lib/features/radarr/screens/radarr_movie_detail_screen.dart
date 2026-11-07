@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -57,14 +59,19 @@ class _RadarrMovieDetailScreenState
     setState(() => _actionPending = true);
     try {
       final api = ref.read(radarrApiProvider(widget.instance));
-      final updated =
-          await api.toggleMonitorMovie(_movie.id, !_movie.monitored);
+      final updated = await api.toggleMonitorMovie(
+        _movie.id,
+        !_movie.monitored,
+      );
       if (mounted) setState(() => _movie = updated);
       ref.invalidate(radarrMoviesProvider(widget.instance));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -80,13 +87,19 @@ class _RadarrMovieDetailScreenState
       await api.refreshMovie(_movie.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Refresh queued'), behavior: SnackBarBehavior.floating),
+          const SnackBar(
+            content: Text('Refresh queued'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -102,13 +115,19 @@ class _RadarrMovieDetailScreenState
       await api.searchMovie(_movie.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Search started'), behavior: SnackBarBehavior.floating),
+          const SnackBar(
+            content: Text('Search started'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -124,13 +143,19 @@ class _RadarrMovieDetailScreenState
       await api.sendCommand(name);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label started'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('$label started'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -167,7 +192,8 @@ class _RadarrMovieDetailScreenState
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.statusOffline),
+                backgroundColor: AppColors.statusOffline,
+              ),
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('Remove'),
             ),
@@ -185,7 +211,10 @@ class _RadarrMovieDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+            SnackBar(
+              content: Text('Error: $e'),
+              behavior: SnackBarBehavior.floating,
+            ),
           );
           setState(() => _actionPending = false);
         }
@@ -197,8 +226,8 @@ class _RadarrMovieDetailScreenState
     final updated = await Navigator.push<RadarrMovie>(
       context,
       MaterialPageRoute(
-        builder: (_) => RadarrEditMovieScreen(
-            movie: _movie, instance: widget.instance),
+        builder: (_) =>
+            RadarrEditMovieScreen(movie: _movie, instance: widget.instance),
       ),
     );
     if (updated != null && mounted) {
@@ -225,6 +254,7 @@ class _RadarrMovieDetailScreenState
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
+            leading: const ModuleBackButton(onImage: true),
             expandedHeight: 300,
             pinned: true,
             backgroundColor: AppColors.tealPrimary,
@@ -249,10 +279,13 @@ class _RadarrMovieDetailScreenState
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColors.textOnPrimary)),
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.textOnPrimary,
+                    ),
+                  ),
                 )
               else ...[
                 IconButton(
@@ -264,14 +297,18 @@ class _RadarrMovieDetailScreenState
                   onPressed: _toggleMonitor,
                 ),
                 IconButton(
-                  icon:
-                      const Icon(Icons.edit_outlined, color: AppColors.textOnPrimary),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: AppColors.textOnPrimary,
+                  ),
                   tooltip: 'Edit',
                   onPressed: _openEdit,
                 ),
                 PopupMenuButton<String>(
-                  icon:
-                      const Icon(Icons.more_vert, color: AppColors.textOnPrimary),
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: AppColors.textOnPrimary,
+                  ),
                   onSelected: (value) {
                     switch (value) {
                       case 'search':
@@ -292,51 +329,63 @@ class _RadarrMovieDetailScreenState
                     PopupMenuItem(
                       value: 'search',
                       child: ListTile(
-                          leading: Icon(Icons.search),
-                          title: Text('Search Movie'),
-                          contentPadding: EdgeInsets.zero),
+                        leading: Icon(Icons.search),
+                        title: Text('Search Movie'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
                     PopupMenuItem(
                       value: 'releases',
                       child: ListTile(
-                          leading: Icon(Icons.download_outlined),
-                          title: Text('Releases'),
-                          contentPadding: EdgeInsets.zero),
+                        leading: Icon(Icons.download_outlined),
+                        title: Text('Releases'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
                     PopupMenuItem(
                       value: 'refresh',
                       child: ListTile(
-                          leading: Icon(Icons.refresh),
-                          title: Text('Refresh'),
-                          contentPadding: EdgeInsets.zero),
+                        leading: Icon(Icons.refresh),
+                        title: Text('Refresh'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
                     PopupMenuItem(
                       value: 'rescan',
                       child: ListTile(
-                          leading: Icon(Icons.folder_open_outlined),
-                          title: Text('Rescan Files'),
-                          contentPadding: EdgeInsets.zero),
+                        leading: Icon(Icons.folder_open_outlined),
+                        title: Text('Rescan Files'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
                     PopupMenuItem(
                       value: 'rssSync',
                       child: ListTile(
-                          leading: Icon(Icons.rss_feed),
-                          title: Text('RSS Sync'),
-                          contentPadding: EdgeInsets.zero),
+                        leading: Icon(Icons.rss_feed),
+                        title: Text('RSS Sync'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
                     PopupMenuDivider(),
                     PopupMenuItem(
                       value: 'delete',
                       child: ListTile(
-                          leading: Icon(Icons.delete_outline,
-                              color: AppColors.statusOffline),
-                          title: Text('Remove Movie',
-                              style: TextStyle(color: AppColors.statusOffline)),
-                          contentPadding: EdgeInsets.zero),
+                        leading: Icon(
+                          Icons.delete_outline,
+                          color: AppColors.statusOffline,
+                        ),
+                        title: Text(
+                          'Remove Movie',
+                          style: TextStyle(color: AppColors.statusOffline),
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
                   ],
                 ),
               ],
+
+              const ModuleHomeButton(onImage: true),
             ],
             bottom: TabBar(
               controller: _tabController,
@@ -344,8 +393,10 @@ class _RadarrMovieDetailScreenState
               indicatorWeight: 3,
               labelColor: AppColors.textOnPrimary,
               unselectedLabelColor: AppColors.textOnPrimary.withAlpha(160),
-              labelStyle:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
               tabs: const [
                 Tab(text: 'Overview'),
                 Tab(text: 'Files'),
@@ -421,14 +472,16 @@ class _OverviewTab extends StatelessWidget {
             if (movie.status != null) _StatusChip(status: movie.status!),
             if (movie.hasFile)
               const _Chip(
-                  label: 'File on disk',
-                  icon: Icons.check_circle_outline,
-                  color: AppColors.statusOnline),
+                label: 'File on disk',
+                icon: Icons.check_circle_outline,
+                color: AppColors.statusOnline,
+              ),
             if (!movie.monitored)
               const _Chip(
-                  label: 'Unmonitored',
-                  icon: Icons.visibility_off_outlined,
-                  color: AppColors.statusUnknown),
+                label: 'Unmonitored',
+                icon: Icons.visibility_off_outlined,
+                color: AppColors.statusUnknown,
+              ),
           ],
         ),
         // Genre chips
@@ -437,22 +490,27 @@ class _OverviewTab extends StatelessWidget {
           Wrap(
             spacing: Spacing.s4,
             runSpacing: Spacing.s4,
-            children: movie.genres!
-                .map((g) => _GenreChip(label: g))
-                .toList(),
+            children: movie.genres!.map((g) => _GenreChip(label: g)).toList(),
           ),
         ],
         if (movie.sizeOnDisk != null && movie.sizeOnDisk! > 0) ...[
           const SizedBox(height: Spacing.s4),
-          Text(_formatBytes(movie.sizeOnDisk!),
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary)),
+          Text(
+            _formatBytes(movie.sizeOnDisk!),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
         if (movie.path != null) ...[
           const SizedBox(height: Spacing.s4),
-          Text(movie.path!,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary, fontFamily: 'monospace')),
+          Text(
+            movie.path!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+              fontFamily: 'monospace',
+            ),
+          ),
         ],
         // Release dates
         if (movie.inCinemas != null ||
@@ -463,13 +521,20 @@ class _OverviewTab extends StatelessWidget {
         ],
         const SizedBox(height: Spacing.s16),
         if (movie.overview != null && movie.overview!.isNotEmpty) ...[
-          Text('Overview',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Overview',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: Spacing.s8),
-          Text(movie.overview!,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: AppColors.textSecondary, height: 1.55)),
+          Text(
+            movie.overview!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.55,
+            ),
+          ),
         ],
         // External links
         if (links.isNotEmpty) ...[
@@ -513,8 +578,7 @@ List<ExternalLink> _buildMovieLinks(RadarrMovie movie) => [
   ] else
     ExternalLink(
       label: 'MDBList',
-      url:
-          'https://mdblist.com/?q=${Uri.encodeComponent(movie.title)}',
+      url: 'https://mdblist.com/?q=${Uri.encodeComponent(movie.title)}',
       color: const Color(0xFF1B6EC2),
     ),
   ExternalLink(
@@ -525,17 +589,16 @@ List<ExternalLink> _buildMovieLinks(RadarrMovie movie) => [
   ),
   ExternalLink(
     label: 'Blu-ray',
-    url: 'https://www.blu-ray.com/search/?quicksearch=1'
+    url:
+        'https://www.blu-ray.com/search/?quicksearch=1'
         '&quicksearch_keyword=${Uri.encodeComponent(movie.title)}'
         '&section=bluraymovies',
     color: const Color(0xFF1C355E),
   ),
-  if (movie.youtubeTrailerId != null &&
-      movie.youtubeTrailerId!.isNotEmpty)
+  if (movie.youtubeTrailerId != null && movie.youtubeTrailerId!.isNotEmpty)
     ExternalLink(
       label: 'Trailer',
-      url:
-          'https://www.youtube.com/watch?v=${movie.youtubeTrailerId}',
+      url: 'https://www.youtube.com/watch?v=${movie.youtubeTrailerId}',
       color: const Color(0xFFFF0000),
     ),
 ];
@@ -561,27 +624,38 @@ class _FilesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filesAsync = ref.watch(
-        radarrMovieFilesProvider((instance: instance, movieId: movieId)));
+      radarrMovieFilesProvider((instance: instance, movieId: movieId)),
+    );
     final theme = Theme.of(context);
 
     return filesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
-          child: Text('Error: $e',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: AppColors.statusOffline))),
+        child: Text(
+          'Error: $e',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.statusOffline,
+          ),
+        ),
+      ),
       data: (files) {
         if (files.isEmpty) {
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.folder_off_outlined,
-                    size: 48, color: AppColors.textSecondary.withAlpha(80)),
+                Icon(
+                  Icons.folder_off_outlined,
+                  size: 48,
+                  color: AppColors.textSecondary.withAlpha(80),
+                ),
                 const SizedBox(height: Spacing.s16),
-                Text('No files found',
-                    style: theme.textTheme.bodyLarge
-                        ?.copyWith(color: AppColors.textSecondary)),
+                Text(
+                  'No files found',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           );
@@ -589,26 +663,34 @@ class _FilesTab extends ConsumerWidget {
         return RefreshIndicator(
           color: AppColors.tealPrimary,
           onRefresh: () async => ref.invalidate(
-              radarrMovieFilesProvider((instance: instance, movieId: movieId))),
+            radarrMovieFilesProvider((instance: instance, movieId: movieId)),
+          ),
           child: ListView.builder(
             padding: const EdgeInsets.only(
-                top: Spacing.s8, bottom: Spacing.s24),
+              top: Spacing.s8,
+              bottom: Spacing.s24,
+            ),
             itemCount: files.length,
             itemBuilder: (context, index) {
               final file = files[index];
               return Card(
                 margin: const EdgeInsets.symmetric(
-                    horizontal: Spacing.pageHorizontal, vertical: 4),
+                  horizontal: Spacing.pageHorizontal,
+                  vertical: 4,
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(Spacing.cardPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(file.relativePath ?? 'Unknown file',
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis),
+                      Text(
+                        file.relativePath ?? 'Unknown file',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: Spacing.s8),
                       Wrap(
                         spacing: Spacing.s8,
@@ -629,8 +711,10 @@ class _FilesTab extends ConsumerWidget {
                         const SizedBox(height: Spacing.s4),
                         Text(
                           'Added ${DateFormat.yMMMd().format(file.dateAdded!)}',
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                     ],
@@ -658,11 +742,14 @@ class _MiniTag extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.tealPrimary.withAlpha(60)),
       ),
-      child: Text(label,
-          style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.tealPrimary,
-              fontWeight: FontWeight.w500)),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 10,
+          color: AppColors.tealPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }
@@ -679,27 +766,38 @@ class _HistoryTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(
-        radarrMovieHistoryProvider((instance: instance, movieId: movieId)));
+      radarrMovieHistoryProvider((instance: instance, movieId: movieId)),
+    );
     final theme = Theme.of(context);
 
     return historyAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
-          child: Text('Error: $e',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: AppColors.statusOffline))),
+        child: Text(
+          'Error: $e',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.statusOffline,
+          ),
+        ),
+      ),
       data: (history) {
         if (history.records.isEmpty) {
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.history_outlined,
-                    size: 48, color: AppColors.textSecondary.withAlpha(80)),
+                Icon(
+                  Icons.history_outlined,
+                  size: 48,
+                  color: AppColors.textSecondary.withAlpha(80),
+                ),
                 const SizedBox(height: Spacing.s16),
-                Text('No history',
-                    style: theme.textTheme.bodyLarge
-                        ?.copyWith(color: AppColors.textSecondary)),
+                Text(
+                  'No history',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           );
@@ -707,27 +805,35 @@ class _HistoryTab extends ConsumerWidget {
         return RefreshIndicator(
           color: AppColors.tealPrimary,
           onRefresh: () async => ref.invalidate(
-              radarrMovieHistoryProvider((instance: instance, movieId: movieId))),
+            radarrMovieHistoryProvider((instance: instance, movieId: movieId)),
+          ),
           child: ListView.builder(
             padding: const EdgeInsets.only(
-                top: Spacing.s8, bottom: Spacing.s24),
+              top: Spacing.s8,
+              bottom: Spacing.s24,
+            ),
             itemCount: history.records.length,
             itemBuilder: (context, index) {
               final record = history.records[index];
               return ListTile(
                 leading: _HistoryIcon(eventType: record.eventType),
-                title: Text(record.sourceTitle,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(fontWeight: FontWeight.w500),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
+                title: Text(
+                  record.sourceTitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 subtitle: Text(
                   [
                     _eventLabel(record.eventType),
                     DateFormat.yMMMd().add_jm().format(record.date),
                   ].join(' · '),
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
                 ),
               );
             },
@@ -738,13 +844,13 @@ class _HistoryTab extends ConsumerWidget {
   }
 
   String _eventLabel(String type) => switch (type) {
-        'grabbed' => 'Grabbed',
-        'downloadFolderImported' => 'Imported',
-        'downloadFailed' => 'Failed',
-        'movieFileDeleted' => 'Deleted',
-        'movieFileRenamed' => 'Renamed',
-        _ => type,
-      };
+    'grabbed' => 'Grabbed',
+    'downloadFolderImported' => 'Imported',
+    'downloadFailed' => 'Failed',
+    'movieFileDeleted' => 'Deleted',
+    'movieFileRenamed' => 'Renamed',
+    _ => type,
+  };
 }
 
 class _HistoryIcon extends StatelessWidget {
@@ -755,10 +861,16 @@ class _HistoryIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, color) = switch (eventType) {
       'grabbed' => (Icons.cloud_download_outlined, AppColors.blueAccent),
-      'downloadFolderImported' => (Icons.check_circle_outline, AppColors.statusOnline),
+      'downloadFolderImported' => (
+        Icons.check_circle_outline,
+        AppColors.statusOnline,
+      ),
       'downloadFailed' => (Icons.error_outline, AppColors.statusOffline),
       'movieFileDeleted' => (Icons.delete_outline, AppColors.statusOffline),
-      'movieFileRenamed' => (Icons.drive_file_rename_outline, AppColors.statusWarning),
+      'movieFileRenamed' => (
+        Icons.drive_file_rename_outline,
+        AppColors.statusWarning,
+      ),
       _ => (Icons.info_outline, AppColors.textSecondary),
     };
     return Icon(icon, color: color, size: 24);
@@ -787,9 +899,10 @@ void _showFullscreenImage(BuildContext context, String imageUrl) {
                 imageUrl,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.broken_image,
-                    color: Colors.white54,
-                    size: 64),
+                  Icons.broken_image,
+                  color: Colors.white54,
+                  size: 64,
+                ),
               ),
             ),
           ),
@@ -811,13 +924,13 @@ class _BackdropHeader extends StatelessWidget {
     final statusColor = movie.hasFile
         ? AppColors.statusOnline
         : movie.monitored
-            ? AppColors.statusWarning
-            : AppColors.statusUnknown;
+        ? AppColors.statusWarning
+        : AppColors.statusUnknown;
     final statusLabel = movie.hasFile
         ? 'Downloaded'
         : movie.monitored
-            ? 'Missing'
-            : 'Unmonitored';
+        ? 'Missing'
+        : 'Unmonitored';
 
     return Stack(
       fit: StackFit.expand,
@@ -857,7 +970,8 @@ class _BackdropHeader extends StatelessWidget {
               child: GestureDetector(
                 onTap: () async {
                   final url = Uri.parse(
-                      'https://www.youtube.com/watch?v=${movie.youtubeTrailerId}');
+                    'https://www.youtube.com/watch?v=${movie.youtubeTrailerId}',
+                  );
                   if (await canLaunchUrl(url)) {
                     launchUrl(url, mode: LaunchMode.externalApplication);
                   }
@@ -985,8 +1099,7 @@ class _BackdropHeader extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (movie.studio != null &&
-                          movie.studio!.isNotEmpty) ...[
+                      if (movie.studio != null && movie.studio!.isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
                           movie.studio!,
@@ -1022,7 +1135,10 @@ class _ColoredFallback extends StatelessWidget {
       child: Text(
         movie.title.isNotEmpty ? movie.title[0] : 'R',
         style: const TextStyle(
-            color: Colors.white30, fontSize: 96, fontWeight: FontWeight.w700),
+          color: Colors.white30,
+          fontSize: 96,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -1176,9 +1292,14 @@ class _Chip extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: c),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11, color: c, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: c,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

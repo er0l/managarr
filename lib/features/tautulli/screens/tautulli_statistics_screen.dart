@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -18,16 +20,17 @@ class TautulliStatisticsScreen extends ConsumerWidget {
     final api = ref.read(tautulliApiProvider(instance));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-        title: const Text(
+      appBar: ModuleAppBar(
+        title: Text(
           'Statistics',
-          style: TextStyle(color: AppColors.textOnPrimary),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             onPressed: () =>
                 ref.invalidate(tautulliHomeStatsProvider(instance)),
           ),

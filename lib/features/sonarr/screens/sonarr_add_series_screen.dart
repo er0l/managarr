@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -35,16 +37,16 @@ class _SonarrAddSeriesScreenState extends ConsumerState<SonarrAddSeriesScreen> {
   void _onSearchChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      ref
-          .read(sonarrLookupQueryProvider(widget.instance.id).notifier)
-          .state = value;
+      ref.read(sonarrLookupQueryProvider(widget.instance.id).notifier).state =
+          value;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final resultsAsync =
-        ref.watch(sonarrLookupResultsProvider(widget.instance));
+    final resultsAsync = ref.watch(
+      sonarrLookupResultsProvider(widget.instance),
+    );
     final existingAsync = ref.watch(sonarrSeriesProvider(widget.instance));
     final existingByTvdbId = existingAsync.maybeWhen(
       data: (series) => {for (final s in series) s.tvdbId: s},
@@ -52,13 +54,11 @@ class _SonarrAddSeriesScreenState extends ConsumerState<SonarrAddSeriesScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-        title: const Text(
+      appBar: ModuleAppBar(
+        title: Text(
           'Add Series',
           style: TextStyle(
-            color: AppColors.textOnPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
@@ -85,24 +85,25 @@ class _SonarrAddSeriesScreenState extends ConsumerState<SonarrAddSeriesScreen> {
                         onPressed: () {
                           _searchController.clear();
                           ref
-                              .read(sonarrLookupQueryProvider(
-                                      widget.instance.id)
-                                  .notifier)
-                              .state = '';
+                                  .read(
+                                    sonarrLookupQueryProvider(
+                                      widget.instance.id,
+                                    ).notifier,
+                                  )
+                                  .state =
+                              '';
                         },
                       )
                     : null,
                 isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
               ),
               onChanged: _onSearchChanged,
             ),
           ),
           Expanded(
             child: resultsAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text(
                   'Search failed: $e',
@@ -115,8 +116,8 @@ class _SonarrAddSeriesScreenState extends ConsumerState<SonarrAddSeriesScreen> {
                     child: Text(
                       'Search for a series to add',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   );
                 }
@@ -125,8 +126,8 @@ class _SonarrAddSeriesScreenState extends ConsumerState<SonarrAddSeriesScreen> {
                     child: Text(
                       'No results found',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   );
                 }
@@ -210,8 +211,7 @@ class _SeriesResultTile extends StatelessWidget {
       ),
       title: Text(
         series.title,
-        style: theme.textTheme.bodyLarge
-            ?.copyWith(fontWeight: FontWeight.w600),
+        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
@@ -220,19 +220,18 @@ class _SeriesResultTile extends StatelessWidget {
           if (series.year != null && series.year! > 0)
             Text(
               '${series.year}',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           if (inLibrary) ...[
             const SizedBox(width: 8),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: AppColors.tealPrimary.withAlpha(30),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                    color: AppColors.tealPrimary.withAlpha(80)),
+                border: Border.all(color: AppColors.tealPrimary.withAlpha(80)),
               ),
               child: const Text(
                 'In Library',

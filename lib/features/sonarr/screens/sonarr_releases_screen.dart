@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -26,33 +28,33 @@ class SonarrReleasesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final releasesAsync = ref.watch(sonarrReleasesProvider((
-      instance: instance,
-      seriesId: series.id,
-      seasonNumber: seasonNumber,
-      episodeId: episodeId,
-    )));
+    final releasesAsync = ref.watch(
+      sonarrReleasesProvider((
+        instance: instance,
+        seriesId: series.id,
+        seasonNumber: seasonNumber,
+        episodeId: episodeId,
+      )),
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               title ?? 'Releases',
-              style: const TextStyle(
-                color: AppColors.textOnPrimary,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
               ),
             ),
             Text(
               series.title,
-              style: const TextStyle(
-                color: AppColors.textOnPrimary,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
               ),
@@ -61,13 +63,18 @@ class SonarrReleasesScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
-            onPressed: () => ref.invalidate(sonarrReleasesProvider((
-              instance: instance,
-              seriesId: series.id,
-              seasonNumber: seasonNumber,
-              episodeId: episodeId,
-            ))),
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            onPressed: () => ref.invalidate(
+              sonarrReleasesProvider((
+                instance: instance,
+                seriesId: series.id,
+                seasonNumber: seasonNumber,
+                episodeId: episodeId,
+              )),
+            ),
           ),
         ],
       ),
@@ -79,31 +86,40 @@ class SonarrReleasesScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.cloud_off,
-                    size: 48, color: AppColors.statusOffline),
+                const Icon(
+                  Icons.cloud_off,
+                  size: 48,
+                  color: AppColors.statusOffline,
+                ),
                 const SizedBox(height: Spacing.s16),
-                Text('Failed to load releases',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Failed to load releases',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: Spacing.s8),
-                Text(e.toString(),
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                    maxLines: 3),
+                Text(
+                  e.toString(),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                ),
                 const SizedBox(height: Spacing.s24),
                 FilledButton.icon(
-                  onPressed: () => ref.invalidate(sonarrReleasesProvider((
-                    instance: instance,
-                    seriesId: series.id,
-                    seasonNumber: seasonNumber,
-                    episodeId: episodeId,
-                  ))),
+                  onPressed: () => ref.invalidate(
+                    sonarrReleasesProvider((
+                      instance: instance,
+                      seriesId: series.id,
+                      seasonNumber: seasonNumber,
+                      episodeId: episodeId,
+                    )),
+                  ),
                   style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.tealPrimary,
-                      foregroundColor: AppColors.textOnPrimary,
-                      shape: const StadiumBorder()),
+                    backgroundColor: AppColors.tealPrimary,
+                    foregroundColor: AppColors.textOnPrimary,
+                    shape: const StadiumBorder(),
+                  ),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),
                 ),
@@ -116,10 +132,9 @@ class SonarrReleasesScreen extends ConsumerWidget {
             return Center(
               child: Text(
                 'No releases found',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
               ),
             );
           }
@@ -172,7 +187,8 @@ class _ReleaseTileState extends State<_ReleaseTile> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: AppColors.tealPrimary),
+              backgroundColor: AppColors.tealPrimary,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Grab'),
           ),
@@ -220,7 +236,9 @@ class _ReleaseTileState extends State<_ReleaseTile> {
 
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
-              horizontal: Spacing.pageHorizontal, vertical: 6),
+            horizontal: Spacing.pageHorizontal,
+            vertical: 6,
+          ),
           title: Text(
             release.title,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -255,8 +273,7 @@ class _ReleaseTileState extends State<_ReleaseTile> {
                         ? AppColors.blueAccent
                         : AppColors.orangeAccent,
                   ),
-                if (release.protocol == 'torrent' &&
-                    release.seeders != null)
+                if (release.protocol == 'torrent' && release.seeders != null)
                   _Chip(
                     label: 'S:${release.seeders} L:${release.leechers ?? 0}',
                     color: (release.seeders ?? 0) > 0
@@ -325,7 +342,10 @@ class _Chip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-            fontSize: 10, color: color, fontWeight: FontWeight.w500),
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

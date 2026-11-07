@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -11,29 +13,35 @@ import '../providers/rtorrent_providers.dart';
 // Stays up-to-date whenever the parent provider is refreshed.
 final _torrentByHashProvider = Provider.autoDispose
     .family<RTorrentTorrent?, ({Instance instance, String hash})>((ref, key) {
-  final list = ref.watch(rtorrentTorrentsProvider(key.instance)).valueOrNull;
-  if (list == null) return null;
-  try {
-    return list.firstWhere((t) => t.hash == key.hash);
-  } catch (_) {
-    return null;
-  }
-});
+      final list = ref
+          .watch(rtorrentTorrentsProvider(key.instance))
+          .valueOrNull;
+      if (list == null) return null;
+      try {
+        return list.firstWhere((t) => t.hash == key.hash);
+      } catch (_) {
+        return null;
+      }
+    });
 
 // Per-torrent trackers/files providers
-final _trackersProvider =
-    FutureProvider.autoDispose.family<List<RTorrentTracker>, ({Instance instance, String hash})>(
-        (ref, key) async {
-  final api = RTorrentApi.fromInstance(key.instance);
-  return api.getTrackers(key.hash);
-});
+final _trackersProvider = FutureProvider.autoDispose
+    .family<List<RTorrentTracker>, ({Instance instance, String hash})>((
+      ref,
+      key,
+    ) async {
+      final api = RTorrentApi.fromInstance(key.instance);
+      return api.getTrackers(key.hash);
+    });
 
-final _filesProvider =
-    FutureProvider.autoDispose.family<List<RTorrentFile>, ({Instance instance, String hash})>(
-        (ref, key) async {
-  final api = RTorrentApi.fromInstance(key.instance);
-  return api.getFiles(key.hash);
-});
+final _filesProvider = FutureProvider.autoDispose
+    .family<List<RTorrentFile>, ({Instance instance, String hash})>((
+      ref,
+      key,
+    ) async {
+      final api = RTorrentApi.fromInstance(key.instance);
+      return api.getFiles(key.hash);
+    });
 
 class RTorrentTorrentDetailScreen extends ConsumerStatefulWidget {
   const RTorrentTorrentDetailScreen({
@@ -69,8 +77,7 @@ class _RTorrentTorrentDetailScreenState
     super.dispose();
   }
 
-  void _refresh() =>
-      ref.invalidate(rtorrentTorrentsProvider(widget.instance));
+  void _refresh() => ref.invalidate(rtorrentTorrentsProvider(widget.instance));
 
   Future<void> _action(Future<bool> Function() fn, String successMsg) async {
     try {
@@ -79,14 +86,19 @@ class _RTorrentTorrentDetailScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(ok ? successMsg : 'Action failed'),
-          backgroundColor: ok ? AppColors.statusOnline : AppColors.statusOffline,
+          backgroundColor: ok
+              ? AppColors.statusOnline
+              : AppColors.statusOffline,
         ),
       );
       if (ok) _refresh();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.statusOffline),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.statusOffline,
+        ),
       );
     }
   }
@@ -95,8 +107,7 @@ class _RTorrentTorrentDetailScreenState
   Widget build(BuildContext context) {
     // Keep _torrent up-to-date whenever the provider delivers new data
     ref.listen(
-      _torrentByHashProvider(
-          (instance: widget.instance, hash: _torrent.hash)),
+      _torrentByHashProvider((instance: widget.instance, hash: _torrent.hash)),
       (_, next) {
         if (next != null && mounted) setState(() => _torrent = next);
       },
@@ -108,13 +119,11 @@ class _RTorrentTorrentDetailScreenState
     const muted = Color(0xA0FFFFFF);
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Text(
           t.name,
-          style: const TextStyle(
-            color: AppColors.textOnPrimary,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -123,10 +132,12 @@ class _RTorrentTorrentDetailScreenState
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.textOnPrimary,
-          unselectedLabelColor: AppColors.textOnPrimary.withAlpha(160),
+          labelColor: Theme.of(context).colorScheme.onSurface,
+          unselectedLabelColor: Theme.of(
+            context,
+          ).colorScheme.onSurface.withAlpha(160),
           indicatorColor: AppColors.orangeAccent,
-          tabs: const [
+          tabs: [
             Tab(text: 'Info'),
             Tab(text: 'Trackers'),
             Tab(text: 'Files'),
@@ -200,10 +211,8 @@ class _RTorrentTorrentDetailScreenState
                 const PopupMenuItem(
                   value: _TorrentAction.remove,
                   child: ListTile(
-                    leading:
-                        Icon(Icons.delete_outline, color: Colors.red),
-                    title: Text('Remove',
-                        style: TextStyle(color: Colors.red)),
+                    leading: Icon(Icons.delete_outline, color: Colors.red),
+                    title: Text('Remove', style: TextStyle(color: Colors.red)),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
@@ -231,11 +240,13 @@ class _RTorrentTorrentDetailScreenState
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Set')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Set'),
+          ),
         ],
       ),
     );
@@ -270,12 +281,13 @@ class _RTorrentTorrentDetailScreenState
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
             TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Remove',
-                    style: TextStyle(color: Colors.red))),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Remove', style: TextStyle(color: Colors.red)),
+            ),
           ],
         ),
       ),
@@ -304,55 +316,57 @@ class _InfoTab extends StatelessWidget {
     final color = t.isError
         ? AppColors.statusOffline
         : t.isSeeding
-            ? AppColors.blueAccent
-            : t.isDownloading
-                ? AppColors.statusOnline
-                : t.isPaused
-                    ? AppColors.statusWarning
-                    : AppColors.statusUnknown;
+        ? AppColors.blueAccent
+        : t.isDownloading
+        ? AppColors.statusOnline
+        : t.isPaused
+        ? AppColors.statusWarning
+        : AppColors.statusUnknown;
 
     return RefreshIndicator(
       onRefresh: onRefresh,
       color: AppColors.tealPrimary,
       child: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: t.percentageDone / 100.0,
-            minHeight: 8,
-            backgroundColor: color.withAlpha(40),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+        padding: const EdgeInsets.all(16),
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: t.percentageDone / 100.0,
+              minHeight: 8,
+              backgroundColor: color.withAlpha(40),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        _Row('Status', t.statusLabel),
-        _Row('Progress', '${t.percentageDone}%'),
-        _Row('Size', _fmt(t.size)),
-        _Row('Downloaded', _fmt(t.completed)),
-        _Row('Ratio', t.ratio.toStringAsFixed(3)),
-        if (t.downRate > 0) _Row('Down Speed', '${_fmt(t.downRate)}/s'),
-        if (t.upRate > 0) _Row('Up Speed', '${_fmt(t.upRate)}/s'),
-        _Row('Label', t.label.isEmpty ? '(none)' : t.label),
-        if (t.dateAdded > 0)
-          _Row('Added',
-              DateTime.fromMillisecondsSinceEpoch(t.dateAdded * 1000)
-                  .toLocal()
-                  .toString()
-                  .substring(0, 19)),
-        if (t.dateDone > 0)
-          _Row('Finished',
-              DateTime.fromMillisecondsSinceEpoch(t.dateDone * 1000)
-                  .toLocal()
-                  .toString()
-                  .substring(0, 19)),
-        _Row('Hash', t.hash),
-        if (t.isError)
-          _Row('Error', t.message, valueColor: AppColors.statusOffline),
-        const SizedBox(height: 80),
-      ],
-    ),
+          const SizedBox(height: 16),
+          _Row('Status', t.statusLabel),
+          _Row('Progress', '${t.percentageDone}%'),
+          _Row('Size', _fmt(t.size)),
+          _Row('Downloaded', _fmt(t.completed)),
+          _Row('Ratio', t.ratio.toStringAsFixed(3)),
+          if (t.downRate > 0) _Row('Down Speed', '${_fmt(t.downRate)}/s'),
+          if (t.upRate > 0) _Row('Up Speed', '${_fmt(t.upRate)}/s'),
+          _Row('Label', t.label.isEmpty ? '(none)' : t.label),
+          if (t.dateAdded > 0)
+            _Row(
+              'Added',
+              DateTime.fromMillisecondsSinceEpoch(
+                t.dateAdded * 1000,
+              ).toLocal().toString().substring(0, 19),
+            ),
+          if (t.dateDone > 0)
+            _Row(
+              'Finished',
+              DateTime.fromMillisecondsSinceEpoch(
+                t.dateDone * 1000,
+              ).toLocal().toString().substring(0, 19),
+            ),
+          _Row('Hash', t.hash),
+          if (t.isError)
+            _Row('Error', t.message, valueColor: AppColors.statusOffline),
+          const SizedBox(height: 80),
+        ],
+      ),
     );
   }
 
@@ -385,14 +399,21 @@ class _Row extends StatelessWidget {
         children: [
           SizedBox(
             width: 96,
-            child: Text(label,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.textSecondary)),
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500, color: valueColor)),
+            child: Text(
+              value,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: valueColor,
+              ),
+            ),
           ),
         ],
       ),
@@ -407,8 +428,9 @@ class _TrackersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async =
-        ref.watch(_trackersProvider((instance: instance, hash: hash)));
+    final async = ref.watch(
+      _trackersProvider((instance: instance, hash: hash)),
+    );
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, s) => Center(child: Text('Error: $e')),
@@ -423,10 +445,14 @@ class _TrackersTab extends ConsumerWidget {
             final tr = trackers[i];
             return ListTile(
               leading: const Icon(Icons.track_changes_outlined),
-              title: Text(tr.url,
-                  style: const TextStyle(fontSize: 13, fontFamily: 'monospace')),
-              subtitle: Text('Type ${tr.type}',
-                  style: const TextStyle(fontSize: 11)),
+              title: Text(
+                tr.url,
+                style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+              ),
+              subtitle: Text(
+                'Type ${tr.type}',
+                style: const TextStyle(fontSize: 11),
+              ),
             );
           },
         );
@@ -464,8 +490,11 @@ class _FilesTab extends ConsumerWidget {
                     ? AppColors.statusOnline
                     : AppColors.statusWarning,
               ),
-              title: Text(f.path.split('/').last,
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              title: Text(
+                f.path.split('/').last,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text('${f.percentageDone}%  •  ${_fmt(f.size)}'),
             );
           },

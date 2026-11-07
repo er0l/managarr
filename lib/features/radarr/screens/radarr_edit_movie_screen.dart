@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -22,8 +24,7 @@ class RadarrEditMovieScreen extends ConsumerStatefulWidget {
       _RadarrEditMovieScreenState();
 }
 
-class _RadarrEditMovieScreenState
-    extends ConsumerState<RadarrEditMovieScreen> {
+class _RadarrEditMovieScreenState extends ConsumerState<RadarrEditMovieScreen> {
   late bool _monitored;
   int? _selectedQualityProfileId;
   String? _selectedMinAvailability;
@@ -66,8 +67,7 @@ class _RadarrEditMovieScreenState
               _rawMovieJson!['minimumAvailability'] as String? ?? 'released';
           _path = _rawMovieJson!['path'] as String?;
           final rawTags = _rawMovieJson!['tags'] as List<dynamic>?;
-          _selectedTags =
-              rawTags?.map((e) => e as int).toList() ?? [];
+          _selectedTags = rawTags?.map((e) => e as int).toList() ?? [];
         });
       }
     } catch (e) {
@@ -120,43 +120,54 @@ class _RadarrEditMovieScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final profilesAsync =
-        ref.watch(radarrQualityProfilesProvider(widget.instance));
+    final profilesAsync = ref.watch(
+      radarrQualityProfilesProvider(widget.instance),
+    );
     final tagsAsync = ref.watch(radarrTagsProvider(widget.instance));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Edit Movie',
-                style: TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18)),
-            Text(widget.movie.title,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400)),
+            Text(
+              'Edit Movie',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              widget.movie.title,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
         actions: [
           if (_saving)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: AppColors.textOnPrimary)),
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
             )
           else
             IconButton(
-              icon: const Icon(Icons.check, color: AppColors.textOnPrimary),
+              icon: Icon(
+                Icons.check,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               tooltip: 'Save',
               onPressed: _loaded ? _save : null,
             ),
@@ -172,7 +183,8 @@ class _RadarrEditMovieScreenState
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Monitored'),
                   subtitle: const Text(
-                      'Radarr will search for and download this movie'),
+                    'Radarr will search for and download this movie',
+                  ),
                   value: _monitored,
                   activeThumbColor: AppColors.tealPrimary,
                   onChanged: (v) => setState(() => _monitored = v),
@@ -189,12 +201,17 @@ class _RadarrEditMovieScreenState
                         labelText: 'Quality Profile',
                         border: OutlineInputBorder(),
                       ),
-                      initialValue: profiles.any((p) => p.id == _selectedQualityProfileId)
+                      initialValue:
+                          profiles.any((p) => p.id == _selectedQualityProfileId)
                           ? _selectedQualityProfileId
                           : null,
                       items: profiles
-                          .map((p) =>
-                              DropdownMenuItem(value: p.id, child: Text(p.name)))
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text(p.name),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) =>
                           setState(() => _selectedQualityProfileId = v),
@@ -211,8 +228,12 @@ class _RadarrEditMovieScreenState
                   ),
                   initialValue: _selectedMinAvailability,
                   items: _availabilityOptions.entries
-                      .map((e) =>
-                          DropdownMenuItem(value: e.key, child: Text(e.value)))
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) {
@@ -244,9 +265,12 @@ class _RadarrEditMovieScreenState
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Tags',
-                            style: theme.textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600)),
+                        Text(
+                          'Tags',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(height: Spacing.s8),
                         Wrap(
                           spacing: Spacing.s8,
@@ -256,8 +280,9 @@ class _RadarrEditMovieScreenState
                             return FilterChip(
                               label: Text(tag.label),
                               selected: selected,
-                              selectedColor:
-                                  AppColors.tealPrimary.withAlpha(40),
+                              selectedColor: AppColors.tealPrimary.withAlpha(
+                                40,
+                              ),
                               checkmarkColor: AppColors.tealPrimary,
                               onSelected: (v) {
                                 setState(() {

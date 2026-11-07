@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -9,7 +11,6 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/bottom_bar_button.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../api/models/artist.dart';
 import '../models/lidarr_options.dart';
@@ -34,23 +35,25 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
     try {
       final api = ref.read(lidarrApiProvider(widget.instance));
       await api.sendCommand(name);
-      messenger.showSnackBar(SnackBar(
-        content: Text('$label started'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('$label started'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(
-        content: Text('Error: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
   void _showSortBottomSheet() {
-    final currentSort =
-        ref.read(lidarrSortOptionProvider(widget.instance.id));
-    final ascending =
-        ref.read(lidarrSortAscendingProvider(widget.instance.id));
+    final currentSort = ref.read(lidarrSortOptionProvider(widget.instance.id));
+    final ascending = ref.read(lidarrSortAscendingProvider(widget.instance.id));
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -64,15 +67,18 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
                   Text('Sort by', style: Theme.of(ctx).textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
-                    icon: Icon(ascending
-                        ? Icons.arrow_upward
-                        : Icons.arrow_downward),
+                    icon: Icon(
+                      ascending ? Icons.arrow_upward : Icons.arrow_downward,
+                    ),
                     onPressed: () {
                       ref
-                          .read(lidarrSortAscendingProvider(
-                                  widget.instance.id)
-                              .notifier)
-                          .state = !ascending;
+                              .read(
+                                lidarrSortAscendingProvider(
+                                  widget.instance.id,
+                                ).notifier,
+                              )
+                              .state =
+                          !ascending;
                       Navigator.pop(ctx);
                     },
                   ),
@@ -86,19 +92,25 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     ref
-                        .read(lidarrSortOptionProvider(widget.instance.id)
-                            .notifier)
-                        .state = val;
+                            .read(
+                              lidarrSortOptionProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        val;
                     Navigator.pop(ctx);
                   }
                 },
                 child: ListView(
                   shrinkWrap: true,
                   children: LidarrSortOption.values
-                      .map((o) => RadioListTile<LidarrSortOption>(
-                            title: Text(o.label),
-                            value: o,
-                          ))
+                      .map(
+                        (o) => RadioListTile<LidarrSortOption>(
+                          title: Text(o.label),
+                          value: o,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -110,8 +122,9 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
   }
 
   void _showFilterBottomSheet() {
-    final currentFilter =
-        ref.read(lidarrFilterOptionProvider(widget.instance.id));
+    final currentFilter = ref.read(
+      lidarrFilterOptionProvider(widget.instance.id),
+    );
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -121,8 +134,10 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(Spacing.s16),
-              child: Text('Filter by',
-                  style: Theme.of(ctx).textTheme.titleLarge),
+              child: Text(
+                'Filter by',
+                style: Theme.of(ctx).textTheme.titleLarge,
+              ),
             ),
             const Divider(height: 1),
             Flexible(
@@ -131,19 +146,25 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     ref
-                        .read(lidarrFilterOptionProvider(widget.instance.id)
-                            .notifier)
-                        .state = val;
+                            .read(
+                              lidarrFilterOptionProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        val;
                     Navigator.pop(ctx);
                   }
                 },
                 child: ListView(
                   shrinkWrap: true,
                   children: LidarrFilterOption.values
-                      .map((o) => RadioListTile<LidarrFilterOption>(
-                            title: Text(o.label),
-                            value: o,
-                          ))
+                      .map(
+                        (o) => RadioListTile<LidarrFilterOption>(
+                          title: Text(o.label),
+                          value: o,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -160,13 +181,13 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppColors.tealPrimary,
-            iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text(
+          appBar: ModuleAppBar(
+            title: Text(
               'History',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           body: _LidarrHistoryScreen(instance: widget.instance),
@@ -175,103 +196,87 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
     );
   }
 
-  void _openMissing() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppColors.tealPrimary,
-            iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text(
-              'Missing',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-            ),
-          ),
-          body: LidarrMissingAlbumsScreen(instance: widget.instance),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final displayMode =
-        ref.watch(lidarrDisplayModeProvider(widget.instance.id));
-    final currentSort =
-        ref.watch(lidarrSortOptionProvider(widget.instance.id));
-    final currentFilter =
-        ref.watch(lidarrFilterOptionProvider(widget.instance.id));
+    final displayMode = ref.watch(
+      lidarrDisplayModeProvider(widget.instance.id),
+    );
+    final currentSort = ref.watch(lidarrSortOptionProvider(widget.instance.id));
+    final currentFilter = ref.watch(
+      lidarrFilterOptionProvider(widget.instance.id),
+    );
     final filterActive = currentFilter != LidarrFilterOption.all;
     final sortActive = currentSort != LidarrSortOption.alphabetical;
-
 
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'Lidarr',
-      tabs: const [],
-      tabViews: [_LidarrArtistsScreen(instance: widget.instance)],
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.orangeAccent,
-        foregroundColor: Colors.white,
-        tooltip: 'Add Artist',
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                LidarrAddArtistScreen(instance: widget.instance),
+      sections: [
+        ServiceSection(
+          label: 'Library',
+          title: 'Artists',
+          icon: Icons.video_library_outlined,
+          body: _LidarrArtistsScreen(instance: widget.instance),
+          action: FilledButton.tonalIcon(
+            icon: const Icon(Icons.add),
+            label: const Text('Add'),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    LidarrAddArtistScreen(instance: widget.instance),
+              ),
+            ),
+          ),
+          toolbar: ServiceToolbar(
+            children: [
+              TextButton.icon(
+                onPressed: _showFilterBottomSheet,
+                icon: Icon(
+                  Icons.filter_list,
+                  color: filterActive
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                label: Text(filterActive ? currentFilter.label : 'Filter'),
+              ),
+              TextButton.icon(
+                onPressed: _showSortBottomSheet,
+                icon: const Icon(Icons.sort),
+                label: Text(sortActive ? currentSort.label : 'Sort'),
+              ),
+              IconButton(
+                icon: Icon(
+                  displayMode == DisplayMode.grid
+                      ? Icons.view_list_outlined
+                      : Icons.grid_view_outlined,
+                ),
+                tooltip:
+                    'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
+                onPressed: () {
+                  ref
+                      .read(
+                        lidarrDisplayModeProvider(widget.instance.id).notifier,
+                      )
+                      .state = displayMode == DisplayMode.grid
+                      ? DisplayMode.list
+                      : DisplayMode.grid;
+                },
+              ),
+            ],
           ),
         ),
-        child: const Icon(Icons.add),
-      ),
-      appBarActions: [
-        IconButton(
-          icon: Icon(
-            displayMode == DisplayMode.grid
-                ? Icons.view_list_outlined
-                : Icons.grid_view_outlined,
-            color: Colors.white,
-          ),
-          tooltip:
-              'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
-          onPressed: () {
-            ref
-                .read(lidarrDisplayModeProvider(widget.instance.id).notifier)
-                .state = displayMode == DisplayMode.grid
-                ? DisplayMode.list
-                : DisplayMode.grid;
-          },
-        ),
-      ],
-      bottomLeadingActions: [
-        BottomBarButton(
-          icon: Icons.filter_list,
-          label: 'Filter',
-          active: filterActive,
-          onTap: _showFilterBottomSheet,
-        ),
-        BottomBarButton(
-          icon: Icons.sort,
-          label: 'Sort',
-          active: sortActive,
-          onTap: _showSortBottomSheet,
-        ),
-        BottomBarButton(
-          icon: Icons.history,
-          label: 'History',
-          onTap: _openHistory,
-        ),
-      ],
-      bottomTrailingActions: [
-        BottomBarButton(
-          icon: Icons.album_outlined,
+        ServiceSection(
           label: 'Missing',
-          onTap: _openMissing,
+          icon: Icons.error_outline,
+          body: LidarrMissingAlbumsScreen(instance: widget.instance),
         ),
       ],
-      bottomMoreItems: const [
+      moreItems: const [
+        PopupMenuItem(
+          value: 'history',
+          child: ListTile(leading: Icon(Icons.history), title: Text('History')),
+        ),
         PopupMenuItem(
           value: 'updateLibrary',
           child: ListTile(
@@ -291,6 +296,8 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
       ],
       onMoreSelected: (value) {
         switch (value) {
+          case 'history':
+            _openHistory();
           case 'updateLibrary':
             _runCommand('RescanArtist', 'Update Library');
           case 'backup':
@@ -319,8 +326,9 @@ class _LidarrArtistsScreenState extends ConsumerState<_LidarrArtistsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchController.text =
-          ref.read(lidarrSearchQueryProvider(widget.instance.id));
+      _searchController.text = ref.read(
+        lidarrSearchQueryProvider(widget.instance.id),
+      );
     });
   }
 
@@ -332,14 +340,14 @@ class _LidarrArtistsScreenState extends ConsumerState<_LidarrArtistsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final artistsAsync =
-        ref.watch(lidarrArtistsProvider(widget.instance));
-    final filteredArtists =
-        ref.watch(lidarrFilteredArtistsProvider(widget.instance));
-    final displayMode =
-        ref.watch(lidarrDisplayModeProvider(widget.instance.id));
-    final query =
-        ref.watch(lidarrSearchQueryProvider(widget.instance.id));
+    final artistsAsync = ref.watch(lidarrArtistsProvider(widget.instance));
+    final filteredArtists = ref.watch(
+      lidarrFilteredArtistsProvider(widget.instance),
+    );
+    final displayMode = ref.watch(
+      lidarrDisplayModeProvider(widget.instance.id),
+    );
+    final query = ref.watch(lidarrSearchQueryProvider(widget.instance.id));
 
     return Column(
       children: [
@@ -363,10 +371,13 @@ class _LidarrArtistsScreenState extends ConsumerState<_LidarrArtistsScreen> {
                       onPressed: () {
                         _searchController.clear();
                         ref
-                            .read(lidarrSearchQueryProvider(
-                                    widget.instance.id)
-                                .notifier)
-                            .state = '';
+                                .read(
+                                  lidarrSearchQueryProvider(
+                                    widget.instance.id,
+                                  ).notifier,
+                                )
+                                .state =
+                            '';
                       },
                     )
                   : null,
@@ -389,10 +400,15 @@ class _LidarrArtistsScreenState extends ConsumerState<_LidarrArtistsScreen> {
               ),
               filled: true,
             ),
-            onChanged: (v) => ref
-                .read(
-                    lidarrSearchQueryProvider(widget.instance.id).notifier)
-                .state = v,
+            onChanged: (v) =>
+                ref
+                        .read(
+                          lidarrSearchQueryProvider(
+                            widget.instance.id,
+                          ).notifier,
+                        )
+                        .state =
+                    v,
           ),
         ),
         Expanded(
@@ -402,15 +418,20 @@ class _LidarrArtistsScreenState extends ConsumerState<_LidarrArtistsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.cloud_off,
-                      size: 48, color: AppColors.statusOffline),
+                  const Icon(
+                    Icons.cloud_off,
+                    size: 48,
+                    color: AppColors.statusOffline,
+                  ),
                   const SizedBox(height: Spacing.s12),
-                  Text('Could not connect',
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Could not connect',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: Spacing.s8),
                   FilledButton.icon(
-                    onPressed: () => ref
-                        .invalidate(lidarrArtistsProvider(widget.instance)),
+                    onPressed: () =>
+                        ref.invalidate(lidarrArtistsProvider(widget.instance)),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.tealPrimary,
                       shape: const StadiumBorder(),
@@ -439,10 +460,12 @@ class _LidarrArtistsScreenState extends ConsumerState<_LidarrArtistsScreen> {
                 child: displayMode == DisplayMode.grid
                     ? _ArtistGrid(
                         artists: filteredArtists,
-                        instance: widget.instance)
+                        instance: widget.instance,
+                      )
                     : _ArtistList(
                         artists: filteredArtists,
-                        instance: widget.instance),
+                        instance: widget.instance,
+                      ),
               );
             },
           ),
@@ -469,7 +492,8 @@ class _ArtistGrid extends ConsumerWidget {
         Spacing.s24,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ref.watch(gridColumnsProvider) +
+        crossAxisCount:
+            ref.watch(gridColumnsProvider) +
             (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0),
         crossAxisSpacing: Spacing.cardGap,
         mainAxisSpacing: Spacing.cardGap,
@@ -502,8 +526,8 @@ class _ArtistGridCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => LidarrArtistDetailScreen(
-                  artist: artist, instance: instance),
+              builder: (_) =>
+                  LidarrArtistDetailScreen(artist: artist, instance: instance),
             ),
           );
         },
@@ -519,9 +543,7 @@ class _ArtistGridCard extends StatelessWidget {
                   color: AppColors.tealDark,
                   alignment: Alignment.center,
                   child: Text(
-                    artist.artistName.isNotEmpty
-                        ? artist.artistName[0]
-                        : 'A',
+                    artist.artistName.isNotEmpty ? artist.artistName[0] : 'A',
                     style: const TextStyle(
                       color: Colors.white30,
                       fontSize: 40,
@@ -557,10 +579,9 @@ class _ArtistGridCard extends StatelessWidget {
                       ),
                       if (artist.statistics != null)
                         LinearProgressIndicator(
-                          value: (artist.statistics!.percentOfTracks ?? 0) /
-                              100,
-                          backgroundColor:
-                              Colors.white.withAlpha(40),
+                          value:
+                              (artist.statistics!.percentOfTracks ?? 0) / 100,
+                          backgroundColor: Colors.white.withAlpha(40),
                           color: AppColors.tealPrimary,
                           minHeight: 2,
                         ),
@@ -585,8 +606,7 @@ class _ArtistList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profilesAsync =
-        ref.watch(lidarrQualityProfilesProvider(instance));
+    final profilesAsync = ref.watch(lidarrQualityProfilesProvider(instance));
     final profiles = profilesAsync.valueOrNull ?? [];
 
     return ListView.builder(
@@ -625,8 +645,7 @@ class _ArtistTile extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final posterUrl = artist.posterUrl;
     final accentColor = ServiceType.lidarr.brandColor;
-    final cardBg =
-        isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
 
     final stats = artist.statistics;
     final sizeOnDisk = stats?.sizeOnDisk ?? 0;
@@ -638,8 +657,7 @@ class _ArtistTile extends StatelessWidget {
     final line2Parts = [
       if (artist.artistType != null && artist.artistType!.isNotEmpty)
         artist.artistType!,
-      if (albumCount > 0)
-        '$albumCount album${albumCount == 1 ? '' : 's'}',
+      if (albumCount > 0) '$albumCount album${albumCount == 1 ? '' : 's'}',
     ];
 
     final line3Parts = [
@@ -718,9 +736,7 @@ class _ArtistTile extends StatelessWidget {
                         const SizedBox(height: 3),
                         // Line 2: Type · Albums
                         Text(
-                          line2Parts.isEmpty
-                              ? '—'
-                              : line2Parts.join(' · '),
+                          line2Parts.isEmpty ? '—' : line2Parts.join(' · '),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -730,9 +746,7 @@ class _ArtistTile extends StatelessWidget {
                         const SizedBox(height: 3),
                         // Line 3: Profile · Date added
                         Text(
-                          line3Parts.isEmpty
-                              ? '—'
-                              : line3Parts.join(' · '),
+                          line3Parts.isEmpty ? '—' : line3Parts.join(' · '),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary.withAlpha(200),
                             fontSize: 11,
@@ -834,7 +848,8 @@ class _LidarrHistoryScreen extends ConsumerWidget {
           return const Center(child: Text('History is empty'));
         }
         return RefreshIndicator(
-          onRefresh: () async => ref.invalidate(lidarrHistoryProvider(instance)),
+          onRefresh: () async =>
+              ref.invalidate(lidarrHistoryProvider(instance)),
           color: AppColors.tealPrimary,
           child: ListView.builder(
             itemCount: history.records.length,
@@ -846,7 +861,9 @@ class _LidarrHistoryScreen extends ConsumerWidget {
                 trailing: Text(
                   record.date?.toLocal().toString().split('.')[0] ?? '',
                   style: const TextStyle(
-                      fontSize: 11, color: AppColors.textSecondary),
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               );
             },

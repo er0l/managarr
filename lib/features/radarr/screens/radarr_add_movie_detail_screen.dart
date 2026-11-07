@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -56,9 +58,7 @@ class _RadarrAddMovieDetailScreenState
       movieJson['rootFolderPath'] = _selectedRootFolderPath;
       movieJson['monitored'] = _monitored;
       movieJson['minimumAvailability'] = _minimumAvailability;
-      movieJson['addOptions'] = {
-        'searchForMovie': _searchOnAdd,
-      };
+      movieJson['addOptions'] = {'searchForMovie': _searchOnAdd};
       // Remove id=0 for new additions — Radarr expects no id field
       movieJson.remove('id');
 
@@ -92,15 +92,18 @@ class _RadarrAddMovieDetailScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final movie = widget.movie;
-    final profilesAsync =
-        ref.watch(radarrQualityProfilesProvider(widget.instance));
-    final rootFoldersAsync =
-        ref.watch(radarrRootFoldersProvider(widget.instance));
+    final profilesAsync = ref.watch(
+      radarrQualityProfilesProvider(widget.instance),
+    );
+    final rootFoldersAsync = ref.watch(
+      radarrRootFoldersProvider(widget.instance),
+    );
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
+            leading: const ModuleBackButton(onImage: true),
             expandedHeight: 260,
             pinned: true,
             backgroundColor: AppColors.tealPrimary,
@@ -120,6 +123,7 @@ class _RadarrAddMovieDetailScreenState
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            actions: [const ModuleHomeButton(onImage: true)],
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -134,25 +138,29 @@ class _RadarrAddMovieDetailScreenState
                     children: [
                       if (movie.year > 0)
                         _InfoChip(
-                            label: movie.year.toString(),
-                            icon: Icons.calendar_today),
+                          label: movie.year.toString(),
+                          icon: Icons.calendar_today,
+                        ),
                       if (movie.runtime != null && movie.runtime! > 0)
                         _InfoChip(
-                            label: '${movie.runtime}m',
-                            icon: Icons.timer_outlined),
+                          label: '${movie.runtime}m',
+                          icon: Icons.timer_outlined,
+                        ),
                       if (movie.studio != null)
                         _InfoChip(
-                            label: movie.studio!,
-                            icon: Icons.business_outlined),
+                          label: movie.studio!,
+                          icon: Icons.business_outlined,
+                        ),
                     ],
                   ),
-                  if (movie.overview != null &&
-                      movie.overview!.isNotEmpty) ...[
+                  if (movie.overview != null && movie.overview!.isNotEmpty) ...[
                     const SizedBox(height: Spacing.s16),
                     Text(
                       movie.overview!,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary, height: 1.55),
+                        color: AppColors.textSecondary,
+                        height: 1.55,
+                      ),
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -160,9 +168,12 @@ class _RadarrAddMovieDetailScreenState
                   const SizedBox(height: Spacing.s24),
                   const Divider(),
                   const SizedBox(height: Spacing.s16),
-                  Text('Configuration',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    'Configuration',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: Spacing.s16),
 
                   // Root Folder
@@ -170,8 +181,9 @@ class _RadarrAddMovieDetailScreenState
                     loading: () => const _FieldSkeleton(label: 'Root Folder'),
                     error: (e, _) => _FieldError(label: 'Root Folder'),
                     data: (folders) {
-                      _selectedRootFolderPath ??=
-                          folders.isNotEmpty ? folders.first.path : null;
+                      _selectedRootFolderPath ??= folders.isNotEmpty
+                          ? folders.first.path
+                          : null;
                       return DropdownButtonFormField<String>(
                         decoration: const InputDecoration(
                           labelText: 'Root Folder',
@@ -179,8 +191,12 @@ class _RadarrAddMovieDetailScreenState
                         ),
                         initialValue: _selectedRootFolderPath,
                         items: folders
-                            .map((f) => DropdownMenuItem(
-                                value: f.path, child: Text(f.path)))
+                            .map(
+                              (f) => DropdownMenuItem(
+                                value: f.path,
+                                child: Text(f.path),
+                              ),
+                            )
                             .toList(),
                         onChanged: (v) =>
                             setState(() => _selectedRootFolderPath = v),
@@ -195,8 +211,9 @@ class _RadarrAddMovieDetailScreenState
                         const _FieldSkeleton(label: 'Quality Profile'),
                     error: (e, _) => _FieldError(label: 'Quality Profile'),
                     data: (profiles) {
-                      _selectedQualityProfileId ??=
-                          profiles.isNotEmpty ? profiles.first.id : null;
+                      _selectedQualityProfileId ??= profiles.isNotEmpty
+                          ? profiles.first.id
+                          : null;
                       return DropdownButtonFormField<int>(
                         decoration: const InputDecoration(
                           labelText: 'Quality Profile',
@@ -204,8 +221,12 @@ class _RadarrAddMovieDetailScreenState
                         ),
                         initialValue: _selectedQualityProfileId,
                         items: profiles
-                            .map((p) => DropdownMenuItem(
-                                value: p.id, child: Text(p.name)))
+                            .map(
+                              (p) => DropdownMenuItem(
+                                value: p.id,
+                                child: Text(p.name),
+                              ),
+                            )
                             .toList(),
                         onChanged: (v) =>
                             setState(() => _selectedQualityProfileId = v),
@@ -222,8 +243,12 @@ class _RadarrAddMovieDetailScreenState
                     ),
                     initialValue: _minimumAvailability,
                     items: _availabilityOptions.entries
-                        .map((e) => DropdownMenuItem(
-                            value: e.key, child: Text(e.value)))
+                        .map(
+                          (e) => DropdownMenuItem(
+                            value: e.key,
+                            child: Text(e.value),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) {
                       if (v != null) setState(() => _minimumAvailability = v);
@@ -236,7 +261,8 @@ class _RadarrAddMovieDetailScreenState
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Monitored'),
                     subtitle: const Text(
-                        'Radarr will search for and download this movie'),
+                      'Radarr will search for and download this movie',
+                    ),
                     value: _monitored,
                     activeThumbColor: AppColors.tealPrimary,
                     onChanged: (v) => setState(() => _monitored = v),
@@ -247,7 +273,8 @@ class _RadarrAddMovieDetailScreenState
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Start Search on Add'),
                     subtitle: const Text(
-                        'Immediately search for the movie when added'),
+                      'Immediately search for the movie when added',
+                    ),
                     value: _searchOnAdd,
                     activeThumbColor: AppColors.tealPrimary,
                     onChanged: (v) => setState(() => _searchOnAdd = v),
@@ -262,8 +289,9 @@ class _RadarrAddMovieDetailScreenState
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.orangeAccent,
                         foregroundColor: Colors.white,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: Spacing.s16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: Spacing.s16,
+                        ),
                         shape: const StadiumBorder(),
                       ),
                       icon: _saving
@@ -271,7 +299,9 @@ class _RadarrAddMovieDetailScreenState
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Icon(Icons.add),
                       label: Text(_saving ? 'Adding…' : 'Add Movie'),
@@ -305,8 +335,11 @@ class _BackdropHeader extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         if (fanart != null)
-          Image.network(fanart, fit: BoxFit.cover,
-              errorBuilder: (_, e, s) => _ColoredFallback(movie: movie))
+          Image.network(
+            fanart,
+            fit: BoxFit.cover,
+            errorBuilder: (_, e, s) => _ColoredFallback(movie: movie),
+          )
         else
           _ColoredFallback(movie: movie),
         const DecoratedBox(
@@ -328,7 +361,7 @@ class _BackdropHeader extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(6),
               boxShadow: const [
-                BoxShadow(color: Colors.black54, blurRadius: 8)
+                BoxShadow(color: Colors.black54, blurRadius: 8),
               ],
             ),
             clipBehavior: Clip.antiAlias,
@@ -382,11 +415,14 @@ class _InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: AppColors.tealPrimary),
           const SizedBox(width: 4),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.tealPrimary,
-                  fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.tealPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -407,10 +443,12 @@ class _FieldSkeleton extends StatelessWidget {
       child: const SizedBox(
         height: 20,
         child: Center(
-            child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2))),
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       ),
     );
   }

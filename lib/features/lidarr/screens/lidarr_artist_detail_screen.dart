@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -41,8 +43,10 @@ class _LidarrArtistDetailScreenState
     setState(() => _actionPending = true);
     try {
       final api = ref.read(lidarrApiProvider(widget.instance));
-      final updated =
-          await api.toggleMonitorArtist(_artist.id, !_artist.monitored);
+      final updated = await api.toggleMonitorArtist(
+        _artist.id,
+        !_artist.monitored,
+      );
       if (mounted) setState(() => _artist = updated);
       ref.invalidate(lidarrArtistsProvider(widget.instance));
     } catch (e) {
@@ -121,7 +125,8 @@ class _LidarrArtistDetailScreenState
                         const SizedBox(width: 8),
                         FilledButton(
                           style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.statusOffline),
+                            backgroundColor: AppColors.statusOffline,
+                          ),
                           onPressed: () => Navigator.pop(ctx, true),
                           child: const Text('Remove'),
                         ),
@@ -159,13 +164,15 @@ class _LidarrArtistDetailScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final albumsAsync =
-        ref.watch(lidarrAlbumsProvider((widget.instance, _artist.id)));
+    final albumsAsync = ref.watch(
+      lidarrAlbumsProvider((widget.instance, _artist.id)),
+    );
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
+            leading: const ModuleBackButton(onImage: true),
             expandedHeight: 260,
             pinned: true,
             backgroundColor: AppColors.tealPrimary,
@@ -188,20 +195,22 @@ class _LidarrArtistDetailScreenState
             actions: [
               if (_actionPending)
                 const Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.textOnPrimary),
+                      strokeWidth: 2,
+                      color: AppColors.textOnPrimary,
+                    ),
                   ),
                 )
               else ...[
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined,
-                      color: AppColors.textOnPrimary),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: AppColors.textOnPrimary,
+                  ),
                   tooltip: 'Edit',
                   onPressed: () async {
                     final updated = await Navigator.push<LidarrArtist>(
@@ -220,23 +229,25 @@ class _LidarrArtistDetailScreenState
                 ),
                 IconButton(
                   icon: Icon(
-                    _artist.monitored
-                        ? Icons.bookmark
-                        : Icons.bookmark_border,
+                    _artist.monitored ? Icons.bookmark : Icons.bookmark_border,
                     color: AppColors.textOnPrimary,
                   ),
                   tooltip: _artist.monitored ? 'Unmonitor' : 'Monitor',
                   onPressed: _toggleMonitor,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.refresh,
-                      color: AppColors.textOnPrimary),
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: AppColors.textOnPrimary,
+                  ),
                   tooltip: 'Refresh',
                   onPressed: _refresh,
                 ),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert,
-                      color: AppColors.textOnPrimary),
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: AppColors.textOnPrimary,
+                  ),
                   onSelected: (value) {
                     switch (value) {
                       case 'search':
@@ -258,17 +269,22 @@ class _LidarrArtistDetailScreenState
                     const PopupMenuItem(
                       value: 'delete',
                       child: ListTile(
-                        leading: Icon(Icons.delete_outline,
-                            color: AppColors.statusOffline),
-                        title: Text('Remove Artist',
-                            style:
-                                TextStyle(color: AppColors.statusOffline)),
+                        leading: Icon(
+                          Icons.delete_outline,
+                          color: AppColors.statusOffline,
+                        ),
+                        title: Text(
+                          'Remove Artist',
+                          style: TextStyle(color: AppColors.statusOffline),
+                        ),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
                   ],
                 ),
               ],
+
+              const ModuleHomeButton(onImage: true),
             ],
           ),
 
@@ -285,8 +301,9 @@ class _LidarrArtistDetailScreenState
                     children: [
                       if (_artist.artistType != null)
                         _Chip(
-                            label: _artist.artistType!,
-                            icon: Icons.music_note_outlined),
+                          label: _artist.artistType!,
+                          icon: Icons.music_note_outlined,
+                        ),
                       if ((_artist.statistics?.albumCount ?? 0) > 0)
                         _Chip(
                           label:
@@ -295,8 +312,7 @@ class _LidarrArtistDetailScreenState
                         ),
                       if ((_artist.statistics?.sizeOnDisk ?? 0) > 0)
                         _Chip(
-                          label: _formatBytes(
-                              _artist.statistics!.sizeOnDisk!),
+                          label: _formatBytes(_artist.statistics!.sizeOnDisk!),
                           icon: Icons.storage_outlined,
                         ),
                       if (!_artist.monitored)
@@ -311,9 +327,12 @@ class _LidarrArtistDetailScreenState
                   if (_artist.overview != null &&
                       _artist.overview!.isNotEmpty) ...[
                     const SizedBox(height: Spacing.s16),
-                    Text('Overview',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      'Overview',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: Spacing.s8),
                     Text(
                       _artist.overview!,
@@ -325,9 +344,12 @@ class _LidarrArtistDetailScreenState
                   ],
 
                   const SizedBox(height: Spacing.s24),
-                  Text('Albums',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    'Albums',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: Spacing.s8),
                 ],
               ),
@@ -336,13 +358,15 @@ class _LidarrArtistDetailScreenState
 
           albumsAsync.when(
             loading: () => const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator())),
-            error: (e, _) => SliverFillRemaining(
-                child: Center(child: Text(e.toString()))),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) =>
+                SliverFillRemaining(child: Center(child: Text(e.toString()))),
             data: (albums) {
               if (albums.isEmpty) {
                 return const SliverFillRemaining(
-                    child: Center(child: Text('No albums found')));
+                  child: Center(child: Text('No albums found')),
+                );
               }
               final sorted = [...albums]
                 ..sort((a, b) {
@@ -351,8 +375,7 @@ class _LidarrArtistDetailScreenState
                   return db.compareTo(da);
                 });
               return SliverPadding(
-                padding:
-                    const EdgeInsets.only(bottom: Spacing.s48),
+                padding: const EdgeInsets.only(bottom: Spacing.s48),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => _AlbumTile(
@@ -422,8 +445,11 @@ class _BackdropHeader extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         if (fanart != null)
-          Image.network(fanart, fit: BoxFit.cover,
-              errorBuilder: (e, s, t) => _ColoredFallback(artist: artist))
+          Image.network(
+            fanart,
+            fit: BoxFit.cover,
+            errorBuilder: (e, s, t) => _ColoredFallback(artist: artist),
+          )
         else
           _ColoredFallback(artist: artist),
         const DecoratedBox(
@@ -445,7 +471,7 @@ class _BackdropHeader extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(6),
               boxShadow: const [
-                BoxShadow(color: Colors.black54, blurRadius: 8)
+                BoxShadow(color: Colors.black54, blurRadius: 8),
               ],
             ),
             clipBehavior: Clip.antiAlias,
@@ -497,8 +523,9 @@ class _AlbumTile extends StatelessWidget {
     final stats = album.statistics;
     final fileCount = stats?.trackFileCount ?? 0;
     final trackCount = stats?.trackCount ?? 0;
-    final percent =
-        trackCount > 0 ? fileCount / trackCount : (fileCount > 0 ? 1.0 : 0.0);
+    final percent = trackCount > 0
+        ? fileCount / trackCount
+        : (fileCount > 0 ? 1.0 : 0.0);
     final year = album.releaseDate?.year;
 
     return InkWell(
@@ -514,7 +541,9 @@ class _AlbumTile extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.pageHorizontal, vertical: Spacing.s8),
+          horizontal: Spacing.pageHorizontal,
+          vertical: Spacing.s8,
+        ),
         child: Row(
           children: [
             ClipRRect(
@@ -527,8 +556,11 @@ class _AlbumTile extends StatelessWidget {
                     : Container(
                         color: AppColors.tealDark,
                         alignment: Alignment.center,
-                        child: const Icon(Icons.album,
-                            color: Colors.white54, size: 24),
+                        child: const Icon(
+                          Icons.album,
+                          color: Colors.white54,
+                          size: 24,
+                        ),
                       ),
               ),
             ),
@@ -539,8 +571,9 @@ class _AlbumTile extends StatelessWidget {
                 children: [
                   Text(
                     album.title,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -548,17 +581,26 @@ class _AlbumTile extends StatelessWidget {
                   Row(
                     children: [
                       if (year != null)
-                        Text('$year',
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: AppColors.textSecondary)),
+                        Text(
+                          '$year',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       if (year != null && trackCount > 0)
-                        Text(' · ',
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: AppColors.textSecondary)),
+                        Text(
+                          ' · ',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       if (trackCount > 0)
-                        Text('$fileCount/$trackCount tracks',
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: AppColors.textSecondary)),
+                        Text(
+                          '$fileCount/$trackCount tracks',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -574,8 +616,11 @@ class _AlbumTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right,
-                size: 18, color: AppColors.textSecondary),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: AppColors.textSecondary,
+            ),
           ],
         ),
       ),
@@ -605,9 +650,14 @@ class _Chip extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: c),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11, color: c, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: c,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

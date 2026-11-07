@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -42,21 +44,23 @@ class _RadarrAddMovieScreenState extends ConsumerState<RadarrAddMovieScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final resultsAsync = ref.watch(radarrLookupResultsProvider(widget.instance));
+    final resultsAsync = ref.watch(
+      radarrLookupResultsProvider(widget.instance),
+    );
     final query = ref.watch(radarrLookupQueryProvider(widget.instance.id));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: TextField(
           controller: _searchController,
           autofocus: true,
-          style: const TextStyle(color: AppColors.textOnPrimary),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           cursorColor: AppColors.orangeAccent,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Search for a movie…',
-            hintStyle: TextStyle(color: Colors.white54),
+            hintStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             border: InputBorder.none,
           ),
           onChanged: _onSearchChanged,
@@ -64,13 +68,20 @@ class _RadarrAddMovieScreenState extends ConsumerState<RadarrAddMovieScreen> {
         actions: [
           if (_searchController.text.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.clear, color: AppColors.textOnPrimary),
+              icon: Icon(
+                Icons.clear,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               onPressed: () {
                 _searchController.clear();
                 ref
-                    .read(
-                        radarrLookupQueryProvider(widget.instance.id).notifier)
-                    .state = '';
+                        .read(
+                          radarrLookupQueryProvider(
+                            widget.instance.id,
+                          ).notifier,
+                        )
+                        .state =
+                    '';
               },
             ),
         ],
@@ -80,40 +91,45 @@ class _RadarrAddMovieScreenState extends ConsumerState<RadarrAddMovieScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.movie_filter_outlined,
-                      size: 64, color: AppColors.textSecondary.withAlpha(80)),
+                  Icon(
+                    Icons.movie_filter_outlined,
+                    size: 64,
+                    color: AppColors.textSecondary.withAlpha(80),
+                  ),
                   const SizedBox(height: Spacing.s16),
                   Text(
                     'Search for a movie to add',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(color: AppColors.textSecondary),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             )
           : resultsAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(Spacing.s32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.cloud_off,
-                          size: 48, color: AppColors.statusOffline),
+                      const Icon(
+                        Icons.cloud_off,
+                        size: 48,
+                        color: AppColors.statusOffline,
+                      ),
                       const SizedBox(height: Spacing.s16),
-                      Text('Search failed',
-                          style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Search failed',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: Spacing.s8),
                       Text(
                         e.toString(),
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: AppColors.textSecondary),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                         textAlign: TextAlign.center,
                         maxLines: 3,
                       ),
@@ -126,16 +142,17 @@ class _RadarrAddMovieScreenState extends ConsumerState<RadarrAddMovieScreen> {
                   return Center(
                     child: Text(
                       'No results for "$query"',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(color: AppColors.textSecondary),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   );
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.only(
-                      top: Spacing.s8, bottom: Spacing.s24),
+                    top: Spacing.s8,
+                    bottom: Spacing.s24,
+                  ),
                   itemCount: movies.length,
                   itemBuilder: (context, index) {
                     final movie = movies[index];
@@ -208,12 +225,10 @@ class _SearchResultTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        [
-          '${movie.year}',
-          if (movie.studio != null) movie.studio,
-        ].join(' · '),
-        style:
-            theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+        ['${movie.year}', if (movie.studio != null) movie.studio].join(' · '),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: AppColors.textSecondary,
+        ),
       ),
       trailing: alreadyAdded
           ? Row(
@@ -222,9 +237,10 @@ class _SearchResultTile extends StatelessWidget {
                 Chip(
                   label: const Text('In Library'),
                   labelStyle: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.statusOnline,
-                      fontWeight: FontWeight.w500),
+                    fontSize: 11,
+                    color: AppColors.statusOnline,
+                    fontWeight: FontWeight.w500,
+                  ),
                   backgroundColor: AppColors.statusOnline.withAlpha(20),
                   side: BorderSide(color: AppColors.statusOnline.withAlpha(60)),
                   padding: EdgeInsets.zero,

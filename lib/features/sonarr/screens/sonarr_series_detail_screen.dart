@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -58,14 +60,19 @@ class _SonarrSeriesDetailScreenState
     setState(() => _actionPending = true);
     try {
       final api = ref.read(sonarrApiProvider(widget.instance));
-      final updated =
-          await api.toggleMonitorSeries(_series.id, !_series.monitored);
+      final updated = await api.toggleMonitorSeries(
+        _series.id,
+        !_series.monitored,
+      );
       if (mounted) setState(() => _series = updated);
       ref.invalidate(sonarrSeriesProvider(widget.instance));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -90,7 +97,10 @@ class _SonarrSeriesDetailScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -115,7 +125,10 @@ class _SonarrSeriesDetailScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -140,7 +153,10 @@ class _SonarrSeriesDetailScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -169,7 +185,8 @@ class _SonarrSeriesDetailScreenState
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Delete files from disk'),
                       value: deleteFiles,
-                      onChanged: (v) => setInnerState(() => deleteFiles = v ?? false),
+                      onChanged: (v) =>
+                          setInnerState(() => deleteFiles = v ?? false),
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -206,7 +223,10 @@ class _SonarrSeriesDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
+            SnackBar(
+              content: Text('Error: $e'),
+              behavior: SnackBarBehavior.floating,
+            ),
           );
           setState(() => _actionPending = false);
         }
@@ -237,8 +257,7 @@ class _SonarrSeriesDetailScreenState
       if (_series.tvdbId != null && _series.tvdbId! > 0)
         ExternalLink(
           label: 'Trakt',
-          url:
-              'https://trakt.tv/search/tvdb/${_series.tvdbId}?id_type=show',
+          url: 'https://trakt.tv/search/tvdb/${_series.tvdbId}?id_type=show',
           color: const Color(0xFFED1C24),
         ),
       if (_series.tvMazeId != null && _series.tvMazeId! > 0)
@@ -268,6 +287,7 @@ class _SonarrSeriesDetailScreenState
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
+            leading: const ModuleBackButton(onImage: true),
             expandedHeight: 290,
             pinned: true,
             backgroundColor: AppColors.tealPrimary,
@@ -302,8 +322,10 @@ class _SonarrSeriesDetailScreenState
                 )
               else ...[
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined,
-                      color: AppColors.textOnPrimary),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: AppColors.textOnPrimary,
+                  ),
                   tooltip: 'Edit',
                   onPressed: () async {
                     final updated = await Navigator.push<SonarrSeries>(
@@ -322,21 +344,25 @@ class _SonarrSeriesDetailScreenState
                 ),
                 IconButton(
                   icon: Icon(
-                    _series.monitored
-                        ? Icons.bookmark
-                        : Icons.bookmark_border,
+                    _series.monitored ? Icons.bookmark : Icons.bookmark_border,
                     color: AppColors.textOnPrimary,
                   ),
                   tooltip: _series.monitored ? 'Unmonitor' : 'Monitor',
                   onPressed: _toggleMonitor,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: AppColors.textOnPrimary,
+                  ),
                   tooltip: 'Refresh',
                   onPressed: _refresh,
                 ),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.textOnPrimary),
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: AppColors.textOnPrimary,
+                  ),
                   onSelected: (value) {
                     switch (value) {
                       case 'search':
@@ -396,8 +422,10 @@ class _SonarrSeriesDetailScreenState
                     const PopupMenuItem(
                       value: 'delete',
                       child: ListTile(
-                        leading: Icon(Icons.delete_outline,
-                            color: AppColors.statusOffline),
+                        leading: Icon(
+                          Icons.delete_outline,
+                          color: AppColors.statusOffline,
+                        ),
                         title: Text(
                           'Remove Series',
                           style: TextStyle(color: AppColors.statusOffline),
@@ -408,6 +436,8 @@ class _SonarrSeriesDetailScreenState
                   ],
                 ),
               ],
+
+              const ModuleHomeButton(onImage: true),
             ],
           ),
 
@@ -433,10 +463,7 @@ class _SonarrSeriesDetailScreenState
                           icon: Icons.timer_outlined,
                         ),
                       if (_series.network != null)
-                        _Chip(
-                          label: _series.network!,
-                          icon: Icons.tv_outlined,
-                        ),
+                        _Chip(label: _series.network!, icon: Icons.tv_outlined),
                       if (_series.seasonCount != null)
                         _Chip(
                           label:
@@ -455,8 +482,7 @@ class _SonarrSeriesDetailScreenState
                   ),
 
                   // Genre chips
-                  if (_series.genres != null &&
-                      _series.genres!.isNotEmpty) ...[
+                  if (_series.genres != null && _series.genres!.isNotEmpty) ...[
                     const SizedBox(height: Spacing.s8),
                     Wrap(
                       spacing: Spacing.s4,
@@ -472,8 +498,9 @@ class _SonarrSeriesDetailScreenState
                     const SizedBox(height: Spacing.s4),
                     Text(
                       _formatBytes(_series.statistics!.sizeOnDisk!),
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: AppColors.textSecondary),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
 
@@ -483,8 +510,9 @@ class _SonarrSeriesDetailScreenState
                     const SizedBox(height: Spacing.s16),
                     Text(
                       'Overview',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: Spacing.s8),
                     Text(
@@ -505,8 +533,9 @@ class _SonarrSeriesDetailScreenState
                     const SizedBox(height: Spacing.s24),
                     Text(
                       'Seasons',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: Spacing.s8),
                   ],
@@ -698,8 +727,9 @@ class _BackdropHeader extends StatelessWidget {
                             value: episodeFileCount / episodeCount,
                             minHeight: 4,
                             backgroundColor: Colors.white24,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(accentColor),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              accentColor,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -809,15 +839,19 @@ class _SeasonTileState extends ConsumerState<_SeasonTile> {
     try {
       final api = ref.read(sonarrApiProvider(widget.instance));
       await api.toggleMonitorSeason(
-          widget.series.id, widget.season.seasonNumber, newVal);
+        widget.series.id,
+        widget.season.seasonNumber,
+        newVal,
+      );
       ref.invalidate(sonarrSeriesProvider(widget.instance));
     } catch (e) {
       if (mounted) {
         setState(() => _monitored = !newVal);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error: $e'),
-              behavior: SnackBarBehavior.floating),
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -859,7 +893,9 @@ class _SeasonTileState extends ConsumerState<_SeasonTile> {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.tealPrimary),
+                      strokeWidth: 2,
+                      color: AppColors.tealPrimary,
+                    ),
                   )
                 : GestureDetector(
                     onTap: _toggleMonitor,
@@ -878,8 +914,9 @@ class _SeasonTileState extends ConsumerState<_SeasonTile> {
                 children: [
                   Text(
                     label,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   LinearProgressIndicator(
@@ -894,14 +931,18 @@ class _SeasonTileState extends ConsumerState<_SeasonTile> {
                   const SizedBox(height: 2),
                   Text(
                     '$fileCount / $totalCount episodes',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: AppColors.textSecondary),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right,
-                size: 18, color: AppColors.textSecondary),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: AppColors.textSecondary,
+            ),
           ],
         ),
       ),
@@ -910,11 +951,7 @@ class _SeasonTileState extends ConsumerState<_SeasonTile> {
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.icon,
-    this.color,
-  });
+  const _Chip({required this.label, required this.icon, this.color});
 
   final String label;
   final IconData icon;
@@ -937,8 +974,11 @@ class _Chip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style:
-                TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 11,
+              color: c,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),

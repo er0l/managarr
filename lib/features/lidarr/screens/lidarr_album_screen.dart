@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -25,28 +27,34 @@ class LidarrAlbumScreen extends ConsumerWidget {
     final tracksAsync = ref.watch(lidarrTracksProvider((instance, album.id)));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(album.title,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18)),
-            Text(artistName,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400)),
+            Text(
+              album.title,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              artistName,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.cloud_download_outlined,
-                color: AppColors.textOnPrimary),
+            icon: Icon(
+              Icons.cloud_download_outlined,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             tooltip: 'Releases',
             onPressed: () => Navigator.push(
               context,
@@ -96,16 +104,23 @@ class LidarrAlbumScreen extends ConsumerWidget {
                   ),
                 ),
                 title: Text(track.title),
-                subtitle: Text(_formatDuration(track.duration ?? 0),
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.textSecondary)),
+                subtitle: Text(
+                  _formatDuration(track.duration ?? 0),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 trailing: track.hasFile == true
-                    ? const Icon(Icons.check_circle_outline,
-                        color: AppColors.statusOnline, size: 20)
-                    : const Icon(Icons.radio_button_unchecked,
-                        color: AppColors.textSecondary, size: 20),
+                    ? const Icon(
+                        Icons.check_circle_outline,
+                        color: AppColors.statusOnline,
+                        size: 20,
+                      )
+                    : const Icon(
+                        Icons.radio_button_unchecked,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
               );
             },
           );

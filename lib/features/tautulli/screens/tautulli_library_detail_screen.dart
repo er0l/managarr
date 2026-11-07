@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -20,19 +22,19 @@ class TautulliLibraryDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mediaAsync = ref.watch(
-      tautulliLibraryMediaProvider(
-          (instance: instance, sectionId: library.sectionId)),
+      tautulliLibraryMediaProvider((
+        instance: instance,
+        sectionId: library.sectionId,
+      )),
     );
     final api = ref.read(tautulliApiProvider(instance));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Text(
           library.sectionName,
-          style: const TextStyle(
-            color: AppColors.textOnPrimary,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -74,17 +76,18 @@ class TautulliLibraryDetailScreen extends ConsumerWidget {
               child: Text(
                 'Recently Added',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.tealPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: AppColors.tealPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
           mediaAsync.when(
             loading: () => const SliverToBoxAdapter(
-                child: Center(child: CircularProgressIndicator())),
-            error: (e, s) => SliverToBoxAdapter(
-                child: Center(child: Text('Error: $e'))),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, s) =>
+                SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
             data: (items) {
               if (items.isEmpty) {
                 return const SliverToBoxAdapter(
@@ -118,9 +121,9 @@ class TautulliLibraryDetailScreen extends ConsumerWidget {
                             ? Image.network(
                                 thumbUrl,
                                 fit: BoxFit.cover,
-                                errorBuilder: (c, e, s) =>
-                                    _PlaceholderPoster(
-                                        mediaType: item.mediaType),
+                                errorBuilder: (c, e, s) => _PlaceholderPoster(
+                                  mediaType: item.mediaType,
+                                ),
                               )
                             : _PlaceholderPoster(mediaType: item.mediaType),
                       ),
@@ -130,7 +133,9 @@ class TautulliLibraryDetailScreen extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                     subtitle: Text(
                       item.subtitle,
@@ -138,10 +143,9 @@ class TautulliLibraryDetailScreen extends ConsumerWidget {
                     ),
                     trailing: Text(
                       dateStr,
-                      style: Theme.of(ctx)
-                          .textTheme
-                          .labelSmall
-                          ?.copyWith(color: AppColors.textSecondary),
+                      style: Theme.of(ctx).textTheme.labelSmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   );
                 },
@@ -156,43 +160,61 @@ class TautulliLibraryDetailScreen extends ConsumerWidget {
 
   String _itemLabel(String type) {
     switch (type.toLowerCase()) {
-      case 'movie': return 'Movies';
-      case 'show': return 'Shows';
-      case 'artist': return 'Artists';
-      default: return 'Items';
+      case 'movie':
+        return 'Movies';
+      case 'show':
+        return 'Shows';
+      case 'artist':
+        return 'Artists';
+      default:
+        return 'Items';
     }
   }
 
   String _parentLabel(String type) {
     switch (type.toLowerCase()) {
-      case 'show': return 'Seasons';
-      case 'artist': return 'Albums';
-      default: return 'Parents';
+      case 'show':
+        return 'Seasons';
+      case 'artist':
+        return 'Albums';
+      default:
+        return 'Parents';
     }
   }
 
   String _childLabel(String type) {
     switch (type.toLowerCase()) {
-      case 'show': return 'Episodes';
-      case 'artist': return 'Tracks';
-      default: return 'Children';
+      case 'show':
+        return 'Episodes';
+      case 'artist':
+        return 'Tracks';
+      default:
+        return 'Children';
     }
   }
 
   IconData _typeIcon(String type) {
     switch (type.toLowerCase()) {
-      case 'movie': return Icons.movie_outlined;
-      case 'show': return Icons.tv_outlined;
-      case 'artist': return Icons.music_note_outlined;
-      case 'photo': return Icons.photo_outlined;
-      default: return Icons.folder_outlined;
+      case 'movie':
+        return Icons.movie_outlined;
+      case 'show':
+        return Icons.tv_outlined;
+      case 'artist':
+        return Icons.music_note_outlined;
+      case 'photo':
+        return Icons.photo_outlined;
+      default:
+        return Icons.folder_outlined;
     }
   }
 }
 
 class _StatChip extends StatelessWidget {
-  const _StatChip(
-      {required this.label, required this.value, required this.icon});
+  const _StatChip({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
   final String label;
   final String value;
   final IconData icon;
@@ -206,17 +228,15 @@ class _StatChip extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         Text(
           label,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: AppColors.textSecondary),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -236,8 +256,8 @@ class _PlaceholderPoster extends StatelessWidget {
         mediaType == 'movie'
             ? Icons.movie_outlined
             : mediaType == 'episode'
-                ? Icons.tv_outlined
-                : Icons.music_note_outlined,
+            ? Icons.tv_outlined
+            : Icons.music_note_outlined,
         color: Colors.white24,
         size: 20,
       ),

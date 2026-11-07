@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -23,8 +25,10 @@ class SeerUsersScreen extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 48),
             const SizedBox(height: 12),
-            Text('Failed to load users',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Failed to load users',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 4),
             Text(e.toString(), textAlign: TextAlign.center),
             const SizedBox(height: 16),
@@ -41,13 +45,18 @@ class SeerUsersScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.people_outline,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.people_outline,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(height: 16),
-                Text('No users found',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text(
+                  'No users found',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           );
@@ -58,10 +67,8 @@ class SeerUsersScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 24),
             itemCount: users.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) => _UserTile(
-              user: users[index],
-              instance: instance,
-            ),
+            itemBuilder: (context, index) =>
+                _UserTile(user: users[index], instance: instance),
           ),
         );
       },
@@ -105,9 +112,10 @@ class _UserTile extends StatelessWidget {
               child: Text(
                 'Admin',
                 style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onPrimaryContainer),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
               ),
             ),
           ],
@@ -120,24 +128,31 @@ class _UserTile extends StatelessWidget {
           Row(
             children: [
               Icon(
-                user.isPlexUser ? Icons.play_circle_outline : Icons.person_outline,
+                user.isPlexUser
+                    ? Icons.play_circle_outline
+                    : Icons.person_outline,
                 size: 13,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 4),
               Text(
                 user.isPlexUser ? 'Plex' : 'Local',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(width: 12),
-              Icon(Icons.movie_filter_outlined,
-                  size: 13, color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.movie_filter_outlined,
+                size: 13,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 4),
               Text(
                 '${user.requestCount} request${user.requestCount == 1 ? '' : 's'}',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -207,8 +222,9 @@ class _UserAvatar extends StatelessWidget {
       child: Text(
         initials,
         style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onPrimaryContainer),
+          fontWeight: FontWeight.bold,
+          color: theme.colorScheme.onPrimaryContainer,
+        ),
       ),
     );
   }
@@ -237,8 +253,8 @@ class _QuotaRow extends StatelessWidget {
     final Color barColor = percent >= 0.9
         ? Colors.red
         : percent >= 0.7
-            ? Colors.orange
-            : theme.colorScheme.primary;
+        ? Colors.orange
+        : theme.colorScheme.primary;
 
     return Row(
       children: [
@@ -248,8 +264,10 @@ class _QuotaRow extends StatelessWidget {
           width: 28,
           child: Text(
             label,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 10),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 10,
+            ),
           ),
         ),
         Expanded(
@@ -258,8 +276,7 @@ class _QuotaRow extends StatelessWidget {
             child: LinearProgressIndicator(
               value: percent,
               minHeight: 4,
-              backgroundColor:
-                  theme.colorScheme.onSurfaceVariant.withAlpha(30),
+              backgroundColor: theme.colorScheme.onSurfaceVariant.withAlpha(30),
               valueColor: AlwaysStoppedAnimation(barColor),
             ),
           ),
@@ -268,7 +285,9 @@ class _QuotaRow extends StatelessWidget {
         Text(
           '$used/$limit',
           style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant, fontSize: 10),
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 10,
+          ),
         ),
       ],
     );
@@ -287,12 +306,11 @@ class _UserDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final requestsAsync = ref.watch(
-        seerUserRequestsProvider((instance: instance, userId: user.id)));
+      seerUserRequestsProvider((instance: instance, userId: user.id)),
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(user.displayName),
-      ),
+      appBar: ModuleAppBar(title: Text(user.displayName)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -305,9 +323,12 @@ class _UserDetailScreen extends ConsumerWidget {
                 Text(user.displayName, style: theme.textTheme.headlineSmall),
                 if (user.email.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(user.email,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    user.email,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 8),
                 Row(
@@ -317,21 +338,28 @@ class _UserDetailScreen extends ConsumerWidget {
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text('Admin',
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onPrimaryContainer)),
+                        child: Text(
+                          'Admin',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
                       ),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
@@ -339,8 +367,9 @@ class _UserDetailScreen extends ConsumerWidget {
                       child: Text(
                         user.isPlexUser ? 'Plex User' : 'Local User',
                         style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.onSurfaceVariant),
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -390,30 +419,39 @@ class _UserDetailScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // Requests section
-          Text('Recent Requests',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            'Recent Requests',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
 
           requestsAsync.when(
             loading: () => const Center(
-                child: Padding(
-              padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(),
-            )),
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              ),
+            ),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Failed to load requests: $e',
-                  style: TextStyle(color: theme.colorScheme.error)),
+              child: Text(
+                'Failed to load requests: $e',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
             ),
             data: (requests) {
               if (requests.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.all(24),
                   child: Center(
-                    child: Text('No requests yet',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant)),
+                    child: Text(
+                      'No requests yet',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 );
               }
@@ -464,12 +502,19 @@ class _StatBox extends StatelessWidget {
       children: [
         Icon(icon, color: c, size: 22),
         const SizedBox(height: 4),
-        Text(value,
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold, color: c)),
-        Text(label,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text(
+          value,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: c,
+          ),
+        ),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }
@@ -513,23 +558,26 @@ class _RequestRow extends StatelessWidget {
               children: [
                 Text(
                   request.title,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w500),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   '${request.mediaType == 'movie' ? 'Movie' : 'TV'} · $statusLabel',
                   style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant),
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
           ),
           Text(
             _formatDate(request.createdAt),
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

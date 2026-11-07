@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -13,11 +15,11 @@ class RadarrSystemStatusScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-        title: const Text('System Status',
-            style: TextStyle(color: AppColors.textOnPrimary)),
+      appBar: ModuleAppBar(
+        title: Text(
+          'System Status',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
       ),
       body: ListView(
         children: [
@@ -54,8 +56,10 @@ class _HealthSection extends ConsumerWidget {
         data: (items) {
           if (items.isEmpty) {
             return const ListTile(
-              leading: Icon(Icons.check_circle_outline,
-                  color: AppColors.statusOnline),
+              leading: Icon(
+                Icons.check_circle_outline,
+                color: AppColors.statusOnline,
+              ),
               title: Text('No issues found'),
             );
           }
@@ -99,9 +103,13 @@ class _HealthTile extends StatelessWidget {
       leading: Icon(icon, color: color, size: 22),
       title: Text(message, style: const TextStyle(fontSize: 13)),
       subtitle: source.isNotEmpty
-          ? Text(source,
+          ? Text(
+              source,
               style: const TextStyle(
-                  fontSize: 11, color: AppColors.textSecondary))
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
+            )
           : null,
       dense: true,
     );
@@ -175,15 +183,21 @@ class _DiskTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(path,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w500),
-                    overflow: TextOverflow.ellipsis),
+                child: Text(
+                  path,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               Text(
                 '${_fmt(freeSpace)} free',
                 style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -201,7 +215,9 @@ class _DiskTile extends StatelessWidget {
           Text(
             '${_fmt(usedSpace)} of ${_fmt(totalSpace)} used',
             style: const TextStyle(
-                fontSize: 11, color: AppColors.textSecondary),
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -259,13 +275,13 @@ class _Section extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(
-                            color: AppColors.tealDark,
-                            fontWeight: FontWeight.bold)),
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppColors.tealDark,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               ?trailing,
             ],
@@ -292,14 +308,19 @@ class _InfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 120,
-            child: Text(label,
-                style: const TextStyle(
-                    fontSize: 13, color: AppColors.textSecondary)),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w500)),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
           ),
         ],
       ),
@@ -310,21 +331,21 @@ class _InfoRow extends StatelessWidget {
 class _Loading extends StatelessWidget {
   const _Loading();
   @override
-  Widget build(BuildContext context) =>
-      const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator()),
-      );
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.all(16),
+    child: Center(child: CircularProgressIndicator()),
+  );
 }
 
 class _ErrorTile extends StatelessWidget {
   const _ErrorTile({required this.message});
   final String message;
   @override
-  Widget build(BuildContext context) =>
-      ListTile(
-        leading: const Icon(Icons.error_outline, color: AppColors.statusOffline),
-        title: Text(message,
-            style: const TextStyle(color: AppColors.statusOffline, fontSize: 13)),
-      );
+  Widget build(BuildContext context) => ListTile(
+    leading: const Icon(Icons.error_outline, color: AppColors.statusOffline),
+    title: Text(
+      message,
+      style: const TextStyle(color: AppColors.statusOffline, fontSize: 13),
+    ),
+  );
 }

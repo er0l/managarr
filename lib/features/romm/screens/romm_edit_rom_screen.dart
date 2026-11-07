@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -7,8 +9,11 @@ import '../api/models/romm_rom.dart';
 import '../providers/romm_providers.dart';
 
 class RommEditRomScreen extends ConsumerStatefulWidget {
-  const RommEditRomScreen(
-      {super.key, required this.rom, required this.instance});
+  const RommEditRomScreen({
+    super.key,
+    required this.rom,
+    required this.instance,
+  });
 
   final RommRom rom;
   final Instance instance;
@@ -45,17 +50,23 @@ class _RommEditRomScreenState extends ConsumerState<RommEditRomScreen> {
         'name': _nameCtrl.text.trim(),
         'summary': _summaryCtrl.text.trim(),
       });
-      ref.invalidate(rommRomDetailProvider(
-          (instance: widget.instance, romId: widget.rom.id)));
+      ref.invalidate(
+        rommRomDetailProvider((
+          instance: widget.instance,
+          romId: widget.rom.id,
+        )),
+      );
       if (mounted) {
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Save failed: $e'),
-          backgroundColor: AppColors.statusOffline,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Save failed: $e'),
+            backgroundColor: AppColors.statusOffline,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -65,31 +76,33 @@ class _RommEditRomScreenState extends ConsumerState<RommEditRomScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-        title: const Text('Edit ROM',
-            style: TextStyle(color: AppColors.textOnPrimary)),
+      appBar: ModuleAppBar(
+        title: Text(
+          'Edit ROM',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         actions: [
           _saving
-              ? const Padding(
+              ? Padding(
                   padding: EdgeInsets.all(14),
                   child: SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                      color: AppColors.textOnPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       strokeWidth: 2,
                     ),
                   ),
                 )
               : TextButton(
                   onPressed: _save,
-                  child: const Text('Save',
-                      style: TextStyle(
-                        color: AppColors.textOnPrimary,
-                        fontWeight: FontWeight.w600,
-                      )),
+                  child: Text(
+                    'Save',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
         ],
       ),

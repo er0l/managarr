@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -24,25 +26,26 @@ class _SonarrManualImportScreenState
 
   @override
   Widget build(BuildContext context) {
-    final rootFoldersAsync =
-        ref.watch(sonarrRootFoldersProvider(widget.instance));
+    final rootFoldersAsync = ref.watch(
+      sonarrRootFoldersProvider(widget.instance),
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manual Import'),
+      appBar: ModuleAppBar(
+        title: Text('Manual Import'),
         actions: [
           if (_selectedIndices.isNotEmpty)
             FilledButton.icon(
               onPressed: _import,
-              icon: const Icon(Icons.download_done_outlined, size: 18),
+              icon: Icon(Icons.download_done_outlined, size: 18),
               label: Text('Import ${_selectedIndices.length}'),
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
                 visualDensity: VisualDensity.compact,
               ),
             ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -57,8 +60,10 @@ class _SonarrManualImportScreenState
                   labelText: 'Root Folder',
                   border: OutlineInputBorder(),
                   isDense: true,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
                 child: DropdownButton<String>(
                   value: _selectedFolder,
@@ -67,11 +72,12 @@ class _SonarrManualImportScreenState
                   underline: const SizedBox.shrink(),
                   isDense: true,
                   items: folders
-                      .map((f) => DropdownMenuItem(
-                            value: f.path,
-                            child: Text(f.path,
-                                overflow: TextOverflow.ellipsis),
-                          ))
+                      .map(
+                        (f) => DropdownMenuItem(
+                          value: f.path,
+                          child: Text(f.path, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) {
@@ -118,25 +124,32 @@ class _SonarrManualImportScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.folder_open_outlined,
-                size: 64,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.folder_open_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
-            Text('Select a root folder to scan for importable files',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color:
-                        Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              'Select a root folder to scan for importable files',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       );
     }
     if (_items.isEmpty) {
       return Center(
-        child: Text('No importable files found in $_selectedFolder',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        child: Text(
+          'No importable files found in $_selectedFolder',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
       );
     }
 
@@ -146,10 +159,12 @@ class _SonarrManualImportScreenState
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Row(
             children: [
-              Text('${_items.length} file${_items.length == 1 ? '' : 's'} found',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(
+                '${_items.length} file${_items.length == 1 ? '' : 's'} found',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
               const Spacer(),
               TextButton(
                 onPressed: () => setState(() {
@@ -157,12 +172,15 @@ class _SonarrManualImportScreenState
                     _selectedIndices.clear();
                   } else {
                     _selectedIndices.addAll(
-                        List.generate(_items.length, (i) => i));
+                      List.generate(_items.length, (i) => i),
+                    );
                   }
                 }),
-                child: Text(_selectedIndices.length == _items.length
-                    ? 'Deselect All'
-                    : 'Select All'),
+                child: Text(
+                  _selectedIndices.length == _items.length
+                      ? 'Deselect All'
+                      : 'Select All',
+                ),
               ),
             ],
           ),
@@ -220,7 +238,8 @@ class _SonarrManualImportScreenState
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-              'Importing ${toImport.length} file${toImport.length == 1 ? '' : 's'}…'),
+            'Importing ${toImport.length} file${toImport.length == 1 ? '' : 's'}…',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -257,19 +276,19 @@ class _ImportItemTile extends StatelessWidget {
     final series = item['series'] as Map<String, dynamic>?;
     final seriesTitle = series?['title'] as String?;
     final episodeNumbers = (item['episodes'] as List?)
-        ?.map((e) =>
-            'S${(e['seasonNumber'] as int).toString().padLeft(2, '0')}E${(e['episodeNumber'] as int).toString().padLeft(2, '0')}')
+        ?.map(
+          (e) =>
+              'S${(e['seasonNumber'] as int).toString().padLeft(2, '0')}E${(e['episodeNumber'] as int).toString().padLeft(2, '0')}',
+        )
         .join(', ');
-    final quality = (item['quality'] as Map<String, dynamic>?)?['quality']
-        ?['name'] as String?;
+    final quality =
+        (item['quality'] as Map<String, dynamic>?)?['quality']?['name']
+            as String?;
     final rejections = item['rejections'] as List? ?? [];
     final hasRejections = rejections.isNotEmpty;
 
     return ListTile(
-      leading: Checkbox(
-        value: selected,
-        onChanged: (_) => onToggle(),
-      ),
+      leading: Checkbox(value: selected, onChanged: (_) => onToggle()),
       title: Text(
         seriesTitle != null && episodeNumbers != null
             ? '$seriesTitle — $episodeNumbers'
@@ -285,8 +304,9 @@ class _ImportItemTile extends StatelessWidget {
             fileName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           if (quality != null || hasRejections)
             Row(
@@ -295,30 +315,35 @@ class _ImportItemTile extends StatelessWidget {
                   Container(
                     margin: const EdgeInsets.only(top: 3, right: 6),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 1),
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(quality,
-                        style: TextStyle(
-                            fontSize: 11,
-                            color:
-                                theme.colorScheme.onSecondaryContainer)),
+                    child: Text(
+                      quality,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
                   ),
                 if (hasRejections)
                   Container(
                     margin: const EdgeInsets.only(top: 3),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 1),
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red.withAlpha(30),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       '${rejections.length} rejection${rejections.length == 1 ? '' : 's'}',
-                      style: const TextStyle(
-                          fontSize: 11, color: Colors.red),
+                      style: const TextStyle(fontSize: 11, color: Colors.red),
                     ),
                   ),
               ],

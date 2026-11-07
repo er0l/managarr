@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -28,13 +30,11 @@ class TautulliUserDetailScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Text(
           displayName,
-          style: const TextStyle(
-            color: AppColors.textOnPrimary,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -55,22 +55,23 @@ class TautulliUserDetailScreen extends ConsumerWidget {
                       CircleAvatar(
                         radius: 36,
                         backgroundColor: AppColors.orangeAccent.withAlpha(30),
-                        child: const Icon(Icons.person_outline,
-                            color: AppColors.orangeAccent, size: 36),
+                        child: const Icon(
+                          Icons.person_outline,
+                          color: AppColors.orangeAccent,
+                          size: 36,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         detail.displayName,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (detail.username != detail.displayName)
                         Text(
                           '@${detail.username}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
+                          style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: AppColors.textSecondary),
                         ),
                       const SizedBox(height: 16),
@@ -90,8 +91,9 @@ class TautulliUserDetailScreen extends ConsumerWidget {
                           if (detail.lastSeenAt != null)
                             _StatChip(
                               label: 'Last Seen',
-                              value: DateFormat.MMMd()
-                                  .format(detail.lastSeenAt!),
+                              value: DateFormat.MMMd().format(
+                                detail.lastSeenAt!,
+                              ),
                               icon: Icons.visibility_outlined,
                             ),
                         ],
@@ -100,9 +102,7 @@ class TautulliUserDetailScreen extends ConsumerWidget {
                         const SizedBox(height: 8),
                         Text(
                           'Last played: ${detail.lastPlayed}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
+                          style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: AppColors.textSecondary),
                           textAlign: TextAlign.center,
                         ),
@@ -117,21 +117,19 @@ class TautulliUserDetailScreen extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
                     'Watch History',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(
-                          color: AppColors.tealPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppColors.tealPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
               historyAsync.when(
                 loading: () => const SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator())),
-                error: (e, s) => SliverToBoxAdapter(
-                    child: Center(child: Text('Error: $e'))),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (e, s) =>
+                    SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
                 data: (history) {
                   if (history.items.isEmpty) {
                     return const SliverToBoxAdapter(
@@ -155,7 +153,9 @@ class TautulliUserDetailScreen extends ConsumerWidget {
                         title: Text(
                           item.title ?? 'Unknown',
                           style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 14),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -165,14 +165,11 @@ class TautulliUserDetailScreen extends ConsumerWidget {
                         ),
                         trailing: Text(
                           '${item.percentComplete}%',
-                          style: Theme.of(ctx)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(
-                                color: item.percentComplete >= 90
-                                    ? AppColors.statusOnline
-                                    : AppColors.statusWarning,
-                              ),
+                          style: Theme.of(ctx).textTheme.labelSmall?.copyWith(
+                            color: item.percentComplete >= 90
+                                ? AppColors.statusOnline
+                                : AppColors.statusWarning,
+                          ),
                         ),
                       );
                     },
@@ -189,8 +186,11 @@ class TautulliUserDetailScreen extends ConsumerWidget {
 }
 
 class _StatChip extends StatelessWidget {
-  const _StatChip(
-      {required this.label, required this.value, required this.icon});
+  const _StatChip({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
   final String label;
   final String value;
   final IconData icon;
@@ -204,17 +204,15 @@ class _StatChip extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         Text(
           label,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: AppColors.textSecondary),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );

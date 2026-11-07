@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
-import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/bottom_bar_button.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../models/radarr_options.dart';
 import '../providers/radarr_providers.dart';
 import 'radarr_activity_screen.dart';
+import 'radarr_queue_screen.dart';
 import 'radarr_add_movie_screen.dart';
 import 'radarr_calendar_screen.dart';
 import 'radarr_cutoff_unmet_screen.dart';
@@ -36,15 +36,19 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
     try {
       final api = ref.read(radarrApiProvider(widget.instance));
       await api.sendCommand(name);
-      messenger.showSnackBar(SnackBar(
-        content: Text('$label started'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('$label started'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(
-        content: Text('Error: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -64,14 +68,18 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
                   Text('Sort by', style: Theme.of(ctx).textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
-                    icon: Icon(ascending
-                        ? Icons.arrow_upward
-                        : Icons.arrow_downward),
+                    icon: Icon(
+                      ascending ? Icons.arrow_upward : Icons.arrow_downward,
+                    ),
                     onPressed: () {
                       ref
-                          .read(radarrSortAscendingProvider(widget.instance.id)
-                              .notifier)
-                          .state = !ascending;
+                              .read(
+                                radarrSortAscendingProvider(
+                                  widget.instance.id,
+                                ).notifier,
+                              )
+                              .state =
+                          !ascending;
                       Navigator.pop(ctx);
                     },
                   ),
@@ -85,18 +93,24 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     ref
-                        .read(radarrSortOptionProvider(widget.instance.id)
-                            .notifier)
-                        .state = val;
+                            .read(
+                              radarrSortOptionProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        val;
                     Navigator.pop(ctx);
                   }
                 },
                 child: ListView(
                   children: RadarrSortOption.values
-                      .map((o) => RadioListTile<RadarrSortOption>(
-                            title: Text(o.label),
-                            value: o,
-                          ))
+                      .map(
+                        (o) => RadioListTile<RadarrSortOption>(
+                          title: Text(o.label),
+                          value: o,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -108,8 +122,9 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
   }
 
   void _showFilterBottomSheet() {
-    final currentFilter =
-        ref.read(radarrFilterOptionProvider(widget.instance.id));
+    final currentFilter = ref.read(
+      radarrFilterOptionProvider(widget.instance.id),
+    );
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -119,8 +134,10 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(Spacing.s16),
-              child: Text('Filter by',
-                  style: Theme.of(ctx).textTheme.titleLarge),
+              child: Text(
+                'Filter by',
+                style: Theme.of(ctx).textTheme.titleLarge,
+              ),
             ),
             const Divider(height: 1),
             Flexible(
@@ -129,64 +146,30 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     ref
-                        .read(radarrFilterOptionProvider(widget.instance.id)
-                            .notifier)
-                        .state = val;
+                            .read(
+                              radarrFilterOptionProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        val;
                     Navigator.pop(ctx);
                   }
                 },
                 child: ListView(
                   shrinkWrap: true,
                   children: RadarrFilterOption.values
-                      .map((o) => RadioListTile<RadarrFilterOption>(
-                            title: Text(o.label),
-                            value: o,
-                          ))
+                      .map(
+                        (o) => RadioListTile<RadarrFilterOption>(
+                          title: Text(o.label),
+                          value: o,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _openUpcoming() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppColors.tealPrimary,
-            iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text(
-              'Upcoming',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-            ),
-          ),
-          body: RadarrCalendarScreen(instance: widget.instance),
-        ),
-      ),
-    );
-  }
-
-  void _openMissing() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppColors.tealPrimary,
-            iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text(
-              'Missing',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-            ),
-          ),
-          body: RadarrMissingScreen(instance: widget.instance),
         ),
       ),
     );
@@ -198,12 +181,13 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppColors.tealPrimary,
-            iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text(
+          appBar: ModuleAppBar(
+            title: Text(
               'History',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           body: RadarrActivityScreen(instance: widget.instance),
@@ -214,84 +198,96 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final displayMode =
-        ref.watch(radarrDisplayModeProvider(widget.instance.id));
-    final currentSort =
-        ref.watch(radarrSortOptionProvider(widget.instance.id));
-    final currentFilter =
-        ref.watch(radarrFilterOptionProvider(widget.instance.id));
+    final displayMode = ref.watch(
+      radarrDisplayModeProvider(widget.instance.id),
+    );
+    final currentSort = ref.watch(radarrSortOptionProvider(widget.instance.id));
+    final currentFilter = ref.watch(
+      radarrFilterOptionProvider(widget.instance.id),
+    );
     final filterActive = currentFilter != RadarrFilterOption.all;
     final sortActive = currentSort != RadarrSortOption.alphabetical;
-
 
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'Radarr',
-      tabs: const [],
-      tabViews: [RadarrMoviesScreen(instance: widget.instance)],
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: ServiceType.radarr.brandColor,
-        foregroundColor: Colors.black,
-        tooltip: 'Add Movie',
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => RadarrAddMovieScreen(instance: widget.instance),
+      sections: [
+        ServiceSection(
+          label: 'Library',
+          title: 'Movies',
+          icon: Icons.video_library_outlined,
+          body: RadarrMoviesScreen(instance: widget.instance),
+          action: FilledButton.tonalIcon(
+            icon: const Icon(Icons.add),
+            label: const Text('Add'),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RadarrAddMovieScreen(instance: widget.instance),
+              ),
+            ),
+          ),
+          toolbar: ServiceToolbar(
+            children: [
+              TextButton.icon(
+                onPressed: _showFilterBottomSheet,
+                icon: Icon(
+                  Icons.filter_list,
+                  color: filterActive
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                label: Text(filterActive ? currentFilter.label : 'Filter'),
+              ),
+              TextButton.icon(
+                onPressed: _showSortBottomSheet,
+                icon: const Icon(Icons.sort),
+                label: Text(sortActive ? currentSort.label : 'Sort'),
+              ),
+              IconButton(
+                icon: Icon(
+                  displayMode == DisplayMode.grid
+                      ? Icons.view_list_outlined
+                      : Icons.grid_view_outlined,
+                ),
+                tooltip:
+                    'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
+                onPressed: () {
+                  ref
+                      .read(
+                        radarrDisplayModeProvider(widget.instance.id).notifier,
+                      )
+                      .state = displayMode == DisplayMode.grid
+                      ? DisplayMode.list
+                      : DisplayMode.grid;
+                },
+              ),
+            ],
           ),
         ),
-        child: const Icon(Icons.add),
-      ),
-      bottomLeadingActions: [
-        BottomBarButton(
-          icon: Icons.filter_list,
-          label: 'Filter',
-          active: filterActive,
-          onTap: _showFilterBottomSheet,
-        ),
-        BottomBarButton(
-          icon: Icons.sort,
-          label: 'Sort',
-          active: sortActive,
-          onTap: _showSortBottomSheet,
-        ),
-        BottomBarButton(
-          icon: Icons.history,
-          label: 'History',
-          onTap: _openHistory,
-        ),
-      ],
-      appBarActions: [
-        IconButton(
-          icon: Icon(
-            displayMode == DisplayMode.grid
-                ? Icons.view_list_outlined
-                : Icons.grid_view_outlined,
-            color: Colors.white,
-          ),
-          tooltip:
-              'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
-          onPressed: () {
-            ref
-                .read(radarrDisplayModeProvider(widget.instance.id).notifier)
-                .state = displayMode == DisplayMode.grid
-                ? DisplayMode.list
-                : DisplayMode.grid;
-          },
-        ),
-      ],
-      bottomTrailingActions: [
-        BottomBarButton(
-          icon: Icons.calendar_month_outlined,
+        ServiceSection(
           label: 'Upcoming',
-          onTap: _openUpcoming,
+          icon: Icons.calendar_month_outlined,
+          body: RadarrCalendarScreen(instance: widget.instance),
         ),
-        BottomBarButton(
-          icon: Icons.video_file_outlined,
+        ServiceSection(
           label: 'Missing',
-          onTap: _openMissing,
+          icon: Icons.error_outline,
+          body: RadarrMissingScreen(instance: widget.instance),
         ),
       ],
-      bottomMoreItems: const [
+      moreItems: const [
+        PopupMenuItem(
+          value: 'queue',
+          child: ListTile(
+            leading: Icon(Icons.download_outlined),
+            title: Text('Queue'),
+          ),
+        ),
+        PopupMenuItem(
+          value: 'history',
+          child: ListTile(leading: Icon(Icons.history), title: Text('History')),
+        ),
         PopupMenuItem(
           value: 'updateLibrary',
           child: ListTile(
@@ -345,6 +341,18 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
       ],
       onMoreSelected: (value) {
         switch (value) {
+          case 'queue':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: const ModuleAppBar(title: Text('Queue')),
+                  body: RadarrQueueScreen(instance: widget.instance),
+                ),
+              ),
+            );
+          case 'history':
+            _openHistory();
           case 'updateLibrary':
             _runCommand('RescanMovie', 'Update Library');
           case 'manualImport':
@@ -368,19 +376,17 @@ class _RadarrHomeScreenState extends ConsumerState<RadarrHomeScreen> {
               context,
               MaterialPageRoute(
                 builder: (_) => Scaffold(
-                  backgroundColor:
-                      Theme.of(context).scaffoldBackgroundColor,
-                  appBar: AppBar(
-                    backgroundColor: AppColors.tealPrimary,
-                    iconTheme: const IconThemeData(color: Colors.white),
-                    title: const Text(
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  appBar: ModuleAppBar(
+                    title: Text(
                       'Cutoff Unmet',
                       style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600),
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  body: RadarrCutoffUnmetScreen(
-                      instance: widget.instance),
+                  body: RadarrCutoffUnmetScreen(instance: widget.instance),
                 ),
               ),
             );

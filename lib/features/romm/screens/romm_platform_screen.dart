@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -203,23 +205,26 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
     const muted = Color(0xA0FFFFFF);
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(widget.platform.displayName,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary, fontSize: 16)),
+            Text(
+              widget.platform.displayName,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 16,
+              ),
+            ),
             if (_roms.isNotEmpty)
               Text(
                 '${_roms.length}${_hasMore ? '+' : ''} ROMs',
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
           ],
         ),
@@ -229,14 +234,15 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
               viewMode == DisplayMode.list
                   ? Icons.grid_view_outlined
                   : Icons.list_outlined,
-              color: AppColors.textOnPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             tooltip: viewMode == DisplayMode.list ? 'Grid view' : 'List view',
             onPressed: () {
-              ref.read(rommPlatformViewModeProvider.notifier).state =
-                  viewMode == DisplayMode.list
-                      ? DisplayMode.grid
-                      : DisplayMode.list;
+              ref
+                  .read(rommPlatformViewModeProvider.notifier)
+                  .state = viewMode == DisplayMode.list
+                  ? DisplayMode.grid
+                  : DisplayMode.list;
             },
           ),
         ],
@@ -258,8 +264,7 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
                       )
                     : null,
                 isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -359,8 +364,11 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: AppColors.statusOffline),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: AppColors.statusOffline,
+            ),
             const SizedBox(height: 12),
             Text(_error!),
             const SizedBox(height: 8),
@@ -377,8 +385,11 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.search_off_outlined,
-                size: 48, color: AppColors.textSecondary),
+            const Icon(
+              Icons.search_off_outlined,
+              size: 48,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(height: 12),
             Text(
               _searchTerm.isNotEmpty
@@ -411,17 +422,14 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        return _RomListTile(
-          rom: _roms[i],
-          api: api,
-          instance: widget.instance,
-        );
+        return _RomListTile(rom: _roms[i], api: api, instance: widget.instance);
       },
     );
   }
 
   Widget _buildGridView(RommApi api) {
-    final columns = ref.watch(gridColumnsProvider) +
+    final columns =
+        ref.watch(gridColumnsProvider) +
         (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0);
     return GridView.builder(
       controller: _scrollController,
@@ -435,15 +443,9 @@ class _RommPlatformScreenState extends ConsumerState<RommPlatformScreen> {
       itemCount: _roms.length + (_isLoadingMore ? 3 : 0),
       itemBuilder: (ctx, i) {
         if (i >= _roms.length) {
-          return const Card(
-            child: Center(child: CircularProgressIndicator()),
-          );
+          return const Card(child: Center(child: CircularProgressIndicator()));
         }
-        return _RomGridCard(
-          rom: _roms[i],
-          api: api,
-          instance: widget.instance,
-        );
+        return _RomGridCard(rom: _roms[i], api: api, instance: widget.instance);
       },
     );
   }
@@ -508,8 +510,7 @@ class _RomListTile extends StatelessWidget {
                       headers: authHeaders,
                       color: Colors.black.withAlpha(isDark ? 178 : 210),
                       colorBlendMode: BlendMode.darken,
-                      errorBuilder: (e, st, tr) =>
-                          const SizedBox.shrink(),
+                      errorBuilder: (e, st, tr) => const SizedBox.shrink(),
                     ),
                   ),
                 // Horizontal gradient: solid on left, transparent on right
@@ -545,8 +546,7 @@ class _RomListTile extends StatelessWidget {
                                   coverUrl,
                                   fit: BoxFit.cover,
                                   headers: authHeaders,
-                                  errorBuilder: (e, st, tr) =>
-                                      _placeholder(),
+                                  errorBuilder: (e, st, tr) => _placeholder(),
                                 )
                               : _placeholder(),
                         ),
@@ -602,8 +602,11 @@ class _RomListTile extends StatelessWidget {
   Widget _placeholder() {
     return Container(
       color: AppColors.tealPrimary.withAlpha(20),
-      child: const Icon(Icons.videogame_asset_outlined,
-          color: AppColors.tealPrimary, size: 24),
+      child: const Icon(
+        Icons.videogame_asset_outlined,
+        color: AppColors.tealPrimary,
+        size: 24,
+      ),
     );
   }
 }
@@ -658,12 +661,7 @@ class _RomGridCard extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  cover,
-                ],
-              ),
+              child: Stack(fit: StackFit.expand, children: [cover]),
             ),
           ),
           const SizedBox(height: 4),
@@ -677,7 +675,9 @@ class _RomGridCard extends StatelessWidget {
             Text(
               '${rom.releaseYear}',
               style: const TextStyle(
-                  fontSize: 10, color: AppColors.textSecondary),
+                fontSize: 10,
+                color: AppColors.textSecondary,
+              ),
             ),
         ],
       ),
@@ -688,13 +688,15 @@ class _RomGridCard extends StatelessWidget {
     return Container(
       color: AppColors.tealPrimary.withAlpha(20),
       child: const Center(
-        child: Icon(Icons.videogame_asset_outlined,
-            color: AppColors.tealPrimary, size: 32),
+        child: Icon(
+          Icons.videogame_asset_outlined,
+          color: AppColors.tealPrimary,
+          size: 32,
+        ),
       ),
     );
   }
 }
-
 
 // ---------------------------------------------------------------------------
 // Sort option helper
@@ -727,8 +729,7 @@ class _LetterRail extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface.withAlpha(200),
-        borderRadius:
-            const BorderRadius.horizontal(left: Radius.circular(12)),
+        borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {

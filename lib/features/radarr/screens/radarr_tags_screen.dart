@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -15,14 +17,17 @@ class RadarrTagsScreen extends ConsumerWidget {
     final tagsAsync = ref.watch(radarrTagsProvider(instance));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-        title: const Text('Tags',
-            style: TextStyle(color: AppColors.textOnPrimary)),
+      appBar: ModuleAppBar(
+        title: Text(
+          'Tags',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add, color: AppColors.textOnPrimary),
+            icon: Icon(
+              Icons.add,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             tooltip: 'Add Tag',
             onPressed: () => _showAddDialog(context, ref),
           ),
@@ -34,8 +39,11 @@ class RadarrTagsScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 48, color: AppColors.statusOffline),
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.statusOffline,
+              ),
               const SizedBox(height: 12),
               Text('$e'),
               const SizedBox(height: 8),
@@ -52,8 +60,11 @@ class RadarrTagsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.label_off_outlined,
-                      size: 48, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.label_off_outlined,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(height: 12),
                   const Text('No tags yet'),
                   const SizedBox(height: 8),
@@ -67,8 +78,7 @@ class RadarrTagsScreen extends ConsumerWidget {
             );
           }
           return RefreshIndicator(
-            onRefresh: () async =>
-                ref.invalidate(radarrTagsProvider(instance)),
+            onRefresh: () async => ref.invalidate(radarrTagsProvider(instance)),
             color: AppColors.tealPrimary,
             child: ListView.separated(
               itemCount: tags.length,
@@ -76,13 +86,19 @@ class RadarrTagsScreen extends ConsumerWidget {
               itemBuilder: (ctx, i) {
                 final tag = tags[i];
                 return ListTile(
-                  leading: const Icon(Icons.label_outline,
-                      color: AppColors.tealPrimary),
+                  leading: const Icon(
+                    Icons.label_outline,
+                    color: AppColors.tealPrimary,
+                  ),
                   title: Text(tag.label),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: AppColors.statusOffline, size: 20),
-                    onPressed: () => _confirmDelete(context, ref, tag.id, tag.label),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.statusOffline,
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        _confirmDelete(context, ref, tag.id, tag.label),
                   ),
                 );
               },
@@ -124,7 +140,10 @@ class RadarrTagsScreen extends ConsumerWidget {
   }
 
   Future<void> _createTag(
-      BuildContext context, WidgetRef ref, String label) async {
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+  ) async {
     final trimmed = label.trim();
     if (trimmed.isEmpty) return;
     Navigator.pop(context);
@@ -134,16 +153,22 @@ class RadarrTagsScreen extends ConsumerWidget {
       ref.invalidate(radarrTagsProvider(instance));
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to create tag: $e'),
-          backgroundColor: AppColors.statusOffline,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create tag: $e'),
+            backgroundColor: AppColors.statusOffline,
+          ),
+        );
       }
     }
   }
 
   void _confirmDelete(
-      BuildContext context, WidgetRef ref, int id, String label) {
+    BuildContext context,
+    WidgetRef ref,
+    int id,
+    String label,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -163,15 +188,19 @@ class RadarrTagsScreen extends ConsumerWidget {
                 ref.invalidate(radarrTagsProvider(instance));
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Failed to delete tag: $e'),
-                    backgroundColor: AppColors.statusOffline,
-                  ));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete tag: $e'),
+                      backgroundColor: AppColors.statusOffline,
+                    ),
+                  );
                 }
               }
             },
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.statusOffline)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.statusOffline),
+            ),
           ),
         ],
       ),

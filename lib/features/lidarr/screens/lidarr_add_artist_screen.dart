@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -20,8 +22,7 @@ class LidarrAddArtistScreen extends ConsumerStatefulWidget {
       _LidarrAddArtistScreenState();
 }
 
-class _LidarrAddArtistScreenState
-    extends ConsumerState<LidarrAddArtistScreen> {
+class _LidarrAddArtistScreenState extends ConsumerState<LidarrAddArtistScreen> {
   final _searchController = TextEditingController();
   Timer? _debounce;
 
@@ -35,31 +36,28 @@ class _LidarrAddArtistScreenState
   void _onSearchChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      ref
-          .read(lidarrLookupQueryProvider(widget.instance.id).notifier)
-          .state = value;
+      ref.read(lidarrLookupQueryProvider(widget.instance.id).notifier).state =
+          value;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final resultsAsync =
-        ref.watch(lidarrLookupResultsProvider(widget.instance));
+    final resultsAsync = ref.watch(
+      lidarrLookupResultsProvider(widget.instance),
+    );
     final existingAsync = ref.watch(lidarrArtistsProvider(widget.instance));
     final existingIds = existingAsync.maybeWhen(
-      data: (artists) =>
-          artists.map((a) => a.foreignArtistId).toSet(),
+      data: (artists) => artists.map((a) => a.foreignArtistId).toSet(),
       orElse: () => <String?>{},
     );
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-        title: const Text(
+      appBar: ModuleAppBar(
+        title: Text(
           'Add Artist',
           style: TextStyle(
-            color: AppColors.textOnPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
@@ -86,24 +84,25 @@ class _LidarrAddArtistScreenState
                         onPressed: () {
                           _searchController.clear();
                           ref
-                              .read(lidarrLookupQueryProvider(
-                                      widget.instance.id)
-                                  .notifier)
-                              .state = '';
+                                  .read(
+                                    lidarrLookupQueryProvider(
+                                      widget.instance.id,
+                                    ).notifier,
+                                  )
+                                  .state =
+                              '';
                         },
                       )
                     : null,
                 isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
               ),
               onChanged: _onSearchChanged,
             ),
           ),
           Expanded(
             child: resultsAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text(
                   'Search failed: $e',
@@ -115,10 +114,9 @@ class _LidarrAddArtistScreenState
                   return Center(
                     child: Text(
                       'Search for an artist to add',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(color: AppColors.textSecondary),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   );
                 }
@@ -126,10 +124,9 @@ class _LidarrAddArtistScreenState
                   return Center(
                     child: Text(
                       'No results found',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(color: AppColors.textSecondary),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   );
                 }
@@ -138,23 +135,23 @@ class _LidarrAddArtistScreenState
                   itemCount: results.length,
                   itemBuilder: (context, index) {
                     final artist = results[index];
-                    final inLibrary =
-                        existingIds.contains(artist.foreignArtistId);
+                    final inLibrary = existingIds.contains(
+                      artist.foreignArtistId,
+                    );
                     return _ArtistResultTile(
                       artist: artist,
                       inLibrary: inLibrary,
                       onTap: inLibrary
                           ? null
                           : () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      LidarrAddArtistDetailScreen(
-                                    artist: artist,
-                                    instance: widget.instance,
-                                  ),
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LidarrAddArtistDetailScreen(
+                                  artist: artist,
+                                  instance: widget.instance,
                                 ),
                               ),
+                            ),
                     );
                   },
                 );
@@ -200,9 +197,7 @@ class _ArtistResultTile extends StatelessWidget {
                   color: AppColors.tealDark,
                   alignment: Alignment.center,
                   child: Text(
-                    artist.artistName.isNotEmpty
-                        ? artist.artistName[0]
-                        : 'A',
+                    artist.artistName.isNotEmpty ? artist.artistName[0] : 'A',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -213,8 +208,7 @@ class _ArtistResultTile extends StatelessWidget {
       ),
       title: Text(
         artist.artistName,
-        style: theme.textTheme.bodyLarge
-            ?.copyWith(fontWeight: FontWeight.w600),
+        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -223,19 +217,18 @@ class _ArtistResultTile extends StatelessWidget {
           if (artist.artistType != null)
             Text(
               artist.artistType!,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           if (inLibrary) ...[
             const SizedBox(width: 8),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: AppColors.tealPrimary.withAlpha(30),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                    color: AppColors.tealPrimary.withAlpha(80)),
+                border: Border.all(color: AppColors.tealPrimary.withAlpha(80)),
               ),
               child: const Text(
                 'In Library',
@@ -251,8 +244,7 @@ class _ArtistResultTile extends StatelessWidget {
       ),
       trailing: inLibrary
           ? null
-          : const Icon(Icons.chevron_right,
-              color: AppColors.textSecondary),
+          : const Icon(Icons.chevron_right, color: AppColors.textSecondary),
     );
   }
 }

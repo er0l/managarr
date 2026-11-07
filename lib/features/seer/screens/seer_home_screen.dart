@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
 import '../../../core/database/app_database.dart';
-import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/bottom_bar_button.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../providers/seer_providers.dart';
 import 'seer_discover_screen.dart';
 import 'seer_requests_screen.dart';
 import 'seer_users_screen.dart';
 
-/// Seer module home — Discover is the main body (Radarr/Sonarr layout).
-/// Requests and Users open as full screens from the bottom bar; media type
-/// (Movies/TV) and sort live in the bottom bar; grid/list toggle top-right.
 class SeerHomeScreen extends ConsumerStatefulWidget {
   const SeerHomeScreen({super.key, required this.instance});
 
@@ -32,13 +28,13 @@ class _SeerHomeScreenState extends ConsumerState<SeerHomeScreen> {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppColors.tealPrimary,
-            iconTheme: const IconThemeData(color: Colors.white),
+          appBar: ModuleAppBar(
             title: Text(
               title,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           body: body,
@@ -68,19 +64,25 @@ class _SeerHomeScreenState extends ConsumerState<SeerHomeScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     ref
-                        .read(seerDiscoverSortProvider(widget.instance.id)
-                            .notifier)
-                        .state = val;
+                            .read(
+                              seerDiscoverSortProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        val;
                     Navigator.pop(ctx);
                   }
                 },
                 child: ListView(
                   shrinkWrap: true,
                   children: SeerDiscoverSort.values
-                      .map((opt) => RadioListTile<SeerDiscoverSort>(
-                            title: Text(opt.label),
-                            value: opt,
-                          ))
+                      .map(
+                        (opt) => RadioListTile<SeerDiscoverSort>(
+                          title: Text(opt.label),
+                          value: opt,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -94,83 +96,93 @@ class _SeerHomeScreenState extends ConsumerState<SeerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final displayMode = ref.watch(seerDisplayModeProvider(widget.instance.id));
-    final mediaType =
-        ref.watch(seerDiscoverMediaTypeProvider(widget.instance.id));
+    final mediaType = ref.watch(
+      seerDiscoverMediaTypeProvider(widget.instance.id),
+    );
     final sort = ref.watch(seerDiscoverSortProvider(widget.instance.id));
     final sortActive = sort != SeerDiscoverSort.popularityDesc;
 
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'Seer',
-      tabs: const [],
-      tabViews: [SeerDiscoverScreen(instance: widget.instance)],
-      appBarActions: [
-        IconButton(
-          icon: Icon(
-            displayMode == DisplayMode.grid
-                ? Icons.view_list_outlined
-                : Icons.grid_view_outlined,
-            color: Colors.white,
-          ),
-          tooltip:
-              'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
-          onPressed: () {
-            ref
-                .read(seerDisplayModeProvider(widget.instance.id).notifier)
-                .state = displayMode == DisplayMode.grid
-                ? DisplayMode.list
-                : DisplayMode.grid;
-          },
-        ),
-      ],
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: ServiceType.seer.brandColor,
-        foregroundColor: Colors.white,
-        tooltip: 'Requests',
-        onPressed: () => _openSubScreen(
-          'Requests',
-          SeerRequestsScreen(instance: widget.instance),
-        ),
-        child: const Icon(Icons.playlist_add_check_outlined),
-      ),
-      // Order: Sort far left, Movies hugging the FAB's left, TV Shows on
-      // its right, Users far right. Spacers spread them around the FAB.
-      bottomLeadingActions: [
-        BottomBarButton(
-          icon: Icons.sort,
-          label: 'Sort',
-          active: sortActive,
-          onTap: _showSortSheet,
-        ),
-        const Spacer(),
-        BottomBarButton(
-          icon: Icons.movie_outlined,
-          label: 'Movies',
-          active: mediaType == 'movie',
-          onTap: () => ref
-              .read(seerDiscoverMediaTypeProvider(widget.instance.id).notifier)
-              .state = 'movie',
-        ),
-      ],
-      bottomTrailingActions: [
-        BottomBarButton(
-          icon: Icons.tv_outlined,
-          label: 'TV Shows',
-          active: mediaType == 'tv',
-          onTap: () => ref
-              .read(seerDiscoverMediaTypeProvider(widget.instance.id).notifier)
-              .state = 'tv',
-        ),
-        const Spacer(),
-        BottomBarButton(
-          icon: Icons.people_outline,
-          label: 'Users',
-          onTap: () => _openSubScreen(
-            'Users',
-            SeerUsersScreen(instance: widget.instance),
+      sections: [
+        ServiceSection(
+          label: 'Discover',
+          icon: Icons.explore_outlined,
+          body: SeerDiscoverScreen(instance: widget.instance),
+          toolbar: ServiceToolbar(
+            children: [
+              TextButton.icon(
+                onPressed: _showSortSheet,
+                icon: const Icon(Icons.sort),
+                label: Text(sortActive ? sort.label : 'Sort'),
+              ),
+              ChoiceChip(
+                label: const Text('Movies'),
+                selected: mediaType == 'movie',
+                onSelected: (_) =>
+                    ref
+                            .read(
+                              seerDiscoverMediaTypeProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        'movie',
+              ),
+              ChoiceChip(
+                label: const Text('TV Shows'),
+                selected: mediaType == 'tv',
+                onSelected: (_) =>
+                    ref
+                            .read(
+                              seerDiscoverMediaTypeProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        'tv',
+              ),
+              IconButton(
+                icon: Icon(
+                  displayMode == DisplayMode.grid
+                      ? Icons.view_list_outlined
+                      : Icons.grid_view_outlined,
+                ),
+                tooltip:
+                    'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
+                onPressed: () =>
+                    ref
+                        .read(
+                          seerDisplayModeProvider(widget.instance.id).notifier,
+                        )
+                        .state = displayMode == DisplayMode.grid
+                    ? DisplayMode.list
+                    : DisplayMode.grid,
+              ),
+            ],
           ),
         ),
+        ServiceSection(
+          label: 'Requests',
+          icon: Icons.inbox_outlined,
+          body: SeerRequestsScreen(instance: widget.instance),
+        ),
       ],
+      moreItems: const [
+        PopupMenuItem(
+          value: 'users',
+          child: ListTile(
+            leading: Icon(Icons.people_outline),
+            title: Text('Users'),
+          ),
+        ),
+      ],
+      onMoreSelected: (value) {
+        if (value == 'users') {
+          _openSubScreen('Users', SeerUsersScreen(instance: widget.instance));
+        }
+      },
     );
   }
 }

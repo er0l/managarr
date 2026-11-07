@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -111,45 +113,57 @@ class _LidarrEditArtistScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final profilesAsync =
-        ref.watch(lidarrQualityProfilesProvider(widget.instance));
-    final metadataAsync =
-        ref.watch(lidarrMetadataProfilesProvider(widget.instance));
+    final profilesAsync = ref.watch(
+      lidarrQualityProfilesProvider(widget.instance),
+    );
+    final metadataAsync = ref.watch(
+      lidarrMetadataProfilesProvider(widget.instance),
+    );
     final tagsAsync = ref.watch(lidarrTagsProvider(widget.instance));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Edit Artist',
-                style: TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18)),
-            Text(widget.artist.artistName,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400)),
+            Text(
+              'Edit Artist',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              widget.artist.artistName,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
         actions: [
           if (_saving)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: AppColors.textOnPrimary)),
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
             )
           else
             IconButton(
-              icon: const Icon(Icons.check, color: AppColors.textOnPrimary),
+              icon: Icon(
+                Icons.check,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               tooltip: 'Save',
               onPressed: _loaded ? _save : null,
             ),
@@ -164,7 +178,8 @@ class _LidarrEditArtistScreenState
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Monitored'),
                   subtitle: const Text(
-                      'Lidarr will search for new albums by this artist'),
+                    'Lidarr will search for new albums by this artist',
+                  ),
                   value: _monitored,
                   activeThumbColor: AppColors.tealPrimary,
                   onChanged: (v) => setState(() => _monitored = v),
@@ -180,13 +195,17 @@ class _LidarrEditArtistScreenState
                         labelText: 'Quality Profile',
                         border: OutlineInputBorder(),
                       ),
-                      initialValue: profiles.any(
-                              (p) => p.id == _selectedQualityProfileId)
+                      initialValue:
+                          profiles.any((p) => p.id == _selectedQualityProfileId)
                           ? _selectedQualityProfileId
                           : null,
                       items: profiles
-                          .map((p) => DropdownMenuItem(
-                              value: p.id, child: Text(p.name)))
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text(p.name),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) =>
                           setState(() => _selectedQualityProfileId = v),
@@ -197,21 +216,26 @@ class _LidarrEditArtistScreenState
 
                 metadataAsync.when(
                   loading: () => const LinearProgressIndicator(),
-                  error: (e, _) =>
-                      Text('Error loading metadata profiles: $e'),
+                  error: (e, _) => Text('Error loading metadata profiles: $e'),
                   data: (profiles) {
                     return DropdownButtonFormField<int>(
                       decoration: const InputDecoration(
                         labelText: 'Metadata Profile',
                         border: OutlineInputBorder(),
                       ),
-                      initialValue: profiles.any(
-                              (p) => p.id == _selectedMetadataProfileId)
+                      initialValue:
+                          profiles.any(
+                            (p) => p.id == _selectedMetadataProfileId,
+                          )
                           ? _selectedMetadataProfileId
                           : null,
                       items: profiles
-                          .map((p) => DropdownMenuItem(
-                              value: p.id, child: Text(p.name)))
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text(p.name),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) =>
                           setState(() => _selectedMetadataProfileId = v),
@@ -238,9 +262,12 @@ class _LidarrEditArtistScreenState
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Tags',
-                            style: theme.textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600)),
+                        Text(
+                          'Tags',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(height: Spacing.s8),
                         Wrap(
                           spacing: Spacing.s8,
@@ -250,8 +277,9 @@ class _LidarrEditArtistScreenState
                             return FilterChip(
                               label: Text(tag.label),
                               selected: selected,
-                              selectedColor:
-                                  AppColors.tealPrimary.withAlpha(40),
+                              selectedColor: AppColors.tealPrimary.withAlpha(
+                                40,
+                              ),
                               checkmarkColor: AppColors.tealPrimary,
                               onSelected: (v) {
                                 setState(() {

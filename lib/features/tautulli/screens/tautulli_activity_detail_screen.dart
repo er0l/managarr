@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -49,7 +51,8 @@ class _TautulliActivityDetailScreenState
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: AppColors.statusOffline),
+              backgroundColor: AppColors.statusOffline,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Terminate'),
           ),
@@ -121,9 +124,11 @@ class _TautulliActivityDetailScreenState
       );
       return;
     }
-    final libraries =
-        ref.read(tautulliLibrariesProvider(widget.instance)).valueOrNull;
-    final lib = libraries?.where((l) => l.sectionId == sectionId).firstOrNull ??
+    final libraries = ref
+        .read(tautulliLibrariesProvider(widget.instance))
+        .valueOrNull;
+    final lib =
+        libraries?.where((l) => l.sectionId == sectionId).firstOrNull ??
         TautulliLibrary(
           sectionId: sectionId,
           sectionName: session.libraryName ?? 'Library',
@@ -149,15 +154,13 @@ class _TautulliActivityDetailScreenState
     const muted = Color(0xA0FFFFFF);
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Text(
           session.grandparentTitle?.isNotEmpty == true
               ? session.grandparentTitle!
               : session.displayTitle,
-          style: const TextStyle(
-            color: AppColors.textOnPrimary,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -173,7 +176,9 @@ class _TautulliActivityDetailScreenState
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.white),
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.close),
             )
@@ -232,25 +237,32 @@ class _TautulliActivityDetailScreenState
                     if (session.grandparentTitle?.isNotEmpty == true) ...[
                       Text(
                         session.grandparentTitle!,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (session.parentTitle?.isNotEmpty == true)
                         Text(
                           session.parentTitle!,
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.textSecondary),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      Text(session.displayTitle,
-                          style: theme.textTheme.bodyMedium),
+                      Text(
+                        session.displayTitle,
+                        style: theme.textTheme.bodyMedium,
+                      ),
                     ] else
                       Text(
                         session.displayTitle,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     const SizedBox(height: 8),
-                    _TranscodeDecisionBadge(decision: session.transcodeDecision),
+                    _TranscodeDecisionBadge(
+                      decision: session.transcodeDecision,
+                    ),
                     const SizedBox(height: 6),
                     _StateBadge(state: session.state),
                   ],
@@ -317,7 +329,7 @@ class _TautulliActivityDetailScreenState
                 label: 'QUALITY',
                 value: session.qualityProfile != null
                     ? '${session.qualityProfile}'
-                        '${session.streamBitrate > 0 ? ' (${session.bandwidthLabel})' : ''}'
+                          '${session.streamBitrate > 0 ? ' (${session.bandwidthLabel})' : ''}'
                     : session.bandwidthLabel,
               ),
             ],
@@ -423,8 +435,9 @@ class _InfoRowWidget extends StatelessWidget {
           Expanded(
             child: Text(
               row.value.isNotEmpty ? row.value : '—',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w500),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -450,8 +463,8 @@ class _PlaceholderPoster extends StatelessWidget {
         mediaType == 'movie'
             ? Icons.movie_outlined
             : mediaType == 'episode'
-                ? Icons.tv_outlined
-                : Icons.music_note_outlined,
+            ? Icons.tv_outlined
+            : Icons.music_note_outlined,
         color: Colors.white24,
         size: 32,
       ),
@@ -469,10 +482,10 @@ class _TranscodeDecisionBadge extends StatelessWidget {
     final (label, color) = d.contains('direct')
         ? ('Direct Play', AppColors.statusOnline)
         : d == 'copy'
-            ? ('Direct Stream', AppColors.statusWarning)
-            : d == 'transcode'
-                ? ('Transcode', AppColors.statusOffline)
-                : ('Unknown', AppColors.statusUnknown);
+        ? ('Direct Stream', AppColors.statusWarning)
+        : d == 'transcode'
+        ? ('Transcode', AppColors.statusOffline)
+        : ('Unknown', AppColors.statusUnknown);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -483,9 +496,9 @@ class _TranscodeDecisionBadge extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -501,10 +514,10 @@ class _StateBadge extends StatelessWidget {
     final (label, color) = s == 'playing'
         ? ('Playing', AppColors.statusOnline)
         : s == 'paused'
-            ? ('Paused', AppColors.statusWarning)
-            : s == 'buffering'
-                ? ('Buffering', AppColors.blueAccent)
-                : ('Unknown', AppColors.statusUnknown);
+        ? ('Paused', AppColors.statusWarning)
+        : s == 'buffering'
+        ? ('Buffering', AppColors.blueAccent)
+        : ('Unknown', AppColors.statusUnknown);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -515,9 +528,9 @@ class _StateBadge extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

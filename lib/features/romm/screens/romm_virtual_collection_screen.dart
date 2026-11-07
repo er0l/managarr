@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -103,26 +105,31 @@ class _RommVirtualCollectionScreenState
   @override
   Widget build(BuildContext context) {
     final api = ref.watch(rommApiProvider(widget.instance));
-    final columns = ref.watch(gridColumnsProvider) +
+    final columns =
+        ref.watch(gridColumnsProvider) +
         (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(widget.collection.name,
-                style: const TextStyle(color: Colors.white, fontSize: 16)),
+            Text(
+              widget.collection.name,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 16,
+              ),
+            ),
             Text(
               '${widget.collection.romCount} ROMs',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ],
         ),
@@ -137,8 +144,11 @@ class _RommVirtualCollectionScreenState
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline,
-                      size: 48, color: AppColors.statusOffline),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: AppColors.statusOffline,
+                  ),
                   const SizedBox(height: 12),
                   Text(_error!, textAlign: TextAlign.center),
                   const SizedBox(height: 8),
@@ -211,22 +221,18 @@ class _RommVirtualCollectionScreenState
                             children: [
                               Text(
                                 rom.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
+                                style: Theme.of(context).textTheme.labelSmall
                                     ?.copyWith(fontWeight: FontWeight.w600),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
                                 rom.platformDisplayName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
+                                style: Theme.of(context).textTheme.labelSmall
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                       fontSize: 9,
                                     ),
                                 maxLines: 1,

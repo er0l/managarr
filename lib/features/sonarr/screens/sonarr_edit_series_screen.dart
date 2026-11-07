@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -117,43 +119,54 @@ class _SonarrEditSeriesScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final profilesAsync =
-        ref.watch(sonarrQualityProfilesProvider(widget.instance));
+    final profilesAsync = ref.watch(
+      sonarrQualityProfilesProvider(widget.instance),
+    );
     final tagsAsync = ref.watch(sonarrTagsProvider(widget.instance));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Edit Series',
-                style: TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18)),
-            Text(widget.series.title,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400)),
+            Text(
+              'Edit Series',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              widget.series.title,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
         actions: [
           if (_saving)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: AppColors.textOnPrimary)),
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
             )
           else
             IconButton(
-              icon: const Icon(Icons.check, color: AppColors.textOnPrimary),
+              icon: Icon(
+                Icons.check,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               tooltip: 'Save',
               onPressed: _loaded ? _save : null,
             ),
@@ -169,7 +182,8 @@ class _SonarrEditSeriesScreenState
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Monitored'),
                   subtitle: const Text(
-                      'Sonarr will search for new episodes of this series'),
+                    'Sonarr will search for new episodes of this series',
+                  ),
                   value: _monitored,
                   activeThumbColor: AppColors.tealPrimary,
                   onChanged: (v) => setState(() => _monitored = v),
@@ -186,13 +200,17 @@ class _SonarrEditSeriesScreenState
                         labelText: 'Quality Profile',
                         border: OutlineInputBorder(),
                       ),
-                      initialValue: profiles
-                              .any((p) => p.id == _selectedQualityProfileId)
+                      initialValue:
+                          profiles.any((p) => p.id == _selectedQualityProfileId)
                           ? _selectedQualityProfileId
                           : null,
                       items: profiles
-                          .map((p) => DropdownMenuItem(
-                              value: p.id, child: Text(p.name)))
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text(p.name),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) =>
                           setState(() => _selectedQualityProfileId = v),
@@ -207,12 +225,17 @@ class _SonarrEditSeriesScreenState
                     labelText: 'Series Type',
                     border: OutlineInputBorder(),
                   ),
-                  initialValue: _seriesTypeOptions.containsKey(_selectedSeriesType)
+                  initialValue:
+                      _seriesTypeOptions.containsKey(_selectedSeriesType)
                       ? _selectedSeriesType
                       : 'standard',
                   items: _seriesTypeOptions.entries
-                      .map((e) =>
-                          DropdownMenuItem(value: e.key, child: Text(e.value)))
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) setState(() => _selectedSeriesType = v);
@@ -240,9 +263,12 @@ class _SonarrEditSeriesScreenState
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Tags',
-                            style: theme.textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600)),
+                        Text(
+                          'Tags',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(height: Spacing.s8),
                         Wrap(
                           spacing: Spacing.s8,
@@ -252,8 +278,9 @@ class _SonarrEditSeriesScreenState
                             return FilterChip(
                               label: Text(tag.label),
                               selected: selected,
-                              selectedColor:
-                                  AppColors.tealPrimary.withAlpha(40),
+                              selectedColor: AppColors.tealPrimary.withAlpha(
+                                40,
+                              ),
                               checkmarkColor: AppColors.tealPrimary,
                               onSelected: (v) {
                                 setState(() {

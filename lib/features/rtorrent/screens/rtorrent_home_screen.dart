@@ -16,8 +16,7 @@ class RTorrentHomeScreen extends ConsumerStatefulWidget {
   final Instance instance;
 
   @override
-  ConsumerState<RTorrentHomeScreen> createState() =>
-      _RTorrentHomeScreenState();
+  ConsumerState<RTorrentHomeScreen> createState() => _RTorrentHomeScreenState();
 }
 
 class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
@@ -31,8 +30,7 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final torrentsAsync =
-        ref.watch(rtorrentTorrentsProvider(widget.instance));
+    final torrentsAsync = ref.watch(rtorrentTorrentsProvider(widget.instance));
     final filtered = ref.watch(rtorrentFilteredProvider(widget.instance));
     final stats = ref.watch(rtorrentGlobalStatsProvider(widget.instance));
 
@@ -43,12 +41,9 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
 
     // Unique labels from raw list
     final labels = torrentsAsync.when(
-      data: (t) => t
-          .map((x) => x.label)
-          .where((l) => l.isNotEmpty)
-          .toSet()
-          .toList()
-        ..sort(),
+      data: (t) =>
+          t.map((x) => x.label).where((l) => l.isNotEmpty).toSet().toList()
+            ..sort(),
       loading: () => <String>[],
       error: (e, s) => <String>[],
     );
@@ -64,7 +59,8 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
                   ? 'Search ${stats.totalTorrents} torrents…'
                   : 'Search torrents…',
               prefixIcon: const Icon(Icons.search, size: 20),
-              suffixIcon: ref
+              suffixIcon:
+                  ref
                       .watch(rtorrentSearchQueryProvider(widget.instance.id))
                       .isNotEmpty
                   ? IconButton(
@@ -72,10 +68,13 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
                       onPressed: () {
                         _searchController.clear();
                         ref
-                            .read(rtorrentSearchQueryProvider(
-                                    widget.instance.id)
-                                .notifier)
-                            .state = '';
+                                .read(
+                                  rtorrentSearchQueryProvider(
+                                    widget.instance.id,
+                                  ).notifier,
+                                )
+                                .state =
+                            '';
                       },
                     )
                   : null,
@@ -98,10 +97,15 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
               ),
               filled: true,
             ),
-            onChanged: (v) => ref
-                .read(
-                    rtorrentSearchQueryProvider(widget.instance.id).notifier)
-                .state = v,
+            onChanged: (v) =>
+                ref
+                        .read(
+                          rtorrentSearchQueryProvider(
+                            widget.instance.id,
+                          ).notifier,
+                        )
+                        .state =
+                    v,
           ),
         ),
         Expanded(
@@ -111,14 +115,14 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline,
-                      size: 48, color: Colors.red),
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
                   const SizedBox(height: 12),
                   Text('$e'),
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed: () => ref
-                        .invalidate(rtorrentTorrentsProvider(widget.instance)),
+                    onPressed: () => ref.invalidate(
+                      rtorrentTorrentsProvider(widget.instance),
+                    ),
                     child: const Text('Retry'),
                   ),
                 ],
@@ -153,34 +157,37 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
       ],
     );
 
-    const muted = Color(0xA0FFFFFF);
-
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'rTorrent',
-      tabs: const [],
-      tabViews: [body],
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.orangeAccent,
-        onPressed: () => _showAddOptions(context),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      bottomLeadingActions: [
-        IconButton(
-          icon: const Icon(Icons.filter_list, color: muted),
-          tooltip: 'Filter',
-          onPressed: () => _showFilterSheet(context, labels),
-        ),
-        IconButton(
-          icon: const Icon(Icons.sort, color: muted),
-          tooltip: 'Sort',
-          onPressed: () => _showSortSheet(context),
-        ),
-      ],
-      bottomTrailingActions: [
-        _SpeedIndicator(
-          downRate: stats.totalDownRate,
-          upRate: stats.totalUpRate,
+      sections: [
+        ServiceSection(
+          label: 'Transfers',
+          icon: Icons.download_outlined,
+          body: body,
+          action: FilledButton.tonalIcon(
+            icon: const Icon(Icons.add),
+            label: const Text('Add'),
+            onPressed: () => _showAddOptions(context),
+          ),
+          toolbar: ServiceToolbar(
+            children: [
+              TextButton.icon(
+                icon: const Icon(Icons.filter_list),
+                label: const Text('Filter'),
+                onPressed: () => _showFilterSheet(context, labels),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.sort),
+                label: const Text('Sort'),
+                onPressed: () => _showSortSheet(context),
+              ),
+              _SpeedIndicator(
+                downRate: stats.totalDownRate,
+                upRate: stats.totalUpRate,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -239,22 +246,25 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
   }
 
   void _showStatus(ScaffoldMessengerState s, bool ok, String msg) {
-    s.showSnackBar(SnackBar(
-      content: Text(ok ? msg : 'Action failed'),
-      backgroundColor: ok ? AppColors.statusOnline : AppColors.statusOffline,
-    ));
+    s.showSnackBar(
+      SnackBar(
+        content: Text(ok ? msg : 'Action failed'),
+        backgroundColor: ok ? AppColors.statusOnline : AppColors.statusOffline,
+      ),
+    );
   }
 
   void _showError(ScaffoldMessengerState s, dynamic e) {
-    s.showSnackBar(SnackBar(
-      content: Text('Error: $e'),
-      backgroundColor: AppColors.statusOffline,
-    ));
+    s.showSnackBar(
+      SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: AppColors.statusOffline,
+      ),
+    );
   }
 
   void _showSortSheet(BuildContext context) {
-    final current =
-        ref.read(rtorrentSortProvider(widget.instance.id));
+    final current = ref.read(rtorrentSortProvider(widget.instance.id));
 
     showModalBottomSheet(
       context: context,
@@ -273,7 +283,12 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
         return ListView(
           shrinkWrap: true,
           children: [
-            const ListTile(title: Text('Sort by', style: TextStyle(fontWeight: FontWeight.bold))),
+            const ListTile(
+              title: Text(
+                'Sort by',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
             ...options.map(
               (o) => ListTile(
                 leading: Icon(o.$3),
@@ -284,7 +299,8 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
                 onTap: () {
                   ref
                       .read(rtorrentSortProvider(widget.instance.id).notifier)
-                      .state = o.$1;
+                      .state = o
+                      .$1;
                   Navigator.pop(context);
                 },
               ),
@@ -300,35 +316,48 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setModalState) {
-          final statusFilter =
-              ref.read(rtorrentStatusFilterProvider(widget.instance.id));
-          final labelFilter =
-              ref.read(rtorrentLabelFilterProvider(widget.instance.id));
+          final statusFilter = ref.read(
+            rtorrentStatusFilterProvider(widget.instance.id),
+          );
+          final labelFilter = ref.read(
+            rtorrentLabelFilterProvider(widget.instance.id),
+          );
 
           return ListView(
             shrinkWrap: true,
             children: [
               const ListTile(
-                  title: Text('Filter by Status',
-                      style: TextStyle(fontWeight: FontWeight.bold))),
-              ...RTorrentStatusFilter.values.map((f) => ListTile(
-                    title: Text(f.name[0].toUpperCase() + f.name.substring(1)),
-                    trailing: statusFilter == f
-                        ? const Icon(Icons.check, color: AppColors.tealPrimary)
-                        : null,
-                    onTap: () {
-                      ref
-                          .read(rtorrentStatusFilterProvider(
-                                  widget.instance.id)
-                              .notifier)
-                          .state = f;
-                      Navigator.pop(context);
-                    },
-                  )),
+                title: Text(
+                  'Filter by Status',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              ...RTorrentStatusFilter.values.map(
+                (f) => ListTile(
+                  title: Text(f.name[0].toUpperCase() + f.name.substring(1)),
+                  trailing: statusFilter == f
+                      ? const Icon(Icons.check, color: AppColors.tealPrimary)
+                      : null,
+                  onTap: () {
+                    ref
+                            .read(
+                              rtorrentStatusFilterProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        f;
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
               if (labels.isNotEmpty) ...[
                 const ListTile(
-                    title: Text('Filter by Label',
-                        style: TextStyle(fontWeight: FontWeight.bold))),
+                  title: Text(
+                    'Filter by Label',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
                 ListTile(
                   title: const Text('All Labels'),
                   trailing: labelFilter.isEmpty
@@ -336,28 +365,36 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
                       : null,
                   onTap: () {
                     ref
-                        .read(rtorrentLabelFilterProvider(widget.instance.id)
-                            .notifier)
-                        .state = '';
+                            .read(
+                              rtorrentLabelFilterProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        '';
                     Navigator.pop(context);
                   },
                 ),
-                ...labels.map((l) => ListTile(
-                      leading: const Icon(Icons.label_outline),
-                      title: Text(l),
-                      trailing: labelFilter == l
-                          ? const Icon(Icons.check,
-                              color: AppColors.tealPrimary)
-                          : null,
-                      onTap: () {
-                        ref
-                            .read(rtorrentLabelFilterProvider(
-                                    widget.instance.id)
-                                .notifier)
-                            .state = l;
-                        Navigator.pop(context);
-                      },
-                    )),
+                ...labels.map(
+                  (l) => ListTile(
+                    leading: const Icon(Icons.label_outline),
+                    title: Text(l),
+                    trailing: labelFilter == l
+                        ? const Icon(Icons.check, color: AppColors.tealPrimary)
+                        : null,
+                    onTap: () {
+                      ref
+                              .read(
+                                rtorrentLabelFilterProvider(
+                                  widget.instance.id,
+                                ).notifier,
+                              )
+                              .state =
+                          l;
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
               ],
             ],
           );
@@ -382,8 +419,9 @@ class _RTorrentHomeScreenState extends ConsumerState<RTorrentHomeScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () async {
               final url = urlController.text.trim();
@@ -424,7 +462,7 @@ class _SpeedIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const muted = Color(0xA0FFFFFF);
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Column(
@@ -434,19 +472,28 @@ class _SpeedIndicator extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.arrow_downward, size: 10, color: AppColors.statusOnline),
+              const Icon(
+                Icons.arrow_downward,
+                size: 10,
+                color: AppColors.statusOnline,
+              ),
               const SizedBox(width: 2),
-              Text(_fmt(downRate),
-                  style: const TextStyle(fontSize: 10, color: muted)),
+              Text(
+                _fmt(downRate),
+                style: TextStyle(fontSize: 12, color: muted),
+              ),
             ],
           ),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.arrow_upward, size: 10, color: AppColors.blueAccent),
+              const Icon(
+                Icons.arrow_upward,
+                size: 10,
+                color: AppColors.blueAccent,
+              ),
               const SizedBox(width: 2),
-              Text(_fmt(upRate),
-                  style: const TextStyle(fontSize: 10, color: muted)),
+              Text(_fmt(upRate), style: TextStyle(fontSize: 12, color: muted)),
             ],
           ),
         ],
@@ -454,4 +501,3 @@ class _SpeedIndicator extends StatelessWidget {
     );
   }
 }
-

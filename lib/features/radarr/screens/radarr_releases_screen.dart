@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -22,26 +24,31 @@ class RadarrReleasesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final releasesAsync = ref.watch(
-        radarrReleasesProvider((instance: instance, movieId: movieId)));
+      radarrReleasesProvider((instance: instance, movieId: movieId)),
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Releases',
-                style: TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18)),
-            Text(movieTitle,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400)),
+            Text(
+              'Releases',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              movieTitle,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
       ),
@@ -53,27 +60,38 @@ class RadarrReleasesScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.cloud_off,
-                    size: 48, color: AppColors.statusOffline),
+                const Icon(
+                  Icons.cloud_off,
+                  size: 48,
+                  color: AppColors.statusOffline,
+                ),
                 const SizedBox(height: Spacing.s16),
-                Text('Failed to load releases',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Failed to load releases',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: Spacing.s8),
-                Text(e.toString(),
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                    maxLines: 3),
+                Text(
+                  e.toString(),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                ),
                 const SizedBox(height: Spacing.s24),
                 FilledButton.icon(
-                  onPressed: () => ref.invalidate(radarrReleasesProvider(
-                      (instance: instance, movieId: movieId))),
+                  onPressed: () => ref.invalidate(
+                    radarrReleasesProvider((
+                      instance: instance,
+                      movieId: movieId,
+                    )),
+                  ),
                   style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.tealPrimary,
-                      foregroundColor: AppColors.textOnPrimary,
-                      shape: const StadiumBorder()),
+                    backgroundColor: AppColors.tealPrimary,
+                    foregroundColor: AppColors.textOnPrimary,
+                    shape: const StadiumBorder(),
+                  ),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),
                 ),
@@ -84,16 +102,19 @@ class RadarrReleasesScreen extends ConsumerWidget {
         data: (releases) {
           if (releases.isEmpty) {
             return Center(
-              child: Text('No releases found',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(color: AppColors.textSecondary)),
+              child: Text(
+                'No releases found',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+              ),
             );
           }
           return ListView.builder(
-            padding:
-                const EdgeInsets.only(top: Spacing.s8, bottom: Spacing.s24),
+            padding: const EdgeInsets.only(
+              top: Spacing.s8,
+              bottom: Spacing.s24,
+            ),
             itemCount: releases.length,
             itemBuilder: (context, index) => _ReleaseTile(
               release: releases[index],
@@ -133,15 +154,18 @@ class _ReleaseTile extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Grab Release'),
         content: Text(
-            'Download "${release.title}"?\n\nQuality: ${release.qualityName}'),
+          'Download "${release.title}"?\n\nQuality: ${release.qualityName}',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-                backgroundColor: AppColors.orangeAccent),
+              backgroundColor: AppColors.orangeAccent,
+            ),
             child: const Text('Grab'),
           ),
         ],
@@ -181,7 +205,9 @@ class _ReleaseTile extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(
-          horizontal: Spacing.pageHorizontal, vertical: 4),
+        horizontal: Spacing.pageHorizontal,
+        vertical: 4,
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => _grab(context),
@@ -191,11 +217,14 @@ class _ReleaseTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Title
-              Text(release.title,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                release.title,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               const SizedBox(height: Spacing.s8),
               // Meta row
               Wrap(
@@ -210,26 +239,30 @@ class _ReleaseTile extends StatelessWidget {
                   ),
                   if (release.size != null && release.size! > 0)
                     _MiniChip(
-                        label: _formatSize(release.size!),
-                        color: AppColors.tealPrimary),
+                      label: _formatSize(release.size!),
+                      color: AppColors.tealPrimary,
+                    ),
                   _MiniChip(
                     label: isTorrent ? 'Torrent' : 'Usenet',
                     color: AppColors.blueAccent,
                   ),
                   if (isTorrent && release.seeders != null)
                     _MiniChip(
-                        label: '${release.seeders}S / ${release.leechers ?? 0}L',
-                        color: release.seeders! > 0
-                            ? AppColors.statusOnline
-                            : AppColors.statusOffline),
+                      label: '${release.seeders}S / ${release.leechers ?? 0}L',
+                      color: release.seeders! > 0
+                          ? AppColors.statusOnline
+                          : AppColors.statusOffline,
+                    ),
                   if (release.indexer != null)
                     _MiniChip(
-                        label: release.indexer!,
-                        color: AppColors.textSecondary),
+                      label: release.indexer!,
+                      color: AppColors.textSecondary,
+                    ),
                   if (release.age != null)
                     _MiniChip(
-                        label: '${release.age}d',
-                        color: AppColors.textSecondary),
+                      label: '${release.age}d',
+                      color: AppColors.textSecondary,
+                    ),
                   if (release.customFormatScore != null &&
                       release.customFormatScore! != 0)
                     _MiniChip(
@@ -247,7 +280,9 @@ class _ReleaseTile extends StatelessWidget {
                 Text(
                   release.rejections!.join(', '),
                   style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.statusOffline, fontSize: 11),
+                    color: AppColors.statusOffline,
+                    fontSize: 11,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -274,9 +309,14 @@ class _MiniChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withAlpha(60)),
       ),
-      child: Text(label,
-          style:
-              TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }

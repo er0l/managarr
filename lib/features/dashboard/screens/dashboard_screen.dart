@@ -19,10 +19,10 @@ import '../providers/health_check_provider.dart';
 import '../widgets/sections/downloads_section.dart';
 import '../widgets/sections/now_playing_section.dart';
 import '../widgets/sections/requests_section.dart';
-import '../widgets/sections/status_strip.dart';
+import '../widgets/module_launcher.dart';
 import '../widgets/sections/upcoming_section.dart';
 
-/// Content-hub dashboard: service status strip on top, followed by
+/// Content-hub dashboard: module launcher on top, followed by
 /// Now Playing, Downloads, Upcoming and Requests sections. Sections
 /// collapse automatically when no relevant service is configured.
 class DashboardScreen extends ConsumerWidget {
@@ -70,18 +70,15 @@ class DashboardScreen extends ConsumerWidget {
       data: (instances) {
         final enabled = instances.where((i) => i.enabled).toList();
 
-        List<Instance> ofType(ServiceType type) => enabled
-            .where((i) => i.serviceType == type.name)
-            .toList();
+        List<Instance> ofType(ServiceType type) =>
+            enabled.where((i) => i.serviceType == type.name).toList();
 
         return RefreshIndicator(
           color: AppColors.tealPrimary,
           onRefresh: () => _refresh(ref, enabled),
           child: enabled.isEmpty
               ? const CustomScrollView(
-                  slivers: [
-                    SliverFillRemaining(child: _NoInstancesHint()),
-                  ],
+                  slivers: [SliverFillRemaining(child: _NoInstancesHint())],
                 )
               : ListView(
                   padding: const EdgeInsets.only(
@@ -89,9 +86,8 @@ class DashboardScreen extends ConsumerWidget {
                     bottom: Spacing.s24,
                   ),
                   children: [
-                    StatusStrip(instances: enabled),
-                    NowPlayingSection(
-                        instances: ofType(ServiceType.tautulli)),
+                    ModuleLauncher(instances: enabled),
+                    NowPlayingSection(instances: ofType(ServiceType.tautulli)),
                     const DownloadsSection(),
                     const UpcomingSection(),
                     RequestsSection(instances: ofType(ServiceType.seer)),
@@ -145,7 +141,9 @@ class _NoInstancesHint extends StatelessWidget {
                 foregroundColor: AppColors.textOnPrimary,
                 shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.s24, vertical: 14),
+                  horizontal: Spacing.s24,
+                  vertical: 14,
+                ),
               ),
               icon: const Icon(Icons.add),
               label: const Text('Add Instance'),

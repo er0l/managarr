@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -63,10 +65,12 @@ class _ProwlarrAddIndexerScreenState
       await api.addIndexer(schema);
       ref.invalidate(prowlarrIndexersProvider(widget.instance));
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(
-        content: Text('Added "$name"'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Added "$name"'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       Navigator.pop(context);
     } catch (e) {
       var message = '$e';
@@ -79,12 +83,14 @@ class _ProwlarrAddIndexerScreenState
         }
       }
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(
-        content: Text('Could not add "$name": $message'),
-        backgroundColor: AppColors.statusOffline,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 5),
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Could not add "$name": $message'),
+          backgroundColor: AppColors.statusOffline,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _adding = false);
     }
@@ -92,17 +98,19 @@ class _ProwlarrAddIndexerScreenState
 
   @override
   Widget build(BuildContext context) {
-    final schemasAsync =
-        ref.watch(prowlarrIndexerSchemasProvider(widget.instance));
+    final schemasAsync = ref.watch(
+      prowlarrIndexerSchemasProvider(widget.instance),
+    );
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
+      appBar: ModuleAppBar(
+        title: Text(
           'Add Indexer',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       body: Column(
@@ -133,20 +141,23 @@ class _ProwlarrAddIndexerScreenState
           if (_adding) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: schemasAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline,
-                        size: 48, color: AppColors.statusOffline),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: AppColors.statusOffline,
+                    ),
                     const SizedBox(height: 12),
                     const Text('Failed to load indexer list'),
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: () => ref.invalidate(
-                          prowlarrIndexerSchemasProvider(widget.instance)),
+                        prowlarrIndexerSchemasProvider(widget.instance),
+                      ),
                       child: const Text('Retry'),
                     ),
                   ],
@@ -156,10 +167,12 @@ class _ProwlarrAddIndexerScreenState
                 final filtered = _filter.isEmpty
                     ? schemas
                     : schemas
-                        .where((s) => (s['name'] as String? ?? '')
-                            .toLowerCase()
-                            .contains(_filter))
-                        .toList();
+                          .where(
+                            (s) => (s['name'] as String? ?? '')
+                                .toLowerCase()
+                                .contains(_filter),
+                          )
+                          .toList();
                 if (filtered.isEmpty) {
                   return const Center(child: Text('No indexers match'));
                 }
@@ -194,9 +207,10 @@ class _SchemaTile extends StatelessWidget {
 
     return ListTile(
       dense: true,
-      title: Text(name,
-          style:
-              theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+      title: Text(
+        name,
+        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+      ),
       subtitle: Text(
         [
           if (protocol.isNotEmpty) protocol,
@@ -205,8 +219,9 @@ class _SchemaTile extends StatelessWidget {
         ].join(' · '),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodySmall
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
       trailing: Icon(
         privacy == 'private' ? Icons.lock_outline : Icons.add_circle_outline,

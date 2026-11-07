@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -22,34 +24,46 @@ class LidarrAlbumReleasesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final releasesAsync = ref.watch(lidarrAlbumReleasesProvider(
-        (instance: instance, albumId: album.id)));
+    final releasesAsync = ref.watch(
+      lidarrAlbumReleasesProvider((instance: instance, albumId: album.id)),
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(album.title,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18)),
-            Text(artistName,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400)),
+            Text(
+              album.title,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              artistName,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
-            onPressed: () => ref.invalidate(lidarrAlbumReleasesProvider(
-                (instance: instance, albumId: album.id))),
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            onPressed: () => ref.invalidate(
+              lidarrAlbumReleasesProvider((
+                instance: instance,
+                albumId: album.id,
+              )),
+            ),
           ),
         ],
       ),
@@ -61,28 +75,38 @@ class LidarrAlbumReleasesScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.cloud_off,
-                    size: 48, color: AppColors.statusOffline),
+                const Icon(
+                  Icons.cloud_off,
+                  size: 48,
+                  color: AppColors.statusOffline,
+                ),
                 const SizedBox(height: Spacing.s16),
-                Text('Failed to load releases',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Failed to load releases',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: Spacing.s8),
-                Text(e.toString(),
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                    maxLines: 3),
+                Text(
+                  e.toString(),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                ),
                 const SizedBox(height: Spacing.s24),
                 FilledButton.icon(
                   onPressed: () => ref.invalidate(
-                      lidarrAlbumReleasesProvider(
-                          (instance: instance, albumId: album.id))),
+                    lidarrAlbumReleasesProvider((
+                      instance: instance,
+                      albumId: album.id,
+                    )),
+                  ),
                   style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.tealPrimary,
-                      foregroundColor: AppColors.textOnPrimary,
-                      shape: const StadiumBorder()),
+                    backgroundColor: AppColors.tealPrimary,
+                    foregroundColor: AppColors.textOnPrimary,
+                    shape: const StadiumBorder(),
+                  ),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),
                 ),
@@ -93,21 +117,20 @@ class LidarrAlbumReleasesScreen extends ConsumerWidget {
         data: (releases) {
           if (releases.isEmpty) {
             return Center(
-              child: Text('No releases found',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(color: AppColors.textSecondary)),
+              child: Text(
+                'No releases found',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+              ),
             );
           }
           return ListView.separated(
             padding: const EdgeInsets.only(bottom: Spacing.s24),
             itemCount: releases.length,
             separatorBuilder: (context, index) => const Divider(height: 1),
-            itemBuilder: (context, index) => _ReleaseTile(
-              release: releases[index],
-              instance: instance,
-            ),
+            itemBuilder: (context, index) =>
+                _ReleaseTile(release: releases[index], instance: instance),
           );
         },
       ),
@@ -143,7 +166,8 @@ class _ReleaseTileState extends State<_ReleaseTile> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: AppColors.tealPrimary),
+              backgroundColor: AppColors.tealPrimary,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Grab'),
           ),
@@ -190,7 +214,9 @@ class _ReleaseTileState extends State<_ReleaseTile> {
 
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
-              horizontal: Spacing.pageHorizontal, vertical: 6),
+            horizontal: Spacing.pageHorizontal,
+            vertical: 6,
+          ),
           title: Text(
             release.title,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -207,7 +233,10 @@ class _ReleaseTileState extends State<_ReleaseTile> {
               runSpacing: 4,
               children: [
                 if (release.qualityName.isNotEmpty)
-                  _Chip(label: release.qualityName, color: AppColors.tealPrimary),
+                  _Chip(
+                    label: release.qualityName,
+                    color: AppColors.tealPrimary,
+                  ),
                 if (sizeGb != null)
                   _Chip(
                     label: sizeGb >= 1
@@ -230,11 +259,15 @@ class _ReleaseTileState extends State<_ReleaseTile> {
                         : AppColors.statusOffline,
                   ),
                 if (release.indexer != null)
-                  _Chip(label: release.indexer!, color: AppColors.textSecondary),
+                  _Chip(
+                    label: release.indexer!,
+                    color: AppColors.textSecondary,
+                  ),
                 if (release.age != null)
                   _Chip(
-                      label: '${release.age}d',
-                      color: AppColors.textSecondary),
+                    label: '${release.age}d',
+                    color: AppColors.textSecondary,
+                  ),
                 if (!isApproved && (release.rejections?.isNotEmpty ?? false))
                   _Chip(
                     label: release.rejections!.first,
@@ -247,7 +280,8 @@ class _ReleaseTileState extends State<_ReleaseTile> {
               ? const SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : IconButton(
                   icon: const Icon(Icons.download_outlined),
                   color: isApproved
@@ -276,9 +310,14 @@ class _Chip extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withAlpha(60)),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }

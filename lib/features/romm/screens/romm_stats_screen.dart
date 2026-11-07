@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/byte_formatter.dart';
@@ -21,16 +23,20 @@ class RommStatsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
+      appBar: ModuleAppBar(
+        title: Text(
           'Statistics',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             onPressed: () {
               ref.invalidate(rommStatsProvider(instance));
               ref.invalidate(rommPlatformsProvider(instance));
@@ -44,8 +50,11 @@ class RommStatsScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 48, color: AppColors.statusOffline),
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.statusOffline,
+              ),
               const SizedBox(height: 12),
               const Text('Failed to load statistics'),
               const SizedBox(height: 8),
@@ -69,8 +78,9 @@ class RommStatsScreen extends ConsumerWidget {
               children: [
                 Text(
                   'Overview',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: Spacing.s12),
                 GridView.count(
@@ -118,8 +128,9 @@ class RommStatsScreen extends ConsumerWidget {
                 const SizedBox(height: Spacing.s24),
                 Text(
                   'Size per Platform',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: Spacing.s12),
                 platformsAsync.when(
@@ -134,10 +145,8 @@ class RommStatsScreen extends ConsumerWidget {
                     ),
                   ),
                   data: (platforms) => _PlatformSizeList(
-                    platforms: [
-                      ...platforms.where((p) => p.fsSizeBytes > 0)
-                    ]..sort(
-                        (a, b) => b.fsSizeBytes.compareTo(a.fsSizeBytes)),
+                    platforms: [...platforms.where((p) => p.fsSizeBytes > 0)]
+                      ..sort((a, b) => b.fsSizeBytes.compareTo(a.fsSizeBytes)),
                   ),
                 ),
                 const SizedBox(height: Spacing.s24),
@@ -179,8 +188,9 @@ class _StatCard extends StatelessWidget {
                 children: [
                   Text(
                     value,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -240,14 +250,13 @@ class _PlatformSizeList extends StatelessWidget {
                   Expanded(
                     flex: 3,
                     child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: Spacing.s8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.s8,
+                      ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
-                          value: maxSize > 0
-                              ? p.fsSizeBytes / maxSize
-                              : 0,
+                          value: maxSize > 0 ? p.fsSizeBytes / maxSize : 0,
                           minHeight: 6,
                           backgroundColor:
                               theme.colorScheme.surfaceContainerHighest,

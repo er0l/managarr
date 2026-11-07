@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -23,19 +25,20 @@ class SeerMediaDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(
-      seerMediaDetailProvider(
-          (instance: instance, tmdbId: tmdbId, mediaType: mediaType)),
+      seerMediaDetailProvider((
+        instance: instance,
+        tmdbId: tmdbId,
+        mediaType: mediaType,
+      )),
     );
 
     return detailAsync.when(
       loading: () => Scaffold(
-        appBar: AppBar(
-          backgroundColor: AppColors.tealPrimary,
-          iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+        appBar: ModuleAppBar(
           title: Text(
             initialTitle ?? '',
-            style: const TextStyle(
-              color: AppColors.textOnPrimary,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -43,25 +46,32 @@ class SeerMediaDetailScreen extends ConsumerWidget {
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(
-          backgroundColor: AppColors.tealPrimary,
-          iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+        appBar: ModuleAppBar(
           title: Text(
             initialTitle ?? '',
-            style: const TextStyle(color: AppColors.textOnPrimary),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           ),
         ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: AppColors.statusOffline),
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.statusOffline,
+              ),
               const SizedBox(height: 12),
               Text('Failed to load: $e'),
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () => ref.invalidate(seerMediaDetailProvider(
-                    (instance: instance, tmdbId: tmdbId, mediaType: mediaType))),
+                onPressed: () => ref.invalidate(
+                  seerMediaDetailProvider((
+                    instance: instance,
+                    tmdbId: tmdbId,
+                    mediaType: mediaType,
+                  )),
+                ),
                 child: const Text('Retry'),
               ),
             ],
@@ -71,10 +81,7 @@ class SeerMediaDetailScreen extends ConsumerWidget {
       data: (detail) {
         if (detail == null) {
           return Scaffold(
-            appBar: AppBar(
-              backgroundColor: AppColors.tealPrimary,
-              iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-            ),
+            appBar: ModuleAppBar(title: Text(initialTitle ?? 'Seer')),
             body: const Center(child: Text('Content not found')),
           );
         }
@@ -100,6 +107,7 @@ class _DetailScaffold extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
+            leading: const ModuleBackButton(onImage: true),
             expandedHeight: 220,
             pinned: true,
             backgroundColor: AppColors.tealPrimary,
@@ -138,6 +146,7 @@ class _DetailScaffold extends ConsumerWidget {
                     )
                   : Container(color: AppColors.tealDark),
             ),
+            actions: [const ModuleHomeButton(onImage: true)],
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -159,8 +168,10 @@ class _DetailScaffold extends ConsumerWidget {
                               ? Image.network(
                                   posterUrl,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (ctx, e, s) => _PosterPlaceholder(
-                                      mediaType: detail.mediaType),
+                                  errorBuilder: (ctx, e, s) =>
+                                      _PosterPlaceholder(
+                                        mediaType: detail.mediaType,
+                                      ),
                                 )
                               : _PosterPlaceholder(mediaType: detail.mediaType),
                         ),
@@ -204,8 +215,9 @@ class _DetailScaffold extends ConsumerWidget {
                                   ),
                                 if (detail.voteAverage > 0)
                                   _MetaChip(
-                                    label:
-                                        detail.voteAverage.toStringAsFixed(1),
+                                    label: detail.voteAverage.toStringAsFixed(
+                                      1,
+                                    ),
                                     icon: Icons.star_outline,
                                   ),
                               ],
@@ -220,8 +232,7 @@ class _DetailScaffold extends ConsumerWidget {
                               const SizedBox(height: 4),
                             ],
                             if (detail.mediaStatus != null)
-                              _RequestStatusBadge(
-                                  status: detail.mediaStatus!),
+                              _RequestStatusBadge(status: detail.mediaStatus!),
                           ],
                         ),
                       ),
@@ -232,8 +243,9 @@ class _DetailScaffold extends ConsumerWidget {
                   if (detail.overview.isNotEmpty) ...[
                     Text(
                       'Overview',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -316,9 +328,9 @@ class _StatusBadge extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -366,8 +378,7 @@ class _RequestButtonState extends ConsumerState<_RequestButton> {
         child: FilledButton.icon(
           onPressed: null,
           icon: const Icon(Icons.check_circle_outline),
-          label: Text(
-              mediaStatus == 5 ? 'Available' : 'Partially Available'),
+          label: Text(mediaStatus == 5 ? 'Available' : 'Partially Available'),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.statusOnline.withAlpha(30),
             foregroundColor: AppColors.statusOnline,
@@ -404,13 +415,13 @@ class _RequestButtonState extends ConsumerState<_RequestButton> {
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : const Icon(Icons.add),
         label: const Text('Request'),
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.orangeAccent,
-        ),
+        style: FilledButton.styleFrom(backgroundColor: AppColors.orangeAccent),
       ),
     );
   }
@@ -425,18 +436,22 @@ class _RequestButtonState extends ConsumerState<_RequestButton> {
         mediaType: widget.detail.mediaType,
       );
       if (mounted) {
-        messenger.showSnackBar(const SnackBar(
-          content: Text('Request submitted successfully'),
-          behavior: SnackBarBehavior.floating,
-        ));
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Request submitted successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        messenger.showSnackBar(SnackBar(
-          content: Text('Request failed: $e'),
-          behavior: SnackBarBehavior.floating,
-        ));
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Request failed: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         setState(() => _loading = false);
       }
     }

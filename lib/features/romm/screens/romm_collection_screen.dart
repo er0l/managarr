@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -29,8 +31,7 @@ class RommCollectionScreen extends ConsumerStatefulWidget {
       _RommCollectionScreenState();
 }
 
-class _RommCollectionScreenState
-    extends ConsumerState<RommCollectionScreen> {
+class _RommCollectionScreenState extends ConsumerState<RommCollectionScreen> {
   static const _pageSize = 50;
 
   final _searchController = TextEditingController();
@@ -166,29 +167,35 @@ class _RommCollectionScreenState
     final api = ref.watch(rommApiProvider(widget.instance));
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(widget.collection.name,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary, fontSize: 16)),
+            Text(
+              widget.collection.name,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 16,
+              ),
+            ),
             if (_roms.isNotEmpty)
               Text(
                 '${_roms.length}${_hasMore ? '+' : ''} ROMs',
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
           ],
         ),
         actions: [
           PopupMenuButton<_SortOption>(
-            icon: const Icon(Icons.sort, color: AppColors.textOnPrimary),
+            icon: Icon(
+              Icons.sort,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             tooltip: 'Sort',
             onSelected: (opt) {
               setState(() {
@@ -197,7 +204,7 @@ class _RommCollectionScreenState
               });
               _loadPage(reset: true);
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: _SortOption('name', 'asc'),
                 child: Text('Name (A-Z)'),
@@ -225,17 +232,20 @@ class _RommCollectionScreenState
               _viewMode == _ViewMode.list
                   ? Icons.grid_view_outlined
                   : Icons.list_outlined,
-              color: AppColors.textOnPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
-            tooltip:
-                _viewMode == _ViewMode.list ? 'Grid view' : 'List view',
-            onPressed: () => setState(() => _viewMode =
-                _viewMode == _ViewMode.list
-                    ? _ViewMode.grid
-                    : _ViewMode.list),
+            tooltip: _viewMode == _ViewMode.list ? 'Grid view' : 'List view',
+            onPressed: () => setState(
+              () => _viewMode = _viewMode == _ViewMode.list
+                  ? _ViewMode.grid
+                  : _ViewMode.list,
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             onPressed: () => _loadPage(reset: true),
           ),
         ],
@@ -267,8 +277,7 @@ class _RommCollectionScreenState
                       )
                     : null,
                 isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
@@ -293,8 +302,11 @@ class _RommCollectionScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: AppColors.statusOffline),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: AppColors.statusOffline,
+            ),
             const SizedBox(height: 12),
             Text(_error!),
             const SizedBox(height: 8),
@@ -311,8 +323,11 @@ class _RommCollectionScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.search_off_outlined,
-                size: 48, color: AppColors.textSecondary),
+            const Icon(
+              Icons.search_off_outlined,
+              size: 48,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(height: 12),
             Text(
               _searchTerm.isNotEmpty
@@ -345,17 +360,14 @@ class _RommCollectionScreenState
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        return _RomListTile(
-          rom: _roms[i],
-          api: api,
-          instance: widget.instance,
-        );
+        return _RomListTile(rom: _roms[i], api: api, instance: widget.instance);
       },
     );
   }
 
   Widget _buildGridView(RommApi api) {
-    final columns = ref.watch(gridColumnsProvider) +
+    final columns =
+        ref.watch(gridColumnsProvider) +
         (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0);
     return GridView.builder(
       controller: _scrollController,
@@ -369,15 +381,9 @@ class _RommCollectionScreenState
       itemCount: _roms.length + (_isLoadingMore ? 3 : 0),
       itemBuilder: (ctx, i) {
         if (i >= _roms.length) {
-          return const Card(
-            child: Center(child: CircularProgressIndicator()),
-          );
+          return const Card(child: Center(child: CircularProgressIndicator()));
         }
-        return _RomGridCard(
-          rom: _roms[i],
-          api: api,
-          instance: widget.instance,
-        );
+        return _RomGridCard(rom: _roms[i], api: api, instance: widget.instance);
       },
     );
   }
@@ -422,10 +428,12 @@ class _RomListTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: SizedBox(width: 48, height: 64, child: cover),
       ),
-      title: Text(rom.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis),
+      title: Text(
+        rom.name,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
       subtitle: Text(
         [
           if (rom.releaseYear != null) rom.releaseYear.toString(),
@@ -449,10 +457,13 @@ class _RomListTile extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: AppColors.tealPrimary.withAlpha(20),
-        child: const Icon(Icons.videogame_asset_outlined,
-            color: AppColors.tealPrimary, size: 24),
-      );
+    color: AppColors.tealPrimary.withAlpha(20),
+    child: const Icon(
+      Icons.videogame_asset_outlined,
+      color: AppColors.tealPrimary,
+      size: 24,
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -512,14 +523,15 @@ class _RomGridCard extends StatelessWidget {
             rom.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style:
-                const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
           ),
           if (rom.releaseYear != null)
             Text(
               '${rom.releaseYear}',
               style: const TextStyle(
-                  fontSize: 10, color: AppColors.textSecondary),
+                fontSize: 10,
+                color: AppColors.textSecondary,
+              ),
             ),
         ],
       ),
@@ -527,12 +539,15 @@ class _RomGridCard extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: AppColors.tealPrimary.withAlpha(20),
-        child: const Center(
-          child: Icon(Icons.videogame_asset_outlined,
-              color: AppColors.tealPrimary, size: 32),
-        ),
-      );
+    color: AppColors.tealPrimary.withAlpha(20),
+    child: const Center(
+      child: Icon(
+        Icons.videogame_asset_outlined,
+        color: AppColors.tealPrimary,
+        size: 32,
+      ),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------

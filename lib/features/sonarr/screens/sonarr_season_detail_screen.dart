@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -24,11 +26,13 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final episodesAsync = ref.watch(sonarrEpisodesProvider((
-      instance: instance,
-      seriesId: series.id,
-      seasonNumber: season.seasonNumber,
-    )));
+    final episodesAsync = ref.watch(
+      sonarrEpisodesProvider((
+        instance: instance,
+        seriesId: series.id,
+        seasonNumber: season.seasonNumber,
+      )),
+    );
 
     final label = season.seasonNumber == 0
         ? 'Specials'
@@ -44,8 +48,10 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
         onPressed: () => _searchSeason(context, ref),
       ),
       IconButton(
-        icon: const Icon(Icons.cloud_download_outlined,
-            color: AppColors.textOnPrimary),
+        icon: const Icon(
+          Icons.cloud_download_outlined,
+          color: AppColors.textOnPrimary,
+        ),
         tooltip: 'Season Releases',
         onPressed: () => Navigator.push(
           context,
@@ -65,27 +71,34 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label,
-            style: const TextStyle(
-                color: AppColors.textOnPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 18)),
-        Text(series.title,
-            style: const TextStyle(
-                color: AppColors.textOnPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w400)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textOnPrimary,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
+        Text(
+          series.title,
+          style: const TextStyle(
+            color: AppColors.textOnPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
       ],
     );
 
     Widget buildBody(List<SonarrEpisode> episodes) {
       if (episodes.isEmpty) {
         return Center(
-          child: Text('No episodes found',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge
-                  ?.copyWith(color: AppColors.textSecondary)),
+          child: Text(
+            'No episodes found',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+          ),
         );
       }
       final sorted = [...episodes]
@@ -105,6 +118,7 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
       body: NestedScrollView(
         headerSliverBuilder: (context, _) => [
           SliverAppBar(
+            leading: const ModuleBackButton(onImage: true),
             expandedHeight: headerImageUrl != null ? 180 : null,
             pinned: true,
             backgroundColor: AppColors.tealPrimary,
@@ -138,7 +152,7 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
                 : null,
             // When no image, show title inline in the AppBar.
             title: headerImageUrl == null ? titleWidget : null,
-            actions: actions,
+            actions: [...actions, const ModuleHomeButton(onImage: true)],
           ),
         ],
         body: episodesAsync.when(
@@ -149,30 +163,39 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.cloud_off,
-                      size: 48, color: AppColors.statusOffline),
+                  const Icon(
+                    Icons.cloud_off,
+                    size: 48,
+                    color: AppColors.statusOffline,
+                  ),
                   const SizedBox(height: Spacing.s16),
-                  Text('Failed to load episodes',
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Failed to load episodes',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: Spacing.s8),
-                  Text(e.toString(),
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: AppColors.textSecondary),
-                      textAlign: TextAlign.center,
-                      maxLines: 3),
+                  Text(
+                    e.toString(),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                  ),
                   const SizedBox(height: Spacing.s24),
                   FilledButton.icon(
-                    onPressed: () => ref.invalidate(sonarrEpisodesProvider((
-                      instance: instance,
-                      seriesId: series.id,
-                      seasonNumber: season.seasonNumber,
-                    ))),
+                    onPressed: () => ref.invalidate(
+                      sonarrEpisodesProvider((
+                        instance: instance,
+                        seriesId: series.id,
+                        seasonNumber: season.seasonNumber,
+                      )),
+                    ),
                     style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.tealPrimary,
-                        foregroundColor: AppColors.textOnPrimary,
-                        shape: const StadiumBorder()),
+                      backgroundColor: AppColors.tealPrimary,
+                      foregroundColor: AppColors.textOnPrimary,
+                      shape: const StadiumBorder(),
+                    ),
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
                   ),
@@ -191,15 +214,19 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
     try {
       final api = ref.read(sonarrApiProvider(instance));
       await api.searchSeason(series.id, season.seasonNumber);
-      messenger.showSnackBar(const SnackBar(
-        content: Text('Season search started'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Season search started'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(
-        content: Text('Error: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 }
@@ -246,8 +273,9 @@ class _EpisodeTileState extends ConsumerState<_EpisodeTile> {
         setState(() => _monitored = !newVal);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error: $e'),
-              behavior: SnackBarBehavior.floating),
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -269,7 +297,9 @@ class _EpisodeTileState extends ConsumerState<_EpisodeTile> {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
-          horizontal: Spacing.pageHorizontal, vertical: 4),
+        horizontal: Spacing.pageHorizontal,
+        vertical: 4,
+      ),
       onTap: () => _showEpisodeSheet(context),
       leading: Container(
         width: 40,
@@ -305,9 +335,12 @@ class _EpisodeTileState extends ConsumerState<_EpisodeTile> {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: formattedDate != null
-          ? Text(formattedDate,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary))
+          ? Text(
+              formattedDate,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            )
           : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -331,10 +364,16 @@ class _EpisodeTileState extends ConsumerState<_EpisodeTile> {
             ),
           const SizedBox(width: 4),
           if (hasFile)
-            const Icon(Icons.check_circle_outline,
-                size: 16, color: AppColors.statusOnline),
-          const Icon(Icons.chevron_right,
-              size: 18, color: AppColors.textSecondary),
+            const Icon(
+              Icons.check_circle_outline,
+              size: 16,
+              color: AppColors.statusOnline,
+            ),
+          const Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
         ],
       ),
     );
@@ -385,17 +424,21 @@ class _EpisodeDetailSheetState extends ConsumerState<_EpisodeDetailSheet> {
       await api.searchEpisode(widget.episode.id);
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Episode search started'),
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Episode search started'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error: $e'),
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         setState(() => _searching = false);
       }
     }
@@ -457,25 +500,34 @@ class _EpisodeDetailSheetState extends ConsumerState<_EpisodeDetailSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.tealPrimary.withAlpha(20),
                     borderRadius: BorderRadius.circular(6),
-                    border:
-                        Border.all(color: AppColors.tealPrimary.withAlpha(60)),
+                    border: Border.all(
+                      color: AppColors.tealPrimary.withAlpha(60),
+                    ),
                   ),
-                  child: Text(epCode,
-                      style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.tealPrimary,
-                          fontWeight: FontWeight.w700)),
+                  child: Text(
+                    epCode,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.tealPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(ep.title,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700)),
+                  child: Text(
+                    ep.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -486,41 +538,63 @@ class _EpisodeDetailSheetState extends ConsumerState<_EpisodeDetailSheet> {
             Row(
               children: [
                 if (formattedDate != null) ...[
-                  const Icon(Icons.calendar_today,
-                      size: 12, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.calendar_today,
+                    size: 12,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 4),
-                  Text(formattedDate,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    formattedDate,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                   const SizedBox(width: 12),
                 ],
                 if (hasFile) ...[
-                  const Icon(Icons.check_circle_outline,
-                      size: 12, color: AppColors.statusOnline),
+                  const Icon(
+                    Icons.check_circle_outline,
+                    size: 12,
+                    color: AppColors.statusOnline,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     ep.episodeFile?.qualityName.isNotEmpty == true
                         ? ep.episodeFile!.qualityName
                         : 'Downloaded',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: AppColors.statusOnline),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.statusOnline,
+                    ),
                   ),
                 ] else ...[
-                  const Icon(Icons.download_outlined,
-                      size: 12, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.download_outlined,
+                    size: 12,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 4),
-                  Text('Missing',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    'Missing',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
                 if (!ep.monitored) ...[
                   const SizedBox(width: 12),
-                  const Icon(Icons.bookmark_border,
-                      size: 12, color: AppColors.statusUnknown),
+                  const Icon(
+                    Icons.bookmark_border,
+                    size: 12,
+                    color: AppColors.statusUnknown,
+                  ),
                   const SizedBox(width: 4),
-                  Text('Unmonitored',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: AppColors.statusUnknown)),
+                  Text(
+                    'Unmonitored',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.statusUnknown,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -528,11 +602,15 @@ class _EpisodeDetailSheetState extends ConsumerState<_EpisodeDetailSheet> {
             // Overview
             if (ep.overview != null && ep.overview!.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text(ep.overview!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary, height: 1.5),
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                ep.overview!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
 
             const SizedBox(height: 20),
@@ -549,11 +627,10 @@ class _EpisodeDetailSheetState extends ConsumerState<_EpisodeDetailSheet> {
                         ? const SizedBox(
                             width: 14,
                             height: 14,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2))
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.search, size: 18),
-                    label:
-                        Text(_searching ? 'Searching…' : 'Search Episode'),
+                    label: Text(_searching ? 'Searching…' : 'Search Episode'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.tealPrimary,
                       side: const BorderSide(color: AppColors.tealPrimary),

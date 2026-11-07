@@ -1,5 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -41,30 +43,36 @@ class _TautulliGraphsScreenState extends ConsumerState<TautulliGraphsScreen>
     ref.invalidate(tautulliGraphPlaysByTopUsersProvider(widget.instance));
     ref.invalidate(tautulliGraphStreamTypeByDateProvider(widget.instance));
     ref.invalidate(
-        tautulliGraphStreamTypeByTopPlatformsProvider(widget.instance));
+      tautulliGraphStreamTypeByTopPlatformsProvider(widget.instance),
+    );
     ref.invalidate(tautulliGraphStreamTypeByTopUsersProvider(widget.instance));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
-        title: const Text('Graphs',
-            style: TextStyle(color: AppColors.textOnPrimary)),
+      appBar: ModuleAppBar(
+        title: Text(
+          'Graphs',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             onPressed: _refresh,
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.textOnPrimary,
-          unselectedLabelColor: AppColors.textOnPrimary.withAlpha(150),
+          labelColor: Theme.of(context).colorScheme.onSurface,
+          unselectedLabelColor: Theme.of(
+            context,
+          ).colorScheme.onSurface.withAlpha(150),
           indicatorColor: AppColors.orangeAccent,
-          tabs: const [
+          tabs: [
             Tab(text: 'Play by Period'),
             Tab(text: 'Stream Info'),
           ],
@@ -116,15 +124,15 @@ class _PlayByPeriodTab extends ConsumerWidget {
           _ChartCard(
             title: 'Plays by Day of Week',
             subtitle: 'Last 30 days — plays per weekday',
-            async:
-                ref.watch(tautulliGraphPlaysByDayOfWeekProvider(instance)),
+            async: ref.watch(tautulliGraphPlaysByDayOfWeekProvider(instance)),
             chartBuilder: (data) => _TautulliBarChart(data: data),
           ),
           _ChartCard(
             title: 'Top Platforms',
             subtitle: 'Last 30 days — plays by platform',
-            async:
-                ref.watch(tautulliGraphPlaysByTopPlatformsProvider(instance)),
+            async: ref.watch(
+              tautulliGraphPlaysByTopPlatformsProvider(instance),
+            ),
             chartBuilder: (data) =>
                 _TautulliBarChart(data: data, rotateLabels: true),
           ),
@@ -153,8 +161,7 @@ class _StreamInfoTab extends ConsumerWidget {
       color: AppColors.tealPrimary,
       onRefresh: () async {
         ref.invalidate(tautulliGraphStreamTypeByDateProvider(instance));
-        ref.invalidate(
-            tautulliGraphStreamTypeByTopPlatformsProvider(instance));
+        ref.invalidate(tautulliGraphStreamTypeByTopPlatformsProvider(instance));
         ref.invalidate(tautulliGraphStreamTypeByTopUsersProvider(instance));
       },
       child: ListView(
@@ -162,25 +169,25 @@ class _StreamInfoTab extends ConsumerWidget {
         children: [
           _ChartCard(
             title: 'Daily Stream Types',
-            subtitle:
-                'Last 30 days — direct play, direct stream & transcode',
-            async:
-                ref.watch(tautulliGraphStreamTypeByDateProvider(instance)),
+            subtitle: 'Last 30 days — direct play, direct stream & transcode',
+            async: ref.watch(tautulliGraphStreamTypeByDateProvider(instance)),
             chartBuilder: (data) => _TautulliLineChart(data: data),
           ),
           _ChartCard(
             title: 'Stream Types by Platform',
             subtitle: 'Last 30 days — stream type breakdown per platform',
             async: ref.watch(
-                tautulliGraphStreamTypeByTopPlatformsProvider(instance)),
+              tautulliGraphStreamTypeByTopPlatformsProvider(instance),
+            ),
             chartBuilder: (data) =>
                 _TautulliBarChart(data: data, rotateLabels: true),
           ),
           _ChartCard(
             title: 'Stream Types by User',
             subtitle: 'Last 30 days — stream type breakdown per user',
-            async: ref
-                .watch(tautulliGraphStreamTypeByTopUsersProvider(instance)),
+            async: ref.watch(
+              tautulliGraphStreamTypeByTopUsersProvider(instance),
+            ),
             chartBuilder: (data) =>
                 _TautulliBarChart(data: data, rotateLabels: true),
           ),
@@ -215,13 +222,19 @@ class _ChartCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 16),
             async.when(
               loading: () => const _LoadingChart(),
@@ -271,10 +284,12 @@ class _TautulliLineChart extends StatelessWidget {
               FlLine(color: gridColor, strokeWidth: 1),
         ),
         titlesData: FlTitlesData(
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -284,8 +299,9 @@ class _TautulliLineChart extends StatelessWidget {
                 return Text(
                   value.toInt().toString(),
                   style: TextStyle(
-                      fontSize: 9,
-                      color: theme.colorScheme.onSurfaceVariant),
+                    fontSize: 9,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 );
               },
             ),
@@ -306,8 +322,9 @@ class _TautulliLineChart extends StatelessWidget {
                   child: Text(
                     label,
                     style: TextStyle(
-                        fontSize: 9,
-                        color: theme.colorScheme.onSurfaceVariant),
+                      fontSize: 9,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 );
               },
@@ -328,24 +345,21 @@ class _TautulliLineChart extends StatelessWidget {
             isCurved: true,
             curveSmoothness: 0.3,
             dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: color.withAlpha(25),
-            ),
+            belowBarData: BarAreaData(show: true, color: color.withAlpha(25)),
           );
         }).toList(),
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) =>
-                theme.colorScheme.surfaceContainerHighest,
+            getTooltipColor: (_) => theme.colorScheme.surfaceContainerHighest,
             getTooltipItems: (spots) => spots.map((s) {
               final series = data.series[s.barIndex];
               return LineTooltipItem(
                 '${series.name}: ${s.y.toInt()}',
                 TextStyle(
-                    color: _seriesColor(series.name),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600),
+                  color: _seriesColor(series.name),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               );
             }).toList(),
           ),
@@ -378,10 +392,12 @@ class _TautulliBarChart extends StatelessWidget {
               FlLine(color: gridColor, strokeWidth: 1),
         ),
         titlesData: FlTitlesData(
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -391,8 +407,9 @@ class _TautulliBarChart extends StatelessWidget {
                 return Text(
                   value.toInt().toString(),
                   style: TextStyle(
-                      fontSize: 9,
-                      color: theme.colorScheme.onSurfaceVariant),
+                    fontSize: 9,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 );
               },
             ),
@@ -415,8 +432,9 @@ class _TautulliBarChart extends StatelessWidget {
                       child: Text(
                         label,
                         style: TextStyle(
-                            fontSize: 9,
-                            color: theme.colorScheme.onSurfaceVariant),
+                          fontSize: 9,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   );
@@ -426,8 +444,9 @@ class _TautulliBarChart extends StatelessWidget {
                   child: Text(
                     label,
                     style: TextStyle(
-                        fontSize: 9,
-                        color: theme.colorScheme.onSurfaceVariant),
+                      fontSize: 9,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 );
               },
@@ -446,23 +465,24 @@ class _TautulliBarChart extends StatelessWidget {
                 color: _seriesColor(s.name),
                 width: barWidth,
                 borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(3)),
+                  top: Radius.circular(3),
+                ),
               );
             }).toList(),
           );
         }).toList(),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) =>
-                theme.colorScheme.surfaceContainerHighest,
+            getTooltipColor: (_) => theme.colorScheme.surfaceContainerHighest,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               final series = data.series[rodIndex];
               return BarTooltipItem(
                 '${series.name}: ${rod.toY.toInt()}',
                 TextStyle(
-                    color: _seriesColor(series.name),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600),
+                  color: _seriesColor(series.name),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               );
             },
           ),
@@ -499,8 +519,9 @@ class _ChartLegend extends StatelessWidget {
             Text(
               '${s.name} (${s.total})',
               style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         );
@@ -516,9 +537,9 @@ class _LoadingChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
+    height: 200,
+    child: Center(child: CircularProgressIndicator()),
+  );
 }
 
 class _ErrorChart extends StatelessWidget {
@@ -527,23 +548,30 @@ class _ErrorChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 100,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline,
-                  color: AppColors.statusOffline, size: 28),
-              const SizedBox(height: 4),
-              Text(message,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.statusOffline),
-                  textAlign: TextAlign.center,
-                  maxLines: 2),
-            ],
+    height: 100,
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: AppColors.statusOffline,
+            size: 28,
           ),
-        ),
-      );
+          const SizedBox(height: 4),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.statusOffline,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _EmptyChart extends StatelessWidget {
@@ -551,15 +579,14 @@ class _EmptyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 100,
-        child: Center(
-          child: Text(
-            'No data available',
-            style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ),
-      );
+    height: 100,
+    child: Center(
+      child: Text(
+        'No data available',
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+    ),
+  );
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -585,8 +612,18 @@ String _shortLabel(String raw) {
     final day = int.tryParse(parts[2]);
     if (month != null && day != null) {
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       if (month >= 1 && month <= 12) {
         return '${months[month - 1]} $day';

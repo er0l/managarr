@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/spacing.dart';
@@ -52,47 +54,58 @@ class _SonarrAddSeriesDetailScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final profilesAsync =
-        ref.watch(sonarrQualityProfilesProvider(widget.instance));
-    final rootFoldersAsync =
-        ref.watch(sonarrRootFoldersProvider(widget.instance));
+    final profilesAsync = ref.watch(
+      sonarrQualityProfilesProvider(widget.instance),
+    );
+    final rootFoldersAsync = ref.watch(
+      sonarrRootFoldersProvider(widget.instance),
+    );
     final fanart = widget.series.fanartUrl;
     final poster = widget.series.posterUrl;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      appBar: ModuleAppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Add Series',
-                style: TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18)),
-            Text(widget.series.title,
-                style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400)),
+            Text(
+              'Add Series',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              widget.series.title,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
         actions: [
           if (_adding)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.textOnPrimary),
+                  strokeWidth: 2,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             )
           else
             IconButton(
-              icon: const Icon(Icons.add, color: AppColors.textOnPrimary),
+              icon: Icon(
+                Icons.add,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               tooltip: 'Add',
               onPressed: _canAdd() ? _add : null,
             ),
@@ -129,7 +142,7 @@ class _SonarrAddSeriesDetailScreenState
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: const [
-                        BoxShadow(color: Colors.black54, blurRadius: 8)
+                        BoxShadow(color: Colors.black54, blurRadius: 8),
                       ],
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -179,20 +192,25 @@ class _SonarrAddSeriesDetailScreenState
                   loading: () => const LinearProgressIndicator(),
                   error: (e, _) => Text('Error loading profiles: $e'),
                   data: (profiles) {
-                    _selectedQualityProfileId ??=
-                        profiles.isNotEmpty ? profiles.first.id : null;
+                    _selectedQualityProfileId ??= profiles.isNotEmpty
+                        ? profiles.first.id
+                        : null;
                     return DropdownButtonFormField<int>(
                       decoration: const InputDecoration(
                         labelText: 'Quality Profile',
                         border: OutlineInputBorder(),
                       ),
-                      initialValue: profiles.any(
-                              (p) => p.id == _selectedQualityProfileId)
+                      initialValue:
+                          profiles.any((p) => p.id == _selectedQualityProfileId)
                           ? _selectedQualityProfileId
                           : null,
                       items: profiles
-                          .map((p) => DropdownMenuItem(
-                              value: p.id, child: Text(p.name)))
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text(p.name),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) =>
                           setState(() => _selectedQualityProfileId = v),
@@ -206,23 +224,27 @@ class _SonarrAddSeriesDetailScreenState
                   loading: () => const LinearProgressIndicator(),
                   error: (e, _) => Text('Error loading root folders: $e'),
                   data: (folders) {
-                    _selectedRootFolder ??=
-                        folders.isNotEmpty ? folders.first.path : null;
+                    _selectedRootFolder ??= folders.isNotEmpty
+                        ? folders.first.path
+                        : null;
                     return DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
                         labelText: 'Root Folder',
                         border: OutlineInputBorder(),
                       ),
-                      initialValue: folders.any(
-                              (f) => f.path == _selectedRootFolder)
+                      initialValue:
+                          folders.any((f) => f.path == _selectedRootFolder)
                           ? _selectedRootFolder
                           : null,
                       items: folders
-                          .map((f) => DropdownMenuItem(
-                              value: f.path, child: Text(f.path)))
+                          .map(
+                            (f) => DropdownMenuItem(
+                              value: f.path,
+                              child: Text(f.path),
+                            ),
+                          )
                           .toList(),
-                      onChanged: (v) =>
-                          setState(() => _selectedRootFolder = v),
+                      onChanged: (v) => setState(() => _selectedRootFolder = v),
                     );
                   },
                 ),
@@ -236,8 +258,12 @@ class _SonarrAddSeriesDetailScreenState
                   ),
                   initialValue: _selectedSeriesType,
                   items: _seriesTypeOptions.entries
-                      .map((e) =>
-                          DropdownMenuItem(value: e.key, child: Text(e.value)))
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) setState(() => _selectedSeriesType = v);
@@ -253,8 +279,12 @@ class _SonarrAddSeriesDetailScreenState
                   ),
                   initialValue: _selectedMonitor,
                   items: _monitorOptions.entries
-                      .map((e) =>
-                          DropdownMenuItem(value: e.key, child: Text(e.value)))
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) setState(() => _selectedMonitor = v);
@@ -291,8 +321,9 @@ class _SonarrAddSeriesDetailScreenState
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.tealPrimary,
                       foregroundColor: AppColors.textOnPrimary,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: Spacing.s16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: Spacing.s16,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -302,13 +333,18 @@ class _SonarrAddSeriesDetailScreenState
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.textOnPrimary),
+                              strokeWidth: 2,
+                              color: AppColors.textOnPrimary,
+                            ),
                           )
                         : const Icon(Icons.add),
-                    label: const Text('Add Series',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 16)),
+                    label: const Text(
+                      'Add Series',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: Spacing.s48),

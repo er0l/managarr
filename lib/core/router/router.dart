@@ -21,8 +21,8 @@ import '../../features/romm/screens/romm_home_screen.dart';
 import '../../features/radarr/providers/radarr_providers.dart';
 import '../../features/sonarr/providers/sonarr_providers.dart';
 import '../database/app_database.dart';
-import '../theme/app_colors.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/module_app_bar.dart';
 import '../../features/search/screens/global_search_screen.dart';
 import '../../features/settings/services/backup_restore_service.dart';
 import '../../features/widget/widget_update_service.dart';
@@ -43,12 +43,16 @@ class _RadarrLoader extends ConsumerWidget {
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
           return const Scaffold(
-              body: Center(child: Text('Instance not found')));
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         return RadarrHomeScreen(instance: instance);
       },
@@ -68,12 +72,16 @@ class _SonarrLoader extends ConsumerWidget {
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
           return const Scaffold(
-              body: Center(child: Text('Instance not found')));
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         return SonarrHomeScreen(instance: instance);
       },
@@ -93,12 +101,16 @@ class _LidarrLoader extends ConsumerWidget {
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
           return const Scaffold(
-              body: Center(child: Text('Instance not found')));
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         return LidarrHomeScreen(instance: instance);
       },
@@ -119,7 +131,7 @@ class _AppShell extends ConsumerWidget {
     if (index != 2) return [];
     return [
       PopupMenuButton<_SettingsAction>(
-        icon: const Icon(Icons.more_vert, color: AppColors.textOnPrimary),
+        icon: const Icon(Icons.more_vert),
         onSelected: (action) {
           switch (action) {
             case _SettingsAction.backup:
@@ -160,16 +172,18 @@ class _AppShell extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.tealPrimary,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'managarr',
           style: TextStyle(
-            color: AppColors.textOnPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
           ),
         ),
-        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
         actions: [
           ..._actionsForTab(context, ref, navigationShell.currentIndex),
           // Calendar: month ↔ list view
@@ -179,18 +193,22 @@ class _AppShell extends ConsumerWidget {
                 ref.watch(calendarViewModeProvider)
                     ? Icons.view_list_outlined
                     : Icons.calendar_view_month_outlined,
-                color: AppColors.textOnPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               tooltip: ref.watch(calendarViewModeProvider)
                   ? 'List view'
                   : 'Month view',
-              onPressed: () => ref
-                  .read(calendarViewModeProvider.notifier)
-                  .state = !ref.read(calendarViewModeProvider),
+              onPressed: () =>
+                  ref.read(calendarViewModeProvider.notifier).state = !ref.read(
+                    calendarViewModeProvider,
+                  ),
             ),
           // Global search — always visible
           IconButton(
-            icon: const Icon(Icons.search, color: AppColors.textOnPrimary),
+            icon: Icon(
+              Icons.search,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             tooltip: 'Search',
             onPressed: () => Navigator.push(
               context,
@@ -365,7 +383,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           return _RommLoader(instanceId: id);
         },
       ),
-
     ],
   );
 });
@@ -386,12 +403,14 @@ class _EditInstanceLoader extends ConsumerWidget {
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
             body: Center(child: CircularProgressIndicator()),
           );
         }
         final instance = snap.data;
         if (instance == null) {
           return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
             body: Center(child: Text('Instance not found')),
           );
         }
@@ -412,11 +431,17 @@ class _SeerLoader extends ConsumerWidget {
       future: repo.getById(instanceId),
       builder: (context, snap) {
         if (!snap.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
-          return const Scaffold(body: Center(child: Text('Instance not found')));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         return SeerHomeScreen(instance: instance);
       },
@@ -435,11 +460,17 @@ class _RTorrentLoader extends ConsumerWidget {
       future: repo.getById(instanceId),
       builder: (context, snap) {
         if (!snap.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
-          return const Scaffold(body: Center(child: Text('Instance not found')));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         return RTorrentHomeScreen(instance: instance);
       },
@@ -458,11 +489,17 @@ class _ProwlarrLoader extends ConsumerWidget {
       future: repo.getById(instanceId),
       builder: (context, snap) {
         if (!snap.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
-          return const Scaffold(body: Center(child: Text('Instance not found')));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         return ProwlarrHomeScreen(instance: instance);
       },
@@ -481,11 +518,17 @@ class _TautulliLoader extends ConsumerWidget {
       future: repo.getById(instanceId),
       builder: (context, snap) {
         if (!snap.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
-          return const Scaffold(body: Center(child: Text('Instance not found')));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         return TautulliHomeScreen(instance: instance);
       },
@@ -505,12 +548,16 @@ class _RommLoader extends ConsumerWidget {
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
           return const Scaffold(
-              body: Center(child: Text('Instance not found')));
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         return RommHomeScreen(instance: instance);
       },
@@ -532,23 +579,38 @@ class _RadarrMovieDeepLink extends ConsumerWidget {
       future: repo.getById(instanceId),
       builder: (context, snap) {
         if (!snap.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
-          return const Scaffold(body: Center(child: Text('Instance not found')));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         final api = ref.read(radarrApiProvider(instance));
         return FutureBuilder(
           future: api.getMovieById(movieId),
           builder: (context, snap) {
             if (!snap.hasData) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              return const Scaffold(
+                appBar: ModuleAppBar(title: Text('Service')),
+                body: Center(child: CircularProgressIndicator()),
+              );
             }
             if (snap.hasError || snap.data == null) {
-              return const Scaffold(body: Center(child: Text('Movie not found')));
+              return const Scaffold(
+                appBar: ModuleAppBar(title: Text('Service')),
+                body: Center(child: Text('Movie not found')),
+              );
             }
-            return RadarrMovieDetailScreen(movie: snap.data!, instance: instance);
+            return RadarrMovieDetailScreen(
+              movie: snap.data!,
+              instance: instance,
+            );
           },
         );
       },
@@ -557,7 +619,10 @@ class _RadarrMovieDeepLink extends ConsumerWidget {
 }
 
 class _SonarrSeriesDeepLink extends ConsumerWidget {
-  const _SonarrSeriesDeepLink({required this.instanceId, required this.seriesId});
+  const _SonarrSeriesDeepLink({
+    required this.instanceId,
+    required this.seriesId,
+  });
   final int instanceId;
   final int seriesId;
 
@@ -568,23 +633,38 @@ class _SonarrSeriesDeepLink extends ConsumerWidget {
       future: repo.getById(instanceId),
       builder: (context, snap) {
         if (!snap.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         final instance = snap.data;
         if (instance == null) {
-          return const Scaffold(body: Center(child: Text('Instance not found')));
+          return const Scaffold(
+            appBar: ModuleAppBar(title: Text('Service')),
+            body: Center(child: Text('Instance not found')),
+          );
         }
         final api = ref.read(sonarrApiProvider(instance));
         return FutureBuilder(
           future: api.getSeriesById(seriesId),
           builder: (context, snap) {
             if (!snap.hasData) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              return const Scaffold(
+                appBar: ModuleAppBar(title: Text('Service')),
+                body: Center(child: CircularProgressIndicator()),
+              );
             }
             if (snap.hasError || snap.data == null) {
-              return const Scaffold(body: Center(child: Text('Series not found')));
+              return const Scaffold(
+                appBar: ModuleAppBar(title: Text('Service')),
+                body: Center(child: Text('Series not found')),
+              );
             }
-            return SonarrSeriesDetailScreen(series: snap.data!, instance: instance);
+            return SonarrSeriesDetailScreen(
+              series: snap.data!,
+              instance: instance,
+            );
           },
         );
       },

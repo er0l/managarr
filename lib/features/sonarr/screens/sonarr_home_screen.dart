@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_app_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -9,13 +11,13 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/models/service_type.dart';
 import '../../../core/models/display_mode.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/bottom_bar_button.dart';
 import '../../../core/widgets/service_detail_shell.dart';
 import '../api/models/series.dart';
 import '../models/sonarr_options.dart';
 import '../../settings/providers/ui_prefs_provider.dart';
 import '../providers/sonarr_providers.dart';
 import 'sonarr_activity_screen.dart';
+import 'sonarr_queue_screen.dart';
 import 'sonarr_add_series_screen.dart';
 import 'sonarr_calendar_screen.dart';
 import 'sonarr_cutoff_unmet_screen.dart';
@@ -41,23 +43,25 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
     try {
       final api = ref.read(sonarrApiProvider(widget.instance));
       await api.sendCommand(name);
-      messenger.showSnackBar(SnackBar(
-        content: Text('$label started'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('$label started'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(
-        content: Text('Error: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
   void _showSortBottomSheet() {
-    final currentSort =
-        ref.read(sonarrSortOptionProvider(widget.instance.id));
-    final ascending =
-        ref.read(sonarrSortAscendingProvider(widget.instance.id));
+    final currentSort = ref.read(sonarrSortOptionProvider(widget.instance.id));
+    final ascending = ref.read(sonarrSortAscendingProvider(widget.instance.id));
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -71,15 +75,18 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
                   Text('Sort by', style: Theme.of(ctx).textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
-                    icon: Icon(ascending
-                        ? Icons.arrow_upward
-                        : Icons.arrow_downward),
+                    icon: Icon(
+                      ascending ? Icons.arrow_upward : Icons.arrow_downward,
+                    ),
                     onPressed: () {
                       ref
-                          .read(sonarrSortAscendingProvider(
-                                  widget.instance.id)
-                              .notifier)
-                          .state = !ascending;
+                              .read(
+                                sonarrSortAscendingProvider(
+                                  widget.instance.id,
+                                ).notifier,
+                              )
+                              .state =
+                          !ascending;
                       Navigator.pop(ctx);
                     },
                   ),
@@ -93,18 +100,24 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     ref
-                        .read(sonarrSortOptionProvider(widget.instance.id)
-                            .notifier)
-                        .state = val;
+                            .read(
+                              sonarrSortOptionProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        val;
                     Navigator.pop(ctx);
                   }
                 },
                 child: ListView(
                   children: SonarrSortOption.values
-                      .map((o) => RadioListTile<SonarrSortOption>(
-                            title: Text(o.label),
-                            value: o,
-                          ))
+                      .map(
+                        (o) => RadioListTile<SonarrSortOption>(
+                          title: Text(o.label),
+                          value: o,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -116,8 +129,9 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
   }
 
   void _showFilterBottomSheet() {
-    final currentFilter =
-        ref.read(sonarrFilterOptionProvider(widget.instance.id));
+    final currentFilter = ref.read(
+      sonarrFilterOptionProvider(widget.instance.id),
+    );
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -127,8 +141,10 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(Spacing.s16),
-              child: Text('Filter by',
-                  style: Theme.of(ctx).textTheme.titleLarge),
+              child: Text(
+                'Filter by',
+                style: Theme.of(ctx).textTheme.titleLarge,
+              ),
             ),
             const Divider(height: 1),
             Flexible(
@@ -137,66 +153,30 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     ref
-                        .read(sonarrFilterOptionProvider(widget.instance.id)
-                            .notifier)
-                        .state = val;
+                            .read(
+                              sonarrFilterOptionProvider(
+                                widget.instance.id,
+                              ).notifier,
+                            )
+                            .state =
+                        val;
                     Navigator.pop(ctx);
                   }
                 },
                 child: ListView(
                   shrinkWrap: true,
                   children: SonarrFilterOption.values
-                      .map((o) => RadioListTile<SonarrFilterOption>(
-                            title: Text(o.label),
-                            value: o,
-                          ))
+                      .map(
+                        (o) => RadioListTile<SonarrFilterOption>(
+                          title: Text(o.label),
+                          value: o,
+                        ),
+                      )
                       .toList(),
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _openUpcoming() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppColors.tealPrimary,
-            iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text(
-              'Upcoming',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-            ),
-          ),
-          body: SonarrCalendarScreen(instance: widget.instance),
-        ),
-      ),
-    );
-  }
-
-  void _openMissing() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppColors.tealPrimary,
-            iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text(
-              'Missing',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-            ),
-          ),
-          body: SonarrMissingScreen(instance: widget.instance),
         ),
       ),
     );
@@ -208,13 +188,13 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppColors.tealPrimary,
-            iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text(
+          appBar: ModuleAppBar(
+            title: Text(
               'History',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           body: SonarrActivityScreen(instance: widget.instance),
@@ -225,85 +205,97 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final displayMode =
-        ref.watch(sonarrDisplayModeProvider(widget.instance.id));
-    final currentSort =
-        ref.watch(sonarrSortOptionProvider(widget.instance.id));
-    final currentFilter =
-        ref.watch(sonarrFilterOptionProvider(widget.instance.id));
+    final displayMode = ref.watch(
+      sonarrDisplayModeProvider(widget.instance.id),
+    );
+    final currentSort = ref.watch(sonarrSortOptionProvider(widget.instance.id));
+    final currentFilter = ref.watch(
+      sonarrFilterOptionProvider(widget.instance.id),
+    );
     final filterActive = currentFilter != SonarrFilterOption.all;
     final sortActive = currentSort != SonarrSortOption.alphabetical;
-
 
     return ServiceDetailShell(
       instance: widget.instance,
       serviceName: 'Sonarr',
-      tabs: const [],
-      tabViews: [SonarrSeriesScreen(instance: widget.instance)],
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: ServiceType.sonarr.brandColor,
-        foregroundColor: Colors.white,
-        tooltip: 'Add Series',
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                SonarrAddSeriesScreen(instance: widget.instance),
+      sections: [
+        ServiceSection(
+          label: 'Library',
+          title: 'Series',
+          icon: Icons.video_library_outlined,
+          body: SonarrSeriesScreen(instance: widget.instance),
+          action: FilledButton.tonalIcon(
+            icon: const Icon(Icons.add),
+            label: const Text('Add'),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    SonarrAddSeriesScreen(instance: widget.instance),
+              ),
+            ),
+          ),
+          toolbar: ServiceToolbar(
+            children: [
+              TextButton.icon(
+                onPressed: _showFilterBottomSheet,
+                icon: Icon(
+                  Icons.filter_list,
+                  color: filterActive
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                label: Text(filterActive ? currentFilter.label : 'Filter'),
+              ),
+              TextButton.icon(
+                onPressed: _showSortBottomSheet,
+                icon: const Icon(Icons.sort),
+                label: Text(sortActive ? currentSort.label : 'Sort'),
+              ),
+              IconButton(
+                icon: Icon(
+                  displayMode == DisplayMode.grid
+                      ? Icons.view_list_outlined
+                      : Icons.grid_view_outlined,
+                ),
+                tooltip:
+                    'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
+                onPressed: () {
+                  ref
+                      .read(
+                        sonarrDisplayModeProvider(widget.instance.id).notifier,
+                      )
+                      .state = displayMode == DisplayMode.grid
+                      ? DisplayMode.list
+                      : DisplayMode.grid;
+                },
+              ),
+            ],
           ),
         ),
-        child: const Icon(Icons.add),
-      ),
-      appBarActions: [
-        IconButton(
-          icon: Icon(
-            displayMode == DisplayMode.grid
-                ? Icons.view_list_outlined
-                : Icons.grid_view_outlined,
-            color: Colors.white,
-          ),
-          tooltip:
-              'Switch to ${displayMode == DisplayMode.grid ? 'List' : 'Grid'}',
-          onPressed: () {
-            ref
-                .read(sonarrDisplayModeProvider(widget.instance.id).notifier)
-                .state = displayMode == DisplayMode.grid
-                ? DisplayMode.list
-                : DisplayMode.grid;
-          },
-        ),
-      ],
-      bottomLeadingActions: [
-        BottomBarButton(
-          icon: Icons.filter_list,
-          label: 'Filter',
-          active: filterActive,
-          onTap: _showFilterBottomSheet,
-        ),
-        BottomBarButton(
-          icon: Icons.sort,
-          label: 'Sort',
-          active: sortActive,
-          onTap: _showSortBottomSheet,
-        ),
-        BottomBarButton(
-          icon: Icons.history,
-          label: 'History',
-          onTap: _openHistory,
-        ),
-      ],
-      bottomTrailingActions: [
-        BottomBarButton(
-          icon: Icons.calendar_month_outlined,
+        ServiceSection(
           label: 'Upcoming',
-          onTap: _openUpcoming,
+          icon: Icons.calendar_month_outlined,
+          body: SonarrCalendarScreen(instance: widget.instance),
         ),
-        BottomBarButton(
-          icon: Icons.video_file_outlined,
+        ServiceSection(
           label: 'Missing',
-          onTap: _openMissing,
+          icon: Icons.error_outline,
+          body: SonarrMissingScreen(instance: widget.instance),
         ),
       ],
-      bottomMoreItems: const [
+      moreItems: const [
+        PopupMenuItem(
+          value: 'queue',
+          child: ListTile(
+            leading: Icon(Icons.download_outlined),
+            title: Text('Queue'),
+          ),
+        ),
+        PopupMenuItem(
+          value: 'history',
+          child: ListTile(leading: Icon(Icons.history), title: Text('History')),
+        ),
         PopupMenuItem(
           value: 'updateLibrary',
           child: ListTile(
@@ -357,6 +349,18 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
       ],
       onMoreSelected: (value) {
         switch (value) {
+          case 'queue':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: const ModuleAppBar(title: Text('Queue')),
+                  body: SonarrQueueScreen(instance: widget.instance),
+                ),
+              ),
+            );
+          case 'history':
+            _openHistory();
           case 'updateLibrary':
             _runCommand('RescanSeries', 'Update Library');
           case 'manualImport':
@@ -380,16 +384,14 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
               context,
               MaterialPageRoute(
                 builder: (_) => Scaffold(
-                  backgroundColor:
-                      Theme.of(context).scaffoldBackgroundColor,
-                  appBar: AppBar(
-                    backgroundColor: AppColors.tealPrimary,
-                    iconTheme: const IconThemeData(color: Colors.white),
-                    title: const Text(
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  appBar: ModuleAppBar(
+                    title: Text(
                       'Cutoff Unmet',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600),
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   body: SonarrCutoffUnmetScreen(instance: widget.instance),
@@ -400,8 +402,7 @@ class _SonarrHomeScreenState extends ConsumerState<SonarrHomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    SonarrTagsScreen(instance: widget.instance),
+                builder: (_) => SonarrTagsScreen(instance: widget.instance),
               ),
             );
           case 'systemStatus':
@@ -426,8 +427,7 @@ class SonarrSeriesScreen extends ConsumerStatefulWidget {
   final Instance instance;
 
   @override
-  ConsumerState<SonarrSeriesScreen> createState() =>
-      _SonarrSeriesScreenState();
+  ConsumerState<SonarrSeriesScreen> createState() => _SonarrSeriesScreenState();
 }
 
 class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
@@ -437,8 +437,9 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchController.text =
-          ref.read(sonarrSearchQueryProvider(widget.instance.id));
+      _searchController.text = ref.read(
+        sonarrSearchQueryProvider(widget.instance.id),
+      );
     });
   }
 
@@ -451,10 +452,12 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
   @override
   Widget build(BuildContext context) {
     final seriesAsync = ref.watch(sonarrSeriesProvider(widget.instance));
-    final filteredSeries =
-        ref.watch(sonarrFilteredSeriesProvider(widget.instance));
-    final displayMode =
-        ref.watch(sonarrDisplayModeProvider(widget.instance.id));
+    final filteredSeries = ref.watch(
+      sonarrFilteredSeriesProvider(widget.instance),
+    );
+    final displayMode = ref.watch(
+      sonarrDisplayModeProvider(widget.instance.id),
+    );
     final query = ref.watch(sonarrSearchQueryProvider(widget.instance.id));
 
     return Column(
@@ -479,10 +482,13 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
                       onPressed: () {
                         _searchController.clear();
                         ref
-                            .read(sonarrSearchQueryProvider(
-                                    widget.instance.id)
-                                .notifier)
-                            .state = '';
+                                .read(
+                                  sonarrSearchQueryProvider(
+                                    widget.instance.id,
+                                  ).notifier,
+                                )
+                                .state =
+                            '';
                       },
                     )
                   : null,
@@ -505,10 +511,15 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
               ),
               filled: true,
             ),
-            onChanged: (v) => ref
-                .read(
-                    sonarrSearchQueryProvider(widget.instance.id).notifier)
-                .state = v,
+            onChanged: (v) =>
+                ref
+                        .read(
+                          sonarrSearchQueryProvider(
+                            widget.instance.id,
+                          ).notifier,
+                        )
+                        .state =
+                    v,
           ),
         ),
         Expanded(
@@ -518,8 +529,11 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.cloud_off,
-                      size: 48, color: AppColors.statusOffline),
+                  const Icon(
+                    Icons.cloud_off,
+                    size: 48,
+                    color: AppColors.statusOffline,
+                  ),
                   const SizedBox(height: Spacing.s12),
                   Text(
                     'Could not connect',
@@ -546,10 +560,9 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
                     query.isNotEmpty
                         ? 'No results for "$query"'
                         : 'No series found',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(color: AppColors.textSecondary),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 );
               }
@@ -560,10 +573,12 @@ class _SonarrSeriesScreenState extends ConsumerState<SonarrSeriesScreen> {
                 child: displayMode == DisplayMode.grid
                     ? _SeriesGrid(
                         series: filteredSeries,
-                        instance: widget.instance)
+                        instance: widget.instance,
+                      )
                     : _SeriesList(
                         series: filteredSeries,
-                        instance: widget.instance),
+                        instance: widget.instance,
+                      ),
               );
             },
           ),
@@ -590,7 +605,8 @@ class _SeriesGrid extends ConsumerWidget {
         Spacing.s24,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ref.watch(gridColumnsProvider) +
+        crossAxisCount:
+            ref.watch(gridColumnsProvider) +
             (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0),
         crossAxisSpacing: Spacing.cardGap,
         mainAxisSpacing: Spacing.cardGap,
@@ -611,7 +627,8 @@ class _SeriesGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final posterUrl = series.posterUrl;
-    final isUnmonitored = !series.monitored &&
+    final isUnmonitored =
+        !series.monitored &&
         (series.statistics?.percentOfEpisodes ?? 100.0) < 100.0;
 
     return Opacity(
@@ -670,19 +687,17 @@ class _SeriesGridCard extends StatelessWidget {
                         series.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                       if (series.year != null && series.year! > 0)
                         Text(
                           series.year.toString(),
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: Colors.white70,
-                                  ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: Colors.white70),
                         ),
                     ],
                   ),
@@ -769,29 +784,27 @@ class _SeriesTile extends ConsumerWidget {
     final fanartUrl = series.fanartUrl;
     final accentColor = ServiceType.sonarr.brandColor;
 
-    final profilesAsync =
-        ref.watch(sonarrQualityProfilesProvider(instance));
+    final profilesAsync = ref.watch(sonarrQualityProfilesProvider(instance));
     final profileName = profilesAsync.valueOrNull
         ?.where((p) => p.id == series.qualityProfileId)
         .map((p) => p.name)
         .firstOrNull;
 
-    final cardBg =
-        isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
 
     final sizeOnDisk = series.statistics?.sizeOnDisk ?? 0;
     final episodeFileCount = series.statistics?.episodeFileCount ?? 0;
     final episodeCount = series.statistics?.episodeCount ?? 0;
 
-    final isUnmonitored = !series.monitored &&
+    final isUnmonitored =
+        !series.monitored &&
         (series.statistics?.percentOfEpisodes ?? 100.0) < 100.0;
 
     final line2Parts = [
       if (series.year != null && series.year! > 0) '${series.year}',
       if (series.runtime != null && series.runtime! > 0)
         _formatRuntime(series.runtime),
-      if (series.network != null && series.network!.isNotEmpty)
-        series.network!,
+      if (series.network != null && series.network!.isNotEmpty) series.network!,
     ];
 
     final line3Parts = [
@@ -835,8 +848,7 @@ class _SeriesTile extends ConsumerWidget {
                       child: Image.network(
                         fanartUrl,
                         fit: BoxFit.cover,
-                        color: Colors.black
-                            .withAlpha(isDark ? 184 : 210),
+                        color: Colors.black.withAlpha(isDark ? 184 : 210),
                         colorBlendMode: BlendMode.darken,
                         errorBuilder: (context, e, st) =>
                             const SizedBox.shrink(),
@@ -871,8 +883,7 @@ class _SeriesTile extends ConsumerWidget {
                               width: 60,
                               height: 88,
                               child: posterUrl != null
-                                  ? Image.network(posterUrl,
-                                      fit: BoxFit.cover)
+                                  ? Image.network(posterUrl, fit: BoxFit.cover)
                                   : Container(
                                       color: AppColors.tealDark,
                                       alignment: Alignment.center,
@@ -922,8 +933,7 @@ class _SeriesTile extends ConsumerWidget {
                               Text(
                                 line3Parts.join(' · '),
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppColors.textSecondary
-                                      .withAlpha(200),
+                                  color: AppColors.textSecondary.withAlpha(200),
                                   fontSize: 11,
                                 ),
                                 maxLines: 1,
@@ -942,8 +952,7 @@ class _SeriesTile extends ConsumerWidget {
                                         ? accentColor
                                         : AppColors.textSecondary,
                                   ),
-                                  if ((series.statistics
-                                              ?.percentOfEpisodes ??
+                                  if ((series.statistics?.percentOfEpisodes ??
                                           0) >=
                                       100) ...[
                                     const SizedBox(width: 4),
@@ -956,8 +965,7 @@ class _SeriesTile extends ConsumerWidget {
                                   const Spacer(),
                                   if (sizeOnDisk > 0) ...[
                                     _Chip(
-                                      label: ByteFormatter.format(
-                                          sizeOnDisk),
+                                      label: ByteFormatter.format(sizeOnDisk),
                                       color: AppColors.statusOnline,
                                     ),
                                     const SizedBox(width: 6),
