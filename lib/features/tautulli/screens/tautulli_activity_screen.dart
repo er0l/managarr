@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import '../providers/tautulli_providers.dart';
 import 'tautulli_activity_detail_screen.dart';
 
@@ -20,14 +21,17 @@ class TautulliActivityScreen extends ConsumerStatefulWidget {
 
 class _TautulliActivityScreenState
     extends ConsumerState<TautulliActivityScreen> {
-  static const _refreshInterval = Duration(seconds: 10);
+  int _refreshSeconds = 0;
   Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(_refreshInterval, (_) {
-      ref.invalidate(tautulliActivityProvider(widget.instance));
+  void _schedule(int seconds) {
+    _refreshSeconds = seconds;
+    _timer?.cancel();
+    _timer = Timer.periodic(Duration(seconds: seconds), (_) {
+      if (mounted &&
+          TickerMode.valuesOf(context).enabled &&
+          WidgetsBinding.instance.lifecycleState != AppLifecycleState.paused) {
+        ref.invalidate(tautulliActivityProvider(widget.instance));
+      }
     });
   }
 
@@ -39,6 +43,9 @@ class _TautulliActivityScreenState
 
   @override
   Widget build(BuildContext context) {
+    final seconds =
+        ref.watch(customizationProvider)['tautulliRefreshSeconds'] as int;
+    if (seconds != _refreshSeconds) _schedule(seconds);
     final activityAsync = ref.watch(tautulliActivityProvider(widget.instance));
     final api = ref.read(tautulliApiProvider(widget.instance));
 
@@ -63,9 +70,10 @@ class _TautulliActivityScreenState
               final session = activity.sessions[index];
               final thumbUrl =
                   session.thumb != null && session.thumb!.isNotEmpty
-                      ? api.thumbUrl(session.thumb!)
-                      : '';
-              final titleLine = session.grandparentTitle != null &&
+                  ? api.thumbUrl(session.thumb!)
+                  : '';
+              final titleLine =
+                  session.grandparentTitle != null &&
                       session.grandparentTitle!.isNotEmpty
                   ? '${session.grandparentTitle} – ${session.displayTitle}'
                   : session.displayTitle;
@@ -83,7 +91,9 @@ class _TautulliActivityScreenState
                 title: Text(
                   titleLine,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -108,9 +118,7 @@ class _TautulliActivityScreenState
                       children: [
                         Text(
                           session.state?.toUpperCase() ?? 'UNKNOWN',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
+                          style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
                                 color: session.state == 'playing'
                                     ? AppColors.statusOnline
@@ -126,8 +134,10 @@ class _TautulliActivityScreenState
                     ),
                   ],
                 ),
-                trailing: const Icon(Icons.chevron_right,
-                    color: AppColors.textSecondary),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
+                ),
               );
             },
           ),

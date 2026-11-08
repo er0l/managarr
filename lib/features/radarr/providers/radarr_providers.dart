@@ -1,3 +1,4 @@
+import '../../settings/providers/ui_prefs_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -17,22 +18,36 @@ import '../api/radarr_api.dart';
 import '../models/radarr_options.dart';
 
 /// Persists the display mode (Grid/List) for Radarr movies.
-final radarrDisplayModeProvider =
-    StateProvider.family<DisplayMode, int>((ref, instanceId) => DisplayMode.grid);
+final radarrDisplayModeProvider = StateProvider.family<DisplayMode, int>(
+  (ref, instanceId) =>
+      ref.watch(
+            customizationProvider.select((prefs) => prefs['defaultView']),
+          ) ==
+          'list'
+      ? DisplayMode.list
+      : DisplayMode.grid,
+);
 
 /// Search query for Radarr movies.
-final radarrSearchQueryProvider = StateProvider.family<String, int>((ref, instanceId) => '');
+final radarrSearchQueryProvider = StateProvider.family<String, int>(
+  (ref, instanceId) => '',
+);
 
 /// Current sort option for Radarr movies.
 final radarrSortOptionProvider = StateProvider.family<RadarrSortOption, int>(
-    (ref, instanceId) => RadarrSortOption.alphabetical);
+  (ref, instanceId) => RadarrSortOption.alphabetical,
+);
 
 /// Current filter option for Radarr movies.
-final radarrFilterOptionProvider = StateProvider.family<RadarrFilterOption, int>(
-    (ref, instanceId) => RadarrFilterOption.all);
+final radarrFilterOptionProvider =
+    StateProvider.family<RadarrFilterOption, int>(
+      (ref, instanceId) => RadarrFilterOption.all,
+    );
 
 /// Whether to sort in ascending order.
-final radarrSortAscendingProvider = StateProvider.family<bool, int>((ref, instanceId) => true);
+final radarrSortAscendingProvider = StateProvider.family<bool, int>(
+  (ref, instanceId) => true,
+);
 
 /// Creates a [RadarrApi] scoped to a specific [Instance].
 final radarrApiProvider = Provider.family<RadarrApi, Instance>((ref, instance) {
@@ -43,123 +58,131 @@ final radarrApiProvider = Provider.family<RadarrApi, Instance>((ref, instance) {
 /// Fetches all movies from Radarr for [instance].
 final radarrMoviesProvider = FutureProvider.autoDispose
     .family<List<RadarrMovie>, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getMovies();
-});
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getMovies();
+    });
 
 /// Fetches movies that don't meet the quality cutoff for [instance].
 final radarrCutoffUnmetProvider = FutureProvider.autoDispose
     .family<List<RadarrMovie>, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getCutoffUnmet();
-});
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getCutoffUnmet();
+    });
 
 /// Fetches upcoming releases (Calendar) from Radarr for [instance].
 final radarrCalendarProvider = FutureProvider.autoDispose
     .family<List<RadarrMovie>, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  final now = DateTime.now();
-  final start = DateTime(now.year, now.month, now.day);
-  final end = start.add(const Duration(days: 90)); // 3 months lookahead
-  return api.getCalendar(start, end);
-});
+      final api = ref.watch(radarrApiProvider(instance));
+      final now = DateTime.now();
+      final start = DateTime(now.year, now.month, now.day);
+      final end = start.add(const Duration(days: 90)); // 3 months lookahead
+      return api.getCalendar(start, end);
+    });
 
 /// Fetches current download queue from Radarr for [instance].
-final radarrQueueProvider =
-    FutureProvider.autoDispose.family<RadarrQueue, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getQueue();
-});
+final radarrQueueProvider = FutureProvider.autoDispose
+    .family<RadarrQueue, Instance>((ref, instance) {
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getQueue();
+    });
 
 /// Fetches event history from Radarr for [instance].
-final radarrHistoryProvider =
-    FutureProvider.autoDispose.family<RadarrHistory, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getHistory();
-});
+final radarrHistoryProvider = FutureProvider.autoDispose
+    .family<RadarrHistory, Instance>((ref, instance) {
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getHistory();
+    });
 
 /// Fetches quality profiles from Radarr for [instance].
 final radarrQualityProfilesProvider = FutureProvider.autoDispose
     .family<List<RadarrQualityProfile>, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getQualityProfiles();
-});
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getQualityProfiles();
+    });
 
 /// Fetches system status from Radarr for [instance].
 final radarrSystemStatusProvider = FutureProvider.autoDispose
     .family<RadarrSystemStatus, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getSystemStatus();
-});
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getSystemStatus();
+    });
 
 /// Fetches root folders from Radarr for [instance].
 final radarrRootFoldersProvider = FutureProvider.autoDispose
     .family<List<RadarrRootFolder>, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getRootFolders();
-});
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getRootFolders();
+    });
 
 /// Search query for the add-movie lookup screen.
-final radarrLookupQueryProvider =
-    StateProvider.family<String, int>((ref, instanceId) => '');
+final radarrLookupQueryProvider = StateProvider.family<String, int>(
+  (ref, instanceId) => '',
+);
 
 /// Performs a movie lookup against Radarr for [instance].
 /// Only triggers when the lookup query is non-empty.
 final radarrLookupResultsProvider = FutureProvider.autoDispose
     .family<List<RadarrMovie>, Instance>((ref, instance) {
-  final query = ref.watch(radarrLookupQueryProvider(instance.id));
-  if (query.trim().isEmpty) return Future.value([]);
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.lookupMovie(query);
-});
+      final query = ref.watch(radarrLookupQueryProvider(instance.id));
+      if (query.trim().isEmpty) return Future.value([]);
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.lookupMovie(query);
+    });
 
 /// Fetches health check items from Radarr for [instance].
 final radarrHealthProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getHealth();
-});
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getHealth();
+    });
 
 /// Fetches disk space info from Radarr for [instance].
 final radarrDiskSpaceProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getDiskSpace();
-});
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getDiskSpace();
+    });
 
 /// Fetches tags from Radarr for [instance].
 final radarrTagsProvider = FutureProvider.autoDispose
     .family<List<RadarrTag>, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getTags();
-});
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getTags();
+    });
 
 /// Fetches movie files for a specific movie.
 /// Key is a record of (Instance, movieId).
 final radarrMovieFilesProvider = FutureProvider.autoDispose
-    .family<List<RadarrMovieFile>, ({Instance instance, int movieId})>(
-        (ref, args) {
-  final api = ref.watch(radarrApiProvider(args.instance));
-  return api.getMovieFiles(args.movieId);
-});
+    .family<List<RadarrMovieFile>, ({Instance instance, int movieId})>((
+      ref,
+      args,
+    ) {
+      final api = ref.watch(radarrApiProvider(args.instance));
+      return api.getMovieFiles(args.movieId);
+    });
 
 /// Fetches history for a specific movie.
 final radarrMovieHistoryProvider = FutureProvider.autoDispose
     .family<RadarrHistory, ({Instance instance, int movieId})>((ref, args) {
-  final api = ref.watch(radarrApiProvider(args.instance));
-  return api.getMovieHistory(args.movieId);
-});
+      final api = ref.watch(radarrApiProvider(args.instance));
+      return api.getMovieHistory(args.movieId);
+    });
 
 /// Fetches releases for a specific movie.
 final radarrReleasesProvider = FutureProvider.autoDispose
-    .family<List<RadarrRelease>, ({Instance instance, int movieId})>(
-        (ref, args) {
-  final api = ref.watch(radarrApiProvider(args.instance));
-  return api.getReleases(args.movieId);
-});
+    .family<List<RadarrRelease>, ({Instance instance, int movieId})>((
+      ref,
+      args,
+    ) {
+      final api = ref.watch(radarrApiProvider(args.instance));
+      return api.getReleases(args.movieId);
+    });
 
 /// A provider that returns a filtered and sorted list of movies.
-final radarrFilteredMoviesProvider = Provider.family<List<RadarrMovie>, Instance>((ref, instance) {
+final radarrFilteredMoviesProvider = Provider.family<List<RadarrMovie>, Instance>((
+  ref,
+  instance,
+) {
   final moviesAsync = ref.watch(radarrMoviesProvider(instance));
   final query = ref.watch(radarrSearchQueryProvider(instance.id)).toLowerCase();
   final sortOption = ref.watch(radarrSortOptionProvider(instance.id));
@@ -198,11 +221,13 @@ final radarrFilteredMoviesProvider = Provider.family<List<RadarrMovie>, Instance
         int compare;
         switch (sortOption) {
           case RadarrSortOption.alphabetical:
-            compare = (a.sortTitle ?? a.title)
-                .toLowerCase()
-                .compareTo((b.sortTitle ?? b.title).toLowerCase());
+            compare = (a.sortTitle ?? a.title).toLowerCase().compareTo(
+              (b.sortTitle ?? b.title).toLowerCase(),
+            );
           case RadarrSortOption.dateAdded:
-            compare = (a.added ?? DateTime(0)).compareTo(b.added ?? DateTime(0));
+            compare = (a.added ?? DateTime(0)).compareTo(
+              b.added ?? DateTime(0),
+            );
           case RadarrSortOption.year:
             compare = a.year.compareTo(b.year);
           case RadarrSortOption.size:
@@ -212,13 +237,21 @@ final radarrFilteredMoviesProvider = Provider.family<List<RadarrMovie>, Instance
           case RadarrSortOption.studio:
             compare = (a.studio ?? '').compareTo(b.studio ?? '');
           case RadarrSortOption.qualityProfile:
-            compare = (a.qualityProfileId ?? 0).compareTo(b.qualityProfileId ?? 0);
+            compare = (a.qualityProfileId ?? 0).compareTo(
+              b.qualityProfileId ?? 0,
+            );
           case RadarrSortOption.inCinemas:
-            compare = (a.inCinemas ?? DateTime(0)).compareTo(b.inCinemas ?? DateTime(0));
+            compare = (a.inCinemas ?? DateTime(0)).compareTo(
+              b.inCinemas ?? DateTime(0),
+            );
           case RadarrSortOption.physicalRelease:
-            compare = (a.physicalRelease ?? DateTime(0)).compareTo(b.physicalRelease ?? DateTime(0));
+            compare = (a.physicalRelease ?? DateTime(0)).compareTo(
+              b.physicalRelease ?? DateTime(0),
+            );
           case RadarrSortOption.digitalRelease:
-            compare = (a.digitalRelease ?? DateTime(0)).compareTo(b.digitalRelease ?? DateTime(0));
+            compare = (a.digitalRelease ?? DateTime(0)).compareTo(
+              b.digitalRelease ?? DateTime(0),
+            );
         }
         return ascending ? compare : -compare;
       });
@@ -229,9 +262,8 @@ final radarrFilteredMoviesProvider = Provider.family<List<RadarrMovie>, Instance
   );
 });
 
-
-final radarrImportListsProvider =
-    FutureProvider.autoDispose.family<List<RadarrImportList>, Instance>((ref, instance) {
-  final api = ref.watch(radarrApiProvider(instance));
-  return api.getImportLists();
-});
+final radarrImportListsProvider = FutureProvider.autoDispose
+    .family<List<RadarrImportList>, Instance>((ref, instance) {
+      final api = ref.watch(radarrApiProvider(instance));
+      return api.getImportLists();
+    });

@@ -7,6 +7,7 @@ import '../../../core/database/models/service_type.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/section_header.dart';
+import '../../../core/widgets/module_app_bar.dart';
 import '../../../core/widgets/service_avatar.dart';
 import '../providers/instances_provider.dart';
 import '../providers/ui_prefs_provider.dart';
@@ -22,22 +23,67 @@ class SettingsScreen extends ConsumerWidget {
     final grouped = ref.watch(instancesByServiceProvider);
     final repo = ref.read(instanceRepositoryProvider);
     final serviceOrder = ServiceType.values;
-    final populated =
-        serviceOrder.where((t) => grouped.containsKey(t)).toList();
+    final populated = serviceOrder
+        .where((t) => grouped.containsKey(t))
+        .toList();
 
     return Scaffold(
       body: ListView(
         children: [
-          // ── Appearance ──────────────────────────────────────────────────
-          const SectionHeader(title: 'Appearance'),
-          const _SettingsCard(children: [
-            _ThemeSelector(),
-            Divider(height: 1),
-            _GridColumnsSelector(),
-          ]),
-
-          // ── Instances ───────────────────────────────────────────────────
-          if (populated.isNotEmpty) const SectionHeader(title: 'Instances'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Settings',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: () => context.push('/settings/add-instance'),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add'),
+                ),
+              ],
+            ),
+          ),
+          const SectionHeader(title: 'Customize'),
+          _SettingsCard(
+            children: [
+              for (final category in const [
+                (
+                  'Appearance',
+                  Icons.palette_outlined,
+                  'Theme, grid size, default view and artwork',
+                ),
+                (
+                  'Dashboard',
+                  Icons.dashboard_outlined,
+                  'Choose the activity sections you see',
+                ),
+                (
+                  'Calendar & playback',
+                  Icons.tune,
+                  'Week start, time format and activity refresh',
+                ),
+              ])
+                ListTile(
+                  leading: Icon(category.$2),
+                  title: Text(category.$1),
+                  subtitle: Text(category.$3),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          CustomizationScreen(category: category.$1),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SectionHeader(title: 'Instances'),
           if (populated.isEmpty)
             _EmptyState(onAdd: () => context.push('/settings/add-instance'))
           else
@@ -76,13 +122,6 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 80),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/settings/add-instance'),
-        backgroundColor: AppColors.orangeAccent,
-        foregroundColor: AppColors.textOnPrimary,
-        tooltip: 'Add Instance',
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -151,8 +190,9 @@ class _ServiceGroupHeader extends StatelessWidget {
           const SizedBox(width: Spacing.s12),
           Text(
             type.displayName,
-            style: theme.textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -185,30 +225,17 @@ class _ThemeSelector extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          SegmentedButton<ThemeMode>(
-            segments: const [
-              ButtonSegment(
-                value: ThemeMode.light,
-                icon: Icon(Icons.light_mode_outlined),
-                label: Text('Light'),
-              ),
-              ButtonSegment(
-                value: ThemeMode.system,
-                icon: Icon(Icons.brightness_auto_outlined),
-                label: Text('System'),
-              ),
-              ButtonSegment(
-                value: ThemeMode.dark,
-                icon: Icon(Icons.dark_mode_outlined),
-                label: Text('Dark'),
-              ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final mode in AppThemeMode.values)
+                ChoiceChip(
+                  label: Text(mode.label),
+                  selected: currentMode == mode,
+                  onSelected: (_) => notifier.setMode(mode),
+                ),
             ],
-            selected: {currentMode},
-            onSelectionChanged: (s) => notifier.setMode(s.first),
-            style: SegmentedButton.styleFrom(
-              selectedBackgroundColor: AppColors.tealPrimary,
-              selectedForegroundColor: AppColors.textOnPrimary,
-            ),
           ),
         ],
       ),
@@ -298,7 +325,7 @@ class _InMemoryCacheTileState extends State<_InMemoryCacheTile> {
     final subtitle = info.isEmpty
         ? 'Empty'
         : '${ImageCacheService.formatBytes(info.sizeBytes)}'
-            ' · ${info.imageCount} image${info.imageCount == 1 ? '' : 's'} loaded';
+              ' · ${info.imageCount} image${info.imageCount == 1 ? '' : 's'} loaded';
 
     return ListTile(
       contentPadding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
@@ -380,8 +407,8 @@ class _TempFilesTileState extends State<_TempFilesTile> {
         final subtitle = loading
             ? 'Calculating…'
             : empty
-                ? 'Empty'
-                : ImageCacheService.formatBytes(bytes);
+            ? 'Empty'
+            : ImageCacheService.formatBytes(bytes);
 
         return ListTile(
           contentPadding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
@@ -467,14 +494,130 @@ class _EmptyState extends StatelessWidget {
                 backgroundColor: AppColors.orangeAccent,
                 foregroundColor: AppColors.textOnPrimary,
                 shape: const StadiumBorder(),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
               ),
               icon: const Icon(Icons.add),
               label: const Text('Add Instance'),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class CustomizationScreen extends ConsumerWidget {
+  const CustomizationScreen({super.key, required this.category});
+  final String category;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(customizationProvider);
+    final notifier = ref.read(customizationProvider.notifier);
+    Widget toggle(String key, String title, String subtitle) => SwitchListTile(
+      title: Text(title),
+      subtitle: Text(subtitle),
+      value: prefs[key] == true,
+      onChanged: (value) => notifier.set(key, value),
+    );
+    Widget choice(String key, String title, Map<dynamic, String> options) =>
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final option in options.entries)
+                    ChoiceChip(
+                      label: Text(option.value),
+                      selected: prefs[key] == option.key,
+                      onSelected: (_) => notifier.set(key, option.key),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        );
+    return Scaffold(
+      appBar: ModuleAppBar(title: Text(category)),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        children: [
+          if (category == 'Appearance') ...[
+            const _SettingsCard(
+              children: [
+                _ThemeSelector(),
+                Divider(height: 1),
+                _GridColumnsSelector(),
+              ],
+            ),
+            _SettingsCard(
+              children: [
+                choice('defaultView', 'Default library view', const {
+                  'grid': 'Grid',
+                  'list': 'List',
+                }),
+                toggle(
+                  'artworkBackgrounds',
+                  'Artwork backgrounds',
+                  'Show subtle artwork behind Tautulli history and media cards',
+                ),
+              ],
+            ),
+          ] else if (category == 'Dashboard')
+            _SettingsCard(
+              children: [
+                toggle(
+                  'showNowPlaying',
+                  'Now Playing',
+                  'Active Plex sessions from Tautulli',
+                ),
+                toggle(
+                  'showDownloads',
+                  'Downloads',
+                  'Current download activity',
+                ),
+                toggle(
+                  'showUpcoming',
+                  'Upcoming',
+                  'Upcoming movies and episodes',
+                ),
+                toggle('showRequests', 'Requests', 'Recent Seer requests'),
+              ],
+            )
+          else
+            _SettingsCard(
+              children: [
+                toggle(
+                  'weekStartsMonday',
+                  'Start week on Monday',
+                  'Turn off to start the calendar on Sunday',
+                ),
+                toggle(
+                  'use24HourTime',
+                  '24-hour time',
+                  'Used for Tautulli watch history and playback estimates',
+                ),
+                choice(
+                  'tautulliRefreshSeconds',
+                  'Refresh active sessions',
+                  const {10: '10 seconds', 20: '20 seconds', 30: '30 seconds'},
+                ),
+                choice('historyPageSize', 'Recent history entries', const {
+                  50: '50',
+                  100: '100',
+                  200: '200',
+                }),
+              ],
+            ),
+        ],
       ),
     );
   }

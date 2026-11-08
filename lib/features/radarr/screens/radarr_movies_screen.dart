@@ -31,8 +31,9 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchController.text =
-          ref.read(radarrSearchQueryProvider(widget.instance.id));
+      _searchController.text = ref.read(
+        radarrSearchQueryProvider(widget.instance.id),
+      );
     });
   }
 
@@ -45,10 +46,12 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
   @override
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(radarrMoviesProvider(widget.instance));
-    final filteredMovies =
-        ref.watch(radarrFilteredMoviesProvider(widget.instance));
-    final displayMode =
-        ref.watch(radarrDisplayModeProvider(widget.instance.id));
+    final filteredMovies = ref.watch(
+      radarrFilteredMoviesProvider(widget.instance),
+    );
+    final displayMode = ref.watch(
+      radarrDisplayModeProvider(widget.instance.id),
+    );
     final query = ref.watch(radarrSearchQueryProvider(widget.instance.id));
 
     return Column(
@@ -73,9 +76,13 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
                       onPressed: () {
                         _searchController.clear();
                         ref
-                            .read(radarrSearchQueryProvider(widget.instance.id)
-                                .notifier)
-                            .state = '';
+                                .read(
+                                  radarrSearchQueryProvider(
+                                    widget.instance.id,
+                                  ).notifier,
+                                )
+                                .state =
+                            '';
                       },
                     )
                   : null,
@@ -98,10 +105,15 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
               ),
               filled: true,
             ),
-            onChanged: (v) => ref
-                .read(
-                    radarrSearchQueryProvider(widget.instance.id).notifier)
-                .state = v,
+            onChanged: (v) =>
+                ref
+                        .read(
+                          radarrSearchQueryProvider(
+                            widget.instance.id,
+                          ).notifier,
+                        )
+                        .state =
+                    v,
           ),
         ),
         Expanded(
@@ -119,10 +131,9 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
                     query.isNotEmpty
                         ? 'No results for "$query"'
                         : 'No movies found',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(color: AppColors.textSecondary),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 );
               }
@@ -132,9 +143,13 @@ class _RadarrMoviesScreenState extends ConsumerState<RadarrMoviesScreen> {
                     ref.invalidate(radarrMoviesProvider(widget.instance)),
                 child: displayMode == DisplayMode.grid
                     ? _MovieGrid(
-                        movies: filteredMovies, instance: widget.instance)
+                        movies: filteredMovies,
+                        instance: widget.instance,
+                      )
                     : _MovieList(
-                        movies: filteredMovies, instance: widget.instance),
+                        movies: filteredMovies,
+                        instance: widget.instance,
+                      ),
               );
             },
           ),
@@ -159,7 +174,8 @@ class _MovieGrid extends ConsumerWidget {
         Spacing.s24,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ref.watch(gridColumnsProvider) +
+        crossAxisCount:
+            ref.watch(gridColumnsProvider) +
             (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0),
         crossAxisSpacing: Spacing.cardGap,
         mainAxisSpacing: Spacing.cardGap,
@@ -173,10 +189,8 @@ class _MovieGrid extends ConsumerWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => RadarrMovieDetailScreen(
-                movie: movie,
-                instance: instance,
-              ),
+              builder: (_) =>
+                  RadarrMovieDetailScreen(movie: movie, instance: instance),
             ),
           ),
         );
@@ -203,10 +217,8 @@ class _MovieList extends StatelessWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => RadarrMovieDetailScreen(
-                movie: movie,
-                instance: instance,
-              ),
+              builder: (_) =>
+                  RadarrMovieDetailScreen(movie: movie, instance: instance),
             ),
           ),
         );
@@ -241,8 +253,11 @@ String _formatStatus(String? status) {
 }
 
 class _MovieTile extends ConsumerWidget {
-  const _MovieTile(
-      {required this.movie, required this.instance, required this.onTap});
+  const _MovieTile({
+    required this.movie,
+    required this.instance,
+    required this.onTap,
+  });
   final RadarrMovie movie;
   final Instance instance;
   final VoidCallback onTap;
@@ -261,7 +276,7 @@ class _MovieTile extends ConsumerWidget {
         .map((p) => p.name)
         .firstOrNull;
 
-    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg = theme.colorScheme.surface;
 
     final line2Parts = [
       '${movie.year}',
@@ -303,8 +318,7 @@ class _MovieTile extends ConsumerWidget {
                       child: Image.network(
                         fanartUrl,
                         fit: BoxFit.cover,
-                        color:
-                            Colors.black.withAlpha(isDark ? 184 : 210),
+                        color: Colors.black.withAlpha(isDark ? 184 : 210),
                         colorBlendMode: BlendMode.darken,
                         errorBuilder: (context, e, st) =>
                             const SizedBox.shrink(),
@@ -339,8 +353,7 @@ class _MovieTile extends ConsumerWidget {
                               width: 60,
                               height: 88,
                               child: posterUrl != null
-                                  ? Image.network(posterUrl,
-                                      fit: BoxFit.cover)
+                                  ? Image.network(posterUrl, fit: BoxFit.cover)
                                   : Container(
                                       color: AppColors.tealDark,
                                       alignment: Alignment.center,
@@ -390,8 +403,7 @@ class _MovieTile extends ConsumerWidget {
                               Text(
                                 line3Parts.join(' · '),
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppColors.textSecondary
-                                      .withAlpha(200),
+                                  color: AppColors.textSecondary.withAlpha(200),
                                   fontSize: 11,
                                 ),
                                 maxLines: 1,
@@ -406,8 +418,9 @@ class _MovieTile extends ConsumerWidget {
                                     Icon(
                                       Icons.smart_display_outlined,
                                       size: 14,
-                                      color: AppColors.textSecondary
-                                          .withAlpha(180),
+                                      color: AppColors.textSecondary.withAlpha(
+                                        180,
+                                      ),
                                     ),
                                     const SizedBox(width: 4),
                                   ],
@@ -434,7 +447,8 @@ class _MovieTile extends ConsumerWidget {
                                       movie.sizeOnDisk! > 0)
                                     _Chip(
                                       label: ByteFormatter.format(
-                                          movie.sizeOnDisk!),
+                                        movie.sizeOnDisk!,
+                                      ),
                                       color: AppColors.statusOnline,
                                     ),
                                 ],
@@ -495,8 +509,11 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off,
-                size: 48, color: AppColors.statusOffline),
+            const Icon(
+              Icons.cloud_off,
+              size: 48,
+              color: AppColors.statusOffline,
+            ),
             const SizedBox(height: Spacing.s16),
             Text(
               'Could not connect',
@@ -505,10 +522,9 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: Spacing.s8),
             Text(
               message,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
               maxLines: 3,
             ),

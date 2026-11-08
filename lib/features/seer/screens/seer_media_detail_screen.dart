@@ -146,7 +146,6 @@ class _DetailScaffold extends ConsumerWidget {
                     )
                   : Container(color: AppColors.tealDark),
             ),
-            actions: [const ModuleHomeButton(onImage: true)],
           ),
           SliverToBoxAdapter(
             child: Padding(

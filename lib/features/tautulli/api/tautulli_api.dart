@@ -19,12 +19,17 @@ class TautulliApi {
 
   TautulliApi(this._dio, this._baseUrl, this._apiKey);
 
-  static TautulliApi fromInstance(Instance instance) =>
-      fromHost(instance.baseUrl, instance.apiKey,
-          proxyAuth: proxyAuthFor(instance, instance.baseUrl));
+  static TautulliApi fromInstance(Instance instance) => fromHost(
+    instance.baseUrl,
+    instance.apiKey,
+    proxyAuth: proxyAuthFor(instance, instance.baseUrl),
+  );
 
-  static TautulliApi fromHost(String rawHost, String apiKey,
-      {String? proxyAuth}) {
+  static TautulliApi fromHost(
+    String rawHost,
+    String apiKey, {
+    String? proxyAuth,
+  }) {
     final (:url, basicAuth: urlAuth) = extractUrlCredentials(rawHost.trim());
     // Explicit proxyAuth takes priority over URL-embedded credentials.
     final auth = proxyAuth ?? urlAuth;
@@ -33,9 +38,7 @@ class TautulliApi {
       host = host.substring(0, host.length - 1);
     }
     final baseUrl = host.contains('/api/v2') ? host : '$host/api/v2';
-    final headers = <String, dynamic>{
-      'Authorization': ?auth,
-    };
+    final headers = <String, dynamic>{'Authorization': ?auth};
     final dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -50,13 +53,12 @@ class TautulliApi {
   }
 
   Future<Map<String, dynamic>> _get(
-      String cmd, [Map<String, dynamic>? extra]) async {
+    String cmd, [
+    Map<String, dynamic>? extra,
+  ]) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '',
-      queryParameters: {
-        'cmd': cmd,
-        if (extra != null) ...extra,
-      },
+      queryParameters: {'cmd': cmd, if (extra != null) ...extra},
     );
     return response.data ?? {};
   }
@@ -69,13 +71,39 @@ class TautulliApi {
     return TautulliActivity.fromJson(data as Map<String, dynamic>);
   }
 
-  Future<TautulliHistory> getHistory({int length = 50, int? userId}) async {
+  Future<TautulliHistory> getHistory({
+    int length = 100,
+    int start = 0,
+    int? userId,
+    String? ratingKey,
+  }) async {
     final response = await _get('get_history', {
       'length': length,
+      'start': start,
       'user_id': ?userId,
+      'rating_key': ?ratingKey,
     });
-    final data = response['response']?['data'] ?? {};
-    return TautulliHistory.fromJson(data as Map<String, dynamic>);
+    return TautulliHistory.fromJson(
+      Map<String, dynamic>.from(response['response']?['data'] as Map? ?? {}),
+    );
+  }
+
+  Future<Map<String, dynamic>> getMetadata(String ratingKey) =>
+      _details('get_metadata', {'rating_key': ratingKey});
+  Future<Map<String, dynamic>> getStreamData(int rowId) =>
+      _details('get_stream_data', {'row_id': rowId});
+  Future<Map<String, dynamic>> _details(
+    String command,
+    Map<String, dynamic> params,
+  ) async {
+    final response = await _get(command, params);
+    final envelope = response['response'] as Map?;
+    if (envelope?['result'] == 'error') {
+      throw Exception(envelope?['message'] ?? 'Details unavailable');
+    }
+    final data = envelope?['data'];
+    if (data is! Map) throw Exception('Details unavailable');
+    return Map<String, dynamic>.from(data);
   }
 
   Future<List<TautulliLibrary>> getLibraries() async {
@@ -91,8 +119,7 @@ class TautulliApi {
   Future<List<TautulliUser>> getUsers() async {
     // get_users_table includes last_seen; get_users does not.
     final response = await _get('get_users_table', {'length': 1000});
-    final data =
-        response['response']?['data']?['data'] as List? ?? [];
+    final data = response['response']?['data']?['data'] as List? ?? [];
     return data
         .map((u) => TautulliUser.fromJson(u as Map<String, dynamic>))
         .toList();
@@ -126,8 +153,9 @@ class TautulliApi {
     final userData =
         userResp['response']?['data'] as Map<String, dynamic>? ?? {};
 
-    final statsResp =
-        await _get('get_user_watch_time_stats', {'user_id': userId});
+    final statsResp = await _get('get_user_watch_time_stats', {
+      'user_id': userId,
+    });
     final statsData = statsResp['response']?['data'] as List? ?? [];
 
     return TautulliUserDetail.fromJson(
@@ -153,7 +181,8 @@ class TautulliApi {
   }
 
   Future<Map<String, List<TautulliMediaItem>>> librarySearch(
-      String query) async {
+    String query,
+  ) async {
     final raw = await _get('search', {'query': query, 'limit': 20});
 
     // Navigate response envelope
@@ -189,7 +218,9 @@ class TautulliApi {
       // Newer flat-list format – group by media_type field
       for (final item in resultsRaw.whereType<Map<String, dynamic>>()) {
         final type = (item['media_type'] as String?) ?? 'unknown';
-        grouped.putIfAbsent(type, () => []).add(TautulliMediaItem.fromJson(item));
+        grouped
+            .putIfAbsent(type, () => [])
+            .add(TautulliMediaItem.fromJson(item));
       }
     }
 
@@ -206,14 +237,16 @@ class TautulliApi {
 
   // ─── Graph endpoints ───────────────────────────────────────────────────
 
-  Future<TautulliGraphData> _getGraph(String cmd,
-      {int timeRange = 30, String yAxis = 'plays'}) async {
+  Future<TautulliGraphData> _getGraph(
+    String cmd, {
+    int timeRange = 30,
+    String yAxis = 'plays',
+  }) async {
     final response = await _get(cmd, {
       'time_range': timeRange,
       'y_axis': yAxis,
     });
-    final data =
-        response['response']?['data'] as Map<String, dynamic>? ?? {};
+    final data = response['response']?['data'] as Map<String, dynamic>? ?? {};
     return TautulliGraphData.fromJson(data);
   }
 
@@ -226,8 +259,7 @@ class TautulliApi {
   Future<TautulliGraphData> getGraphPlaysByDayOfWeek({int timeRange = 30}) =>
       _getGraph('get_plays_by_dayofweek', timeRange: timeRange);
 
-  Future<TautulliGraphData> getGraphPlaysByTopPlatforms(
-          {int timeRange = 30}) =>
+  Future<TautulliGraphData> getGraphPlaysByTopPlatforms({int timeRange = 30}) =>
       _getGraph('get_plays_by_top_10_platforms', timeRange: timeRange);
 
   Future<TautulliGraphData> getGraphPlaysByTopUsers({int timeRange = 30}) =>
@@ -236,30 +268,43 @@ class TautulliApi {
   Future<TautulliGraphData> getGraphStreamTypeByDate({int timeRange = 30}) =>
       _getGraph('get_plays_by_stream_type', timeRange: timeRange);
 
-  Future<TautulliGraphData> getGraphStreamTypeByTopPlatforms(
-          {int timeRange = 30}) =>
-      _getGraph('get_stream_type_by_top_10_platforms', timeRange: timeRange);
+  Future<TautulliGraphData> getGraphStreamTypeByTopPlatforms({
+    int timeRange = 30,
+  }) => _getGraph('get_stream_type_by_top_10_platforms', timeRange: timeRange);
 
-  Future<TautulliGraphData> getGraphStreamTypeByTopUsers(
-          {int timeRange = 30}) =>
-      _getGraph('get_stream_type_by_top_10_users', timeRange: timeRange);
+  Future<TautulliGraphData> getGraphStreamTypeByTopUsers({
+    int timeRange = 30,
+  }) => _getGraph('get_stream_type_by_top_10_users', timeRange: timeRange);
 
   /// Terminates a Plex stream by session key.
-  Future<void> terminateSession(String sessionKey, {String message = 'Stream stopped by admin'}) async {
-    await _get('terminate_session', {'session_key': sessionKey, 'message': message});
+  Future<void> terminateSession(
+    String sessionKey, {
+    String message = 'Stream stopped by admin',
+  }) async {
+    final response = await _get('terminate_session', {
+      'session_key': sessionKey,
+      'message': message,
+    });
+    if (response['response']?['result'] == 'error') {
+      throw Exception(
+        response['response']?['message'] ?? 'Could not terminate session',
+      );
+    }
   }
+
+  Map<String, String> get imageHeaders => {
+    for (final e in _dio.options.headers.entries) e.key: e.value.toString(),
+  };
 
   /// Builds a pms_image_proxy URL for a Plex poster/thumb.
   String thumbUrl(String thumb) {
-    final base =
-        _baseUrl.contains('/api/v2') ? _baseUrl : '$_baseUrl/api/v2';
+    final base = _baseUrl.contains('/api/v2') ? _baseUrl : '$_baseUrl/api/v2';
     return '$base?cmd=pms_image_proxy&img=${Uri.encodeComponent(thumb)}&apikey=$_apiKey&width=150&height=225';
   }
 
   /// Builds a pms_image_proxy URL for a Plex library art/backdrop.
   String artUrl(String art) {
-    final base =
-        _baseUrl.contains('/api/v2') ? _baseUrl : '$_baseUrl/api/v2';
+    final base = _baseUrl.contains('/api/v2') ? _baseUrl : '$_baseUrl/api/v2';
     return '$base?cmd=pms_image_proxy&img=${Uri.encodeComponent(art)}&apikey=$_apiKey&width=400&height=150';
   }
 }

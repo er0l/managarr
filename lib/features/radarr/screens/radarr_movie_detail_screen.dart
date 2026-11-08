@@ -384,8 +384,6 @@ class _RadarrMovieDetailScreenState
                   ],
                 ),
               ],
-
-              const ModuleHomeButton(onImage: true),
             ],
             bottom: TabBar(
               controller: _tabController,

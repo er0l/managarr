@@ -20,6 +20,8 @@ import '../api/models/romm_search_filters.dart';
 import '../api/romm_api.dart';
 import '../providers/romm_providers.dart';
 import '../widgets/rom_rail.dart';
+import '../widgets/rom_grid_card.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import 'romm_collection_screen.dart';
 import 'romm_downloads_screen.dart';
 import 'romm_platform_screen.dart';
@@ -113,7 +115,7 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
       sections: [
         ServiceSection(
           label: 'Library',
-          title: 'Games & platforms',
+          title: 'Library',
           icon: Icons.videogame_asset_outlined,
           body: _RommMainView(instance: widget.instance),
           action: IconButton(
@@ -158,17 +160,24 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
           ),
         ),
         ServiceSection(
+          label: 'Platforms',
+          icon: Icons.devices_other_outlined,
+          body: _RommPlatformsPage(instance: widget.instance),
+        ),
+        ServiceSection(
           label: 'Collections',
           icon: Icons.folder_outlined,
           body: _CollectionsScreen(instance: widget.instance),
         ),
-        ServiceSection(
-          label: 'Downloads',
-          icon: Icons.download_outlined,
-          body: RommDownloadsScreen(instance: widget.instance, embedded: true),
-        ),
       ],
       moreItems: const [
+        PopupMenuItem(
+          value: 'downloads',
+          child: ListTile(
+            leading: Icon(Icons.download_outlined),
+            title: Text('Downloads'),
+          ),
+        ),
         PopupMenuItem(
           value: 'stats',
           child: ListTile(
@@ -192,6 +201,13 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
       ],
       onMoreSelected: (value) {
         switch (value) {
+          case 'downloads':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RommDownloadsScreen(instance: widget.instance),
+              ),
+            );
           case 'rescan':
             _rescan();
           case 'stats':
@@ -207,7 +223,7 @@ class _RommHomeScreenState extends ConsumerState<RommHomeScreen> {
   }
 }
 
-// ── Main view: platforms + unified search ────────────────────────────────────
+// ── Library overview and game search ────────────────────────────────────
 
 class _RommMainView extends ConsumerStatefulWidget {
   const _RommMainView({required this.instance});
@@ -244,12 +260,8 @@ class _RommMainViewState extends ConsumerState<_RommMainView> {
     final statsAsync = ref.watch(rommStatsProvider(widget.instance));
     final stats = statsAsync.valueOrNull;
     final hintText = stats != null
-        ? 'Search ${stats.totalRoms} ROMs and ${stats.totalPlatforms} platforms'
-        : 'Search ROMs and platforms…';
-
-    final displayMode = ref.watch(
-      rommHomeDisplayModeProvider(widget.instance.id),
-    );
+        ? 'Search ${stats.totalRoms} games'
+        : 'Search games…';
 
     return Column(
       children: [
@@ -309,7 +321,7 @@ class _RommMainViewState extends ConsumerState<_RommMainView> {
                     const RommSearchFilters(),
           ),
 
-        // Body: platforms or ROM search results
+        // Body: recent game rails or search results
         Expanded(
           child: isSearching
               ? _RomSearchResults(
@@ -317,10 +329,119 @@ class _RommMainViewState extends ConsumerState<_RommMainView> {
                   searchTerm: _searchTerm,
                   filters: filters,
                 )
-              : _PlatformsView(
-                  instance: widget.instance,
-                  displayMode: displayMode,
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(rommRecentlyPlayedProvider(widget.instance));
+                    ref.invalidate(rommRecentlyAddedProvider(widget.instance));
+                  },
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      RomRail(
+                        title: 'Continue Playing',
+                        instance: widget.instance,
+                        romsAsync: ref.watch(
+                          rommRecentlyPlayedProvider(widget.instance),
+                        ),
+                      ),
+                      RomRail(
+                        title: 'Recently Added',
+                        instance: widget.instance,
+                        romsAsync: ref.watch(
+                          rommRecentlyAddedProvider(widget.instance),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RommPlatformsPage extends ConsumerStatefulWidget {
+  const _RommPlatformsPage({required this.instance});
+  final Instance instance;
+  @override
+  ConsumerState<_RommPlatformsPage> createState() => _RommPlatformsPageState();
+}
+
+class _RommPlatformsPageState extends ConsumerState<_RommPlatformsPage> {
+  String _query = '';
+  String _filter = 'all';
+  @override
+  Widget build(BuildContext context) {
+    final mode = ref.watch(rommHomeDisplayModeProvider(widget.instance.id));
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: TextField(
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search),
+              hintText: 'Search platforms',
+            ),
+            onChanged: (value) => setState(() => _query = value),
+          ),
+        ),
+        ServiceToolbar(
+          children: [
+            PopupMenuButton<String>(
+              tooltip: 'Filter platforms',
+              initialValue: _filter,
+              onSelected: (value) => setState(() => _filter = value),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'all', child: Text('All platforms')),
+                PopupMenuItem(value: 'games', child: Text('With games')),
+                PopupMenuItem(value: 'empty', child: Text('Empty platforms')),
+              ],
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.filter_list),
+                    const SizedBox(width: 6),
+                    Text(
+                      _filter == 'all'
+                          ? 'Filter'
+                          : _filter == 'games'
+                          ? 'With games'
+                          : 'Empty platforms',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip:
+                  'Switch to ${mode == DisplayMode.grid ? 'List' : 'Grid'}',
+              icon: Icon(
+                mode == DisplayMode.grid
+                    ? Icons.view_list_outlined
+                    : Icons.grid_view_outlined,
+              ),
+              onPressed: () =>
+                  ref
+                      .read(
+                        rommHomeDisplayModeProvider(
+                          widget.instance.id,
+                        ).notifier,
+                      )
+                      .state = mode == DisplayMode.grid
+                  ? DisplayMode.list
+                  : DisplayMode.grid,
+            ),
+          ],
+        ),
+        Expanded(
+          child: _PlatformsView(
+            instance: widget.instance,
+            displayMode: mode,
+            query: _query,
+            filter: _filter,
+          ),
         ),
       ],
     );
@@ -330,7 +451,14 @@ class _RommMainViewState extends ConsumerState<_RommMainView> {
 // ── Platforms view (grid + list) ─────────────────────────────────────────────
 
 class _PlatformsView extends ConsumerWidget {
-  const _PlatformsView({required this.instance, required this.displayMode});
+  final String query;
+  final String filter;
+  const _PlatformsView({
+    required this.instance,
+    required this.displayMode,
+    this.query = '',
+    this.filter = 'all',
+  });
   final Instance instance;
   final DisplayMode displayMode;
 
@@ -361,7 +489,14 @@ class _PlatformsView extends ConsumerWidget {
         ),
       ),
       data: (platforms) {
-        final visible = platforms.where((p) => p.romCount > 0).toList();
+        final visible = platforms
+            .where(
+              (p) =>
+                  p.displayName.toLowerCase().contains(query.toLowerCase()) &&
+                  (filter == 'all' ||
+                      (filter == 'games' ? p.romCount > 0 : p.romCount == 0)),
+            )
+            .toList();
         if (visible.isEmpty) {
           return const Center(
             child: Column(
@@ -387,36 +522,6 @@ class _PlatformsView extends ConsumerWidget {
           color: AppColors.tealPrimary,
           child: CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(
-                child: RomRail(
-                  title: 'Continue Playing',
-                  instance: instance,
-                  romsAsync: ref.watch(rommRecentlyPlayedProvider(instance)),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: RomRail(
-                  title: 'Recently Added',
-                  instance: instance,
-                  romsAsync: ref.watch(rommRecentlyAddedProvider(instance)),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    Spacing.pageHorizontal,
-                    Spacing.s12,
-                    Spacing.pageHorizontal,
-                    0,
-                  ),
-                  child: Text(
-                    'Platforms',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
               if (displayMode == DisplayMode.grid)
                 _PlatformsGrid(platforms: visible, instance: instance, api: api)
               else
@@ -509,8 +614,7 @@ class _PlatformListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg = theme.colorScheme.surface;
 
     final githubSvgUrl =
         'https://raw.githubusercontent.com/rommapp/romm/master/frontend/assets/platforms/${platform.slug}.svg';
@@ -644,6 +748,23 @@ class _RomSearchResults extends ConsumerWidget {
                 Text('No ROMs found'),
               ],
             ),
+          );
+        }
+        if (ref.watch(rommHomeDisplayModeProvider(instance.id)) ==
+            DisplayMode.grid) {
+          return GridView.builder(
+            padding: const EdgeInsets.all(8),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount:
+                  ref.watch(gridColumnsProvider) +
+                  (MediaQuery.sizeOf(context).width >= 600 ? 1 : 0),
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: .62,
+            ),
+            itemCount: roms.length,
+            itemBuilder: (_, i) =>
+                RomGridCard(rom: roms[i], api: api, instance: instance),
           );
         }
         return ListView.separated(

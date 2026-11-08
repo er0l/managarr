@@ -1,3 +1,4 @@
+import '../../settings/providers/ui_prefs_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -19,22 +20,36 @@ import '../api/sonarr_api.dart';
 import '../models/sonarr_options.dart';
 
 /// Persists the display mode (Grid/List) for Sonarr series.
-final sonarrDisplayModeProvider =
-    StateProvider.family<DisplayMode, int>((ref, instanceId) => DisplayMode.grid);
+final sonarrDisplayModeProvider = StateProvider.family<DisplayMode, int>(
+  (ref, instanceId) =>
+      ref.watch(
+            customizationProvider.select((prefs) => prefs['defaultView']),
+          ) ==
+          'list'
+      ? DisplayMode.list
+      : DisplayMode.grid,
+);
 
 /// Search query for Sonarr series.
-final sonarrSearchQueryProvider = StateProvider.family<String, int>((ref, instanceId) => '');
+final sonarrSearchQueryProvider = StateProvider.family<String, int>(
+  (ref, instanceId) => '',
+);
 
 /// Current sort option for Sonarr series.
 final sonarrSortOptionProvider = StateProvider.family<SonarrSortOption, int>(
-    (ref, instanceId) => SonarrSortOption.alphabetical);
+  (ref, instanceId) => SonarrSortOption.alphabetical,
+);
 
 /// Current filter option for Sonarr series.
-final sonarrFilterOptionProvider = StateProvider.family<SonarrFilterOption, int>(
-    (ref, instanceId) => SonarrFilterOption.all);
+final sonarrFilterOptionProvider =
+    StateProvider.family<SonarrFilterOption, int>(
+      (ref, instanceId) => SonarrFilterOption.all,
+    );
 
 /// Whether to sort in ascending order.
-final sonarrSortAscendingProvider = StateProvider.family<bool, int>((ref, instanceId) => true);
+final sonarrSortAscendingProvider = StateProvider.family<bool, int>(
+  (ref, instanceId) => true,
+);
 
 /// Creates a [SonarrApi] scoped to a specific [Instance].
 final sonarrApiProvider = Provider.family<SonarrApi, Instance>((ref, instance) {
@@ -45,118 +60,126 @@ final sonarrApiProvider = Provider.family<SonarrApi, Instance>((ref, instance) {
 /// Fetches all series from Sonarr for [instance].
 final sonarrSeriesProvider = FutureProvider.autoDispose
     .family<List<SonarrSeries>, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getSeries();
-});
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getSeries();
+    });
 
 /// Fetches episodes that don't meet the quality cutoff for [instance].
 final sonarrCutoffUnmetProvider = FutureProvider.autoDispose
     .family<List<SonarrCutoffRecord>, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getCutoffUnmet();
-});
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getCutoffUnmet();
+    });
 
 /// Fetches upcoming episodes (Calendar) from Sonarr for [instance].
 final sonarrCalendarProvider = FutureProvider.autoDispose
     .family<List<SonarrCalendar>, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  final now = DateTime.now();
-  final start = DateTime(now.year, now.month, now.day);
-  final end = start.add(const Duration(days: 30));
-  return api.getCalendar(start, end);
-});
+      final api = ref.watch(sonarrApiProvider(instance));
+      final now = DateTime.now();
+      final start = DateTime(now.year, now.month, now.day);
+      final end = start.add(const Duration(days: 30));
+      return api.getCalendar(start, end);
+    });
 
 /// Fetches current download queue from Sonarr for [instance].
-final sonarrQueueProvider =
-    FutureProvider.autoDispose.family<SonarrQueue, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getQueue();
-});
+final sonarrQueueProvider = FutureProvider.autoDispose
+    .family<SonarrQueue, Instance>((ref, instance) {
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getQueue();
+    });
 
 /// Fetches event history from Sonarr for [instance].
-final sonarrHistoryProvider =
-    FutureProvider.autoDispose.family<SonarrHistory, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getHistory();
-});
+final sonarrHistoryProvider = FutureProvider.autoDispose
+    .family<SonarrHistory, Instance>((ref, instance) {
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getHistory();
+    });
 
 /// Fetches quality profiles from Sonarr for [instance].
 final sonarrQualityProfilesProvider = FutureProvider.autoDispose
     .family<List<SonarrQualityProfile>, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getQualityProfiles();
-});
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getQualityProfiles();
+    });
 
 /// Fetches root folders from Sonarr for [instance].
 final sonarrRootFoldersProvider = FutureProvider.autoDispose
     .family<List<SonarrRootFolder>, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getRootFolders();
-});
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getRootFolders();
+    });
 
 /// Fetches system status from Sonarr for [instance].
 final sonarrSystemStatusProvider = FutureProvider.autoDispose
     .family<SonarrSystemStatus, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getSystemStatus();
-});
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getSystemStatus();
+    });
 
 /// Fetches health check items from Sonarr for [instance].
 final sonarrHealthProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getHealth();
-});
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getHealth();
+    });
 
 /// Fetches disk space info from Sonarr for [instance].
 final sonarrDiskSpaceProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getDiskSpace();
-});
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getDiskSpace();
+    });
 
 /// Fetches tags from Sonarr for [instance].
 final sonarrTagsProvider = FutureProvider.autoDispose
     .family<List<SonarrTag>, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getTags();
-});
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getTags();
+    });
 
 /// Search query for the add-series lookup screen.
-final sonarrLookupQueryProvider =
-    StateProvider.family<String, int>((ref, instanceId) => '');
+final sonarrLookupQueryProvider = StateProvider.family<String, int>(
+  (ref, instanceId) => '',
+);
 
 /// Performs a series lookup against Sonarr for [instance].
 final sonarrLookupResultsProvider = FutureProvider.autoDispose
     .family<List<SonarrSeries>, Instance>((ref, instance) {
-  final query = ref.watch(sonarrLookupQueryProvider(instance.id));
-  if (query.trim().isEmpty) return Future.value([]);
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.lookupSeries(query);
-});
+      final query = ref.watch(sonarrLookupQueryProvider(instance.id));
+      if (query.trim().isEmpty) return Future.value([]);
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.lookupSeries(query);
+    });
 
 /// Fetches episodes for a specific series season.
 final sonarrEpisodesProvider = FutureProvider.autoDispose
-    .family<List<SonarrEpisode>, ({Instance instance, int seriesId, int seasonNumber})>(
-        (ref, args) {
-  final api = ref.watch(sonarrApiProvider(args.instance));
-  return api.getEpisodes(args.seriesId, args.seasonNumber);
-});
+    .family<
+      List<SonarrEpisode>,
+      ({Instance instance, int seriesId, int seasonNumber})
+    >((ref, args) {
+      final api = ref.watch(sonarrApiProvider(args.instance));
+      return api.getEpisodes(args.seriesId, args.seasonNumber);
+    });
 
 /// Fetches releases for a specific series (optionally scoped to a season).
 final sonarrReleasesProvider = FutureProvider.autoDispose
-    .family<List<SonarrRelease>, ({Instance instance, int seriesId, int? seasonNumber, int? episodeId})>(
-        (ref, args) {
-  final api = ref.watch(sonarrApiProvider(args.instance));
-  return api.getReleases(
-    seriesId: args.seriesId,
-    seasonNumber: args.seasonNumber,
-    episodeId: args.episodeId,
-  );
-});
+    .family<
+      List<SonarrRelease>,
+      ({Instance instance, int seriesId, int? seasonNumber, int? episodeId})
+    >((ref, args) {
+      final api = ref.watch(sonarrApiProvider(args.instance));
+      return api.getReleases(
+        seriesId: args.seriesId,
+        seasonNumber: args.seasonNumber,
+        episodeId: args.episodeId,
+      );
+    });
 
 /// A provider that returns a filtered and sorted list of series.
-final sonarrFilteredSeriesProvider = Provider.family<List<SonarrSeries>, Instance>((ref, instance) {
+final sonarrFilteredSeriesProvider = Provider.family<List<SonarrSeries>, Instance>((
+  ref,
+  instance,
+) {
   final seriesAsync = ref.watch(sonarrSeriesProvider(instance));
   final query = ref.watch(sonarrSearchQueryProvider(instance.id)).toLowerCase();
   final sortOption = ref.watch(sonarrSortOptionProvider(instance.id));
@@ -195,14 +218,17 @@ final sonarrFilteredSeriesProvider = Provider.family<List<SonarrSeries>, Instanc
         int compare;
         switch (sortOption) {
           case SonarrSortOption.alphabetical:
-            compare = (a.sortTitle ?? a.title)
-                .toLowerCase()
-                .compareTo((b.sortTitle ?? b.title).toLowerCase());
+            compare = (a.sortTitle ?? a.title).toLowerCase().compareTo(
+              (b.sortTitle ?? b.title).toLowerCase(),
+            );
           case SonarrSortOption.dateAdded:
-            compare = (a.added ?? DateTime(0)).compareTo(b.added ?? DateTime(0));
+            compare = (a.added ?? DateTime(0)).compareTo(
+              b.added ?? DateTime(0),
+            );
           case SonarrSortOption.episodes:
-            compare = (a.statistics?.percentOfEpisodes ?? 0)
-                .compareTo(b.statistics?.percentOfEpisodes ?? 0);
+            compare = (a.statistics?.percentOfEpisodes ?? 0).compareTo(
+              b.statistics?.percentOfEpisodes ?? 0,
+            );
           case SonarrSortOption.network:
             compare = (a.network ?? '').compareTo(b.network ?? '');
           case SonarrSortOption.nextAiring:
@@ -227,10 +253,13 @@ final sonarrFilteredSeriesProvider = Provider.family<List<SonarrSeries>, Instanc
               compare = a.previousAiring!.compareTo(b.previousAiring!);
             }
           case SonarrSortOption.qualityProfile:
-            compare = (a.qualityProfileId ?? 0).compareTo(b.qualityProfileId ?? 0);
+            compare = (a.qualityProfileId ?? 0).compareTo(
+              b.qualityProfileId ?? 0,
+            );
           case SonarrSortOption.size:
-            compare = (a.statistics?.sizeOnDisk ?? 0)
-                .compareTo(b.statistics?.sizeOnDisk ?? 0);
+            compare = (a.statistics?.sizeOnDisk ?? 0).compareTo(
+              b.statistics?.sizeOnDisk ?? 0,
+            );
           case SonarrSortOption.type:
             compare = (a.seriesType ?? '').compareTo(b.seriesType ?? '');
         }
@@ -243,8 +272,8 @@ final sonarrFilteredSeriesProvider = Provider.family<List<SonarrSeries>, Instanc
   );
 });
 
-final sonarrImportListsProvider =
-    FutureProvider.autoDispose.family<List<SonarrImportList>, Instance>((ref, instance) {
-  final api = ref.watch(sonarrApiProvider(instance));
-  return api.getImportLists();
-});
+final sonarrImportListsProvider = FutureProvider.autoDispose
+    .family<List<SonarrImportList>, Instance>((ref, instance) {
+      final api = ref.watch(sonarrApiProvider(instance));
+      return api.getImportLists();
+    });

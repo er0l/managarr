@@ -1,3 +1,4 @@
+import '../../settings/providers/ui_prefs_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -19,8 +20,7 @@ class UnifiedCalendarScreen extends ConsumerStatefulWidget {
       _UnifiedCalendarScreenState();
 }
 
-class _UnifiedCalendarScreenState
-    extends ConsumerState<UnifiedCalendarScreen> {
+class _UnifiedCalendarScreenState extends ConsumerState<UnifiedCalendarScreen> {
   int _monthOffset = 0;
   DateTime? _selectedDate;
 
@@ -68,8 +68,11 @@ class _UnifiedCalendarScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: AppColors.statusOffline),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: AppColors.statusOffline,
+            ),
             const SizedBox(height: 12),
             Text('$e'),
             const SizedBox(height: 8),
@@ -134,10 +137,12 @@ class _ListBody extends StatelessWidget {
     final upcoming = entries.where((e) => !e.date.isBefore(today)).toList();
 
     if (upcoming.isEmpty) {
-      return ListView(children: const [
-        SizedBox(height: 120),
-        Center(child: Text('No upcoming releases')),
-      ]);
+      return ListView(
+        children: const [
+          SizedBox(height: 120),
+          Center(child: Text('No upcoming releases')),
+        ],
+      );
     }
 
     final grouped = <DateTime, List<CalendarEntry>>{};
@@ -184,9 +189,9 @@ class _DateHeader extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.tealDark,
-              fontWeight: FontWeight.bold,
-            ),
+          color: AppColors.tealDark,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -203,8 +208,7 @@ class _EntryTile extends StatelessWidget {
 
     return ListTile(
       onTap: canNavigate ? () => _openEntry(context, entry) : null,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(6),
         child: SizedBox(
@@ -221,8 +225,9 @@ class _EntryTile extends StatelessWidget {
       ),
       title: Text(
         entry.title,
-        style:
-            theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -232,8 +237,9 @@ class _EntryTile extends StatelessWidget {
           if (entry.subtitle != null && entry.subtitle!.isNotEmpty)
             Text(
               entry.subtitle!,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -247,8 +253,9 @@ class _EntryTile extends StatelessWidget {
               Flexible(
                 child: Text(
                   entry.instanceName,
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: AppColors.textSecondary),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -257,8 +264,11 @@ class _EntryTile extends StatelessWidget {
         ],
       ),
       trailing: canNavigate
-          ? const Icon(Icons.chevron_right,
-              size: 20, color: AppColors.textSecondary)
+          ? const Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: AppColors.textSecondary,
+            )
           : null,
     );
   }
@@ -299,10 +309,9 @@ class _TypeBadge extends StatelessWidget {
       ),
       child: Text(
         entry.type == CalendarEntryType.movie ? 'Movie' : 'Episode',
-        style: Theme.of(context)
-            .textTheme
-            .labelSmall
-            ?.copyWith(color: entry.typeColor),
+        style: Theme.of(
+          context,
+        ).textTheme.labelSmall?.copyWith(color: entry.typeColor),
       ),
     );
   }
@@ -327,10 +336,9 @@ class _StatusBadge extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Theme.of(context)
-              .textTheme
-              .labelSmall
-              ?.copyWith(color: Colors.green),
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: Colors.green),
         ),
       );
     }
@@ -348,10 +356,9 @@ class _StatusBadge extends StatelessWidget {
         ),
         child: Text(
           'Unaired',
-          style: Theme.of(context)
-              .textTheme
-              .labelSmall
-              ?.copyWith(color: AppColors.textSecondary),
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary),
         ),
       );
     }
@@ -362,7 +369,7 @@ class _StatusBadge extends StatelessWidget {
 
 // ─── Month table body ─────────────────────────────────────────────────────────
 
-class _MonthBody extends StatelessWidget {
+class _MonthBody extends ConsumerWidget {
   const _MonthBody({
     required this.entries,
     required this.monthStart,
@@ -378,14 +385,16 @@ class _MonthBody extends StatelessWidget {
   final void Function(DateTime, List<CalendarEntry>) onDayTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final byDay = <DateTime, List<CalendarEntry>>{};
     for (final e in entries) {
       byDay.putIfAbsent(e.date, () => []).add(e);
     }
 
-    final firstWeekday = monthStart.weekday; // 1=Mon, 7=Sun
-    final gridStart = monthStart.subtract(Duration(days: firstWeekday - 1));
+    final monday = ref.watch(customizationProvider)['weekStartsMonday'] == true;
+    final gridStart = monthStart.subtract(
+      Duration(days: (monthStart.weekday - (monday ? 1 : 7) + 7) % 7),
+    );
     final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
 
     final weeks = <List<DateTime>>[];
@@ -395,8 +404,9 @@ class _MonthBody extends StatelessWidget {
       weeks.add(List.generate(7, (d) => weekStart.add(Duration(days: d))));
     }
 
-    final selectedEntries =
-        selectedDate != null ? (byDay[selectedDate!] ?? []) : <CalendarEntry>[];
+    final selectedEntries = selectedDate != null
+        ? (byDay[selectedDate!] ?? [])
+        : <CalendarEntry>[];
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -411,10 +421,9 @@ class _MonthBody extends StatelessWidget {
             ),
             Text(
               DateFormat('MMMM yyyy').format(monthStart),
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             IconButton(
               icon: const Icon(Icons.chevron_right),
@@ -427,19 +436,39 @@ class _MonthBody extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             children:
-                const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                    .map((d) => Expanded(
-                          child: Center(
-                            child: Text(
-                              d,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textSecondary,
-                              ),
+                (monday
+                        ? const [
+                            'Mon',
+                            'Tue',
+                            'Wed',
+                            'Thu',
+                            'Fri',
+                            'Sat',
+                            'Sun',
+                          ]
+                        : const [
+                            'Sun',
+                            'Mon',
+                            'Tue',
+                            'Wed',
+                            'Thu',
+                            'Fri',
+                            'Sat',
+                          ])
+                    .map(
+                      (d) => Expanded(
+                        child: Center(
+                          child: Text(
+                            d,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                        ))
+                        ),
+                      ),
+                    )
                     .toList(),
           ),
         ),
@@ -454,19 +483,21 @@ class _MonthBody extends StatelessWidget {
             ),
             defaultVerticalAlignment: TableCellVerticalAlignment.top,
             children: weeks
-                .map((week) => TableRow(
-                      children: week
-                          .map((day) => _DayCell(
-                                day: day,
-                                entries: byDay[day] ?? [],
-                                isCurrentMonth:
-                                    day.month == monthStart.month,
-                                isSelected: day == selectedDate,
-                                onTap: () =>
-                                    onDayTap(day, byDay[day] ?? []),
-                              ))
-                          .toList(),
-                    ))
+                .map(
+                  (week) => TableRow(
+                    children: week
+                        .map(
+                          (day) => _DayCell(
+                            day: day,
+                            entries: byDay[day] ?? [],
+                            isCurrentMonth: day.month == monthStart.month,
+                            isSelected: day == selectedDate,
+                            onTap: () => onDayTap(day, byDay[day] ?? []),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -487,9 +518,9 @@ class _MonthBody extends StatelessWidget {
                   child: Text(
                     DateFormat('EEEE, MMMM d').format(selectedDate!),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: AppColors.tealPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: AppColors.tealPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -512,8 +543,10 @@ class _MonthBody extends StatelessWidget {
   List<Widget> _upcomingPanel(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final upcoming =
-        entries.where((e) => !e.date.isBefore(today)).take(15).toList();
+    final upcoming = entries
+        .where((e) => !e.date.isBefore(today))
+        .take(15)
+        .toList();
     if (upcoming.isEmpty) return const [];
 
     final widgets = <Widget>[const SizedBox(height: 12)];
@@ -521,18 +554,20 @@ class _MonthBody extends StatelessWidget {
     for (final entry in upcoming) {
       if (entry.date != lastDate) {
         lastDate = entry.date;
-        widgets.add(Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-          child: Text(
-            entry.date == today
-                ? 'Today'
-                : DateFormat('EEEE, MMMM d').format(entry.date),
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppColors.tealPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+            child: Text(
+              entry.date == today
+                  ? 'Today'
+                  : DateFormat('EEEE, MMMM d').format(entry.date),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: AppColors.tealPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        ));
+        );
       }
       widgets.add(_EntryTile(entry: entry));
     }
@@ -566,9 +601,7 @@ class _DayCell extends StatelessWidget {
     return InkWell(
       onTap: entries.isNotEmpty ? onTap : null,
       child: Container(
-        color: isSelected
-            ? AppColors.tealPrimary.withAlpha(15)
-            : null,
+        color: isSelected ? AppColors.tealPrimary.withAlpha(15) : null,
         padding: const EdgeInsets.all(3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -589,13 +622,12 @@ class _DayCell extends StatelessWidget {
                 '${day.day}',
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight:
-                      isToday ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                   color: isToday
                       ? Colors.white
                       : isCurrentMonth
-                          ? null
-                          : AppColors.textSecondary.withAlpha(80),
+                      ? null
+                      : AppColors.textSecondary.withAlpha(80),
                 ),
               ),
             ),
@@ -603,8 +635,7 @@ class _DayCell extends StatelessWidget {
             for (int i = 0; i < entries.length && i < maxVisible; i++)
               Container(
                 margin: const EdgeInsets.only(top: 2),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 2, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: entries[i].typeColor.withAlpha(200),

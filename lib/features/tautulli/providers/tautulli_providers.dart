@@ -1,3 +1,4 @@
+import '../../settings/providers/ui_prefs_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -13,155 +14,172 @@ import '../api/models/tautulli_user.dart';
 import '../api/models/tautulli_user_detail.dart';
 import '../api/tautulli_api.dart';
 
-final tautulliApiProvider =
-    Provider.family<TautulliApi, Instance>((ref, instance) {
+final tautulliApiProvider = Provider.family<TautulliApi, Instance>((
+  ref,
+  instance,
+) {
   final useLocal = ref.watch(useLocalUrlProvider(instance.id));
   final localUrl = instance.localUrl;
-  final effectiveUrl =
-      (useLocal && localUrl != null && localUrl.isNotEmpty)
-          ? localUrl
-          : instance.baseUrl;
-  return TautulliApi.fromHost(effectiveUrl, instance.apiKey,
-      proxyAuth: proxyAuthFor(instance, effectiveUrl));
+  final effectiveUrl = (useLocal && localUrl != null && localUrl.isNotEmpty)
+      ? localUrl
+      : instance.baseUrl;
+  return TautulliApi.fromHost(
+    effectiveUrl,
+    instance.apiKey,
+    proxyAuth: proxyAuthFor(instance, effectiveUrl),
+  );
 });
 
 // ─── Existing providers ───────────────────────────────────────────────────
 
-final tautulliActivityProvider =
-    FutureProvider.autoDispose.family<TautulliActivity, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getActivity();
-});
+final tautulliActivityProvider = FutureProvider.autoDispose
+    .family<TautulliActivity, Instance>((ref, instance) async {
+      return ref.watch(tautulliApiProvider(instance)).getActivity();
+    });
 
-final tautulliHistoryProvider =
-    FutureProvider.autoDispose.family<TautulliHistory, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getHistory();
-});
+final tautulliHistoryProvider = FutureProvider.autoDispose
+    .family<TautulliHistory, Instance>((ref, instance) async {
+      return ref
+          .watch(tautulliApiProvider(instance))
+          .getHistory(
+            length: ref.watch(customizationProvider)['historyPageSize'] as int,
+          );
+    });
 
-final tautulliLibrariesProvider =
-    FutureProvider.autoDispose.family<List<TautulliLibrary>, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getLibraries();
-});
+final tautulliLibrariesProvider = FutureProvider.autoDispose
+    .family<List<TautulliLibrary>, Instance>((ref, instance) async {
+      return ref.watch(tautulliApiProvider(instance)).getLibraries();
+    });
 
-final tautulliUsersProvider =
-    FutureProvider.autoDispose.family<List<TautulliUser>, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getUsers();
-});
+final tautulliUsersProvider = FutureProvider.autoDispose
+    .family<List<TautulliUser>, Instance>((ref, instance) async {
+      return ref.watch(tautulliApiProvider(instance)).getUsers();
+    });
 
 // ─── New providers ────────────────────────────────────────────────────────
 
-final tautulliRecentlyAddedProvider =
-    FutureProvider.autoDispose.family<List<TautulliMediaItem>, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getRecentlyAdded();
-});
+final tautulliRecentlyAddedProvider = FutureProvider.autoDispose
+    .family<List<TautulliMediaItem>, Instance>((ref, instance) async {
+      return ref.watch(tautulliApiProvider(instance)).getRecentlyAdded();
+    });
 
-final tautulliHomeStatsProvider =
-    FutureProvider.autoDispose.family<TautulliHomeStats, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getHomeStats();
-});
+final tautulliHomeStatsProvider = FutureProvider.autoDispose
+    .family<TautulliHomeStats, Instance>((ref, instance) async {
+      return ref.watch(tautulliApiProvider(instance)).getHomeStats();
+    });
 
 typedef TautulliUserKey = ({Instance instance, int userId});
 
-final tautulliUserDetailProvider =
-    FutureProvider.autoDispose.family<TautulliUserDetail, TautulliUserKey>(
-        (ref, key) async {
-  return ref
-      .watch(tautulliApiProvider(key.instance))
-      .getUserDetail(key.userId);
-});
+final tautulliUserDetailProvider = FutureProvider.autoDispose
+    .family<TautulliUserDetail, TautulliUserKey>((ref, key) async {
+      return ref
+          .watch(tautulliApiProvider(key.instance))
+          .getUserDetail(key.userId);
+    });
 
-final tautulliUserHistoryProvider =
-    FutureProvider.autoDispose.family<TautulliHistory, TautulliUserKey>(
-        (ref, key) async {
-  return ref
-      .watch(tautulliApiProvider(key.instance))
-      .getHistory(userId: key.userId);
-});
+final tautulliUserHistoryProvider = FutureProvider.autoDispose
+    .family<TautulliHistory, TautulliUserKey>((ref, key) async {
+      return ref
+          .watch(tautulliApiProvider(key.instance))
+          .getHistory(
+            userId: key.userId,
+            length: ref.watch(customizationProvider)['historyPageSize'] as int,
+          );
+    });
 
 typedef TautulliLibraryKey = ({Instance instance, int sectionId});
 
 final tautulliLibraryMediaProvider = FutureProvider.autoDispose
     .family<List<TautulliMediaItem>, TautulliLibraryKey>((ref, key) async {
-  return ref
-      .watch(tautulliApiProvider(key.instance))
-      .getLibraryMediaInfo(key.sectionId);
-});
+      return ref
+          .watch(tautulliApiProvider(key.instance))
+          .getLibraryMediaInfo(key.sectionId);
+    });
 
-final tautulliLogsProvider =
-    FutureProvider.autoDispose.family<List<TautulliLogEntry>, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getLogs();
-});
+final tautulliLogsProvider = FutureProvider.autoDispose
+    .family<List<TautulliLogEntry>, Instance>((ref, instance) async {
+      return ref.watch(tautulliApiProvider(instance)).getLogs();
+    });
 
-final tautulliSearchQueryProvider =
-    StateProvider.family<String, int>((ref, instanceId) => '');
+final tautulliSearchQueryProvider = StateProvider.family<String, int>(
+  (ref, instanceId) => '',
+);
 
 typedef TautulliSearchKey = ({Instance instance, String query});
 
 final tautulliLibrarySearchProvider = FutureProvider.autoDispose
-    .family<Map<String, List<TautulliMediaItem>>, TautulliSearchKey>(
-        (ref, args) async {
-  if (args.query.trim().isEmpty) return {};
-  return ref.watch(tautulliApiProvider(args.instance)).librarySearch(args.query);
-});
+    .family<Map<String, List<TautulliMediaItem>>, TautulliSearchKey>((
+      ref,
+      args,
+    ) async {
+      if (args.query.trim().isEmpty) return {};
+      return ref
+          .watch(tautulliApiProvider(args.instance))
+          .librarySearch(args.query);
+    });
 
 // ─── Graph providers ──────────────────────────────────────────────────────
 
-final tautulliGraphPlaysByDateProvider =
-    FutureProvider.autoDispose.family<TautulliGraphData, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getGraphPlaysByDate();
-});
+final tautulliGraphPlaysByDateProvider = FutureProvider.autoDispose
+    .family<TautulliGraphData, Instance>((ref, instance) async {
+      return ref.watch(tautulliApiProvider(instance)).getGraphPlaysByDate();
+    });
 
-final tautulliGraphPlaysByMonthProvider =
-    FutureProvider.autoDispose.family<TautulliGraphData, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getGraphPlaysByMonth();
-});
+final tautulliGraphPlaysByMonthProvider = FutureProvider.autoDispose
+    .family<TautulliGraphData, Instance>((ref, instance) async {
+      return ref.watch(tautulliApiProvider(instance)).getGraphPlaysByMonth();
+    });
 
-final tautulliGraphPlaysByDayOfWeekProvider =
-    FutureProvider.autoDispose.family<TautulliGraphData, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getGraphPlaysByDayOfWeek();
-});
+final tautulliGraphPlaysByDayOfWeekProvider = FutureProvider.autoDispose
+    .family<TautulliGraphData, Instance>((ref, instance) async {
+      return ref
+          .watch(tautulliApiProvider(instance))
+          .getGraphPlaysByDayOfWeek();
+    });
 
-final tautulliGraphPlaysByTopPlatformsProvider =
-    FutureProvider.autoDispose.family<TautulliGraphData, Instance>(
-        (ref, instance) async {
-  return ref
-      .watch(tautulliApiProvider(instance))
-      .getGraphPlaysByTopPlatforms();
-});
+final tautulliGraphPlaysByTopPlatformsProvider = FutureProvider.autoDispose
+    .family<TautulliGraphData, Instance>((ref, instance) async {
+      return ref
+          .watch(tautulliApiProvider(instance))
+          .getGraphPlaysByTopPlatforms();
+    });
 
-final tautulliGraphPlaysByTopUsersProvider =
-    FutureProvider.autoDispose.family<TautulliGraphData, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getGraphPlaysByTopUsers();
-});
+final tautulliGraphPlaysByTopUsersProvider = FutureProvider.autoDispose
+    .family<TautulliGraphData, Instance>((ref, instance) async {
+      return ref.watch(tautulliApiProvider(instance)).getGraphPlaysByTopUsers();
+    });
 
-final tautulliGraphStreamTypeByDateProvider =
-    FutureProvider.autoDispose.family<TautulliGraphData, Instance>(
-        (ref, instance) async {
-  return ref.watch(tautulliApiProvider(instance)).getGraphStreamTypeByDate();
-});
+final tautulliGraphStreamTypeByDateProvider = FutureProvider.autoDispose
+    .family<TautulliGraphData, Instance>((ref, instance) async {
+      return ref
+          .watch(tautulliApiProvider(instance))
+          .getGraphStreamTypeByDate();
+    });
 
-final tautulliGraphStreamTypeByTopPlatformsProvider =
-    FutureProvider.autoDispose.family<TautulliGraphData, Instance>(
-        (ref, instance) async {
-  return ref
-      .watch(tautulliApiProvider(instance))
-      .getGraphStreamTypeByTopPlatforms();
-});
+final tautulliGraphStreamTypeByTopPlatformsProvider = FutureProvider.autoDispose
+    .family<TautulliGraphData, Instance>((ref, instance) async {
+      return ref
+          .watch(tautulliApiProvider(instance))
+          .getGraphStreamTypeByTopPlatforms();
+    });
 
-final tautulliGraphStreamTypeByTopUsersProvider =
-    FutureProvider.autoDispose.family<TautulliGraphData, Instance>(
-        (ref, instance) async {
-  return ref
-      .watch(tautulliApiProvider(instance))
-      .getGraphStreamTypeByTopUsers();
-});
+final tautulliGraphStreamTypeByTopUsersProvider = FutureProvider.autoDispose
+    .family<TautulliGraphData, Instance>((ref, instance) async {
+      return ref
+          .watch(tautulliApiProvider(instance))
+          .getGraphStreamTypeByTopUsers();
+    });
+
+typedef TautulliMetadataKey = ({Instance instance, String ratingKey});
+final tautulliMetadataProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, TautulliMetadataKey>(
+      (ref, key) => ref
+          .watch(tautulliApiProvider(key.instance))
+          .getMetadata(key.ratingKey),
+    );
+typedef TautulliStreamKey = ({Instance instance, int rowId});
+final tautulliStreamDataProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, TautulliStreamKey>(
+      (ref, key) =>
+          ref.watch(tautulliApiProvider(key.instance)).getStreamData(key.rowId),
+    );

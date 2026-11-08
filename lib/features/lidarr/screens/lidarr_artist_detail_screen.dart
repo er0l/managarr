@@ -283,8 +283,6 @@ class _LidarrArtistDetailScreenState
                   ],
                 ),
               ],
-
-              const ModuleHomeButton(onImage: true),
             ],
           ),
 

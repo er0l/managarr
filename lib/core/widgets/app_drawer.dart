@@ -8,6 +8,7 @@ import '../router/module_routes.dart';
 import '../theme/app_colors.dart';
 import 'service_avatar.dart';
 import 'status_dot.dart';
+import 'module_app_bar.dart';
 import '../../features/dashboard/providers/health_check_provider.dart';
 import '../../features/settings/providers/instances_provider.dart';
 import '../../features/search/screens/global_search_screen.dart';
@@ -31,7 +32,7 @@ class AppDrawer extends ConsumerWidget {
           // ── Header ─────────────────────────────────────────────────────
           Container(
             color: AppColors.tealPrimary,
-            padding: EdgeInsets.fromLTRB(16, top + 14, 16, 14),
+            padding: EdgeInsets.fromLTRB(12, top + 12, 4, 12),
             width: double.infinity,
             child: Row(
               children: [
@@ -43,17 +44,49 @@ class AppDrawer extends ConsumerWidget {
                       const Icon(Icons.radar, size: 32, color: Colors.white),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'managarr',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'managarr',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                ),
+                IconButton(
+                  tooltip: 'Search',
+                  icon: const Icon(Icons.search, color: Colors.white),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const GlobalSearchScreen(),
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  tooltip: 'Settings',
+                  icon: const Icon(
+                    Icons.settings_outlined,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.go('/settings');
+                  },
                 ),
               ],
             ),
           ),
 
+          ListTile(
+            leading: const Icon(Icons.dashboard_outlined),
+            title: const Text('Dashboard'),
+            onTap: () => returnToDashboard(context),
+          ),
+          const Divider(height: 1),
           // ── Modules ─────────────────────────────────────────────────────
           Expanded(
             child: ListView(
@@ -61,50 +94,16 @@ class AppDrawer extends ConsumerWidget {
               children: [
                 for (final type in ServiceType.values)
                   if (grouped[type]?.isNotEmpty ?? false)
-                    ..._moduleEntries(context, ref, theme, type,
-                        grouped[type]!),
+                    ..._moduleEntries(
+                      context,
+                      ref,
+                      theme,
+                      type,
+                      grouped[type]!,
+                    ),
               ],
             ),
           ),
-
-          // ── Footer ─────────────────────────────────────────────────────
-          const Divider(height: 1),
-          ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
-            leading: const Icon(Icons.dashboard_outlined, size: 20),
-            title: const Text('Dashboard'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/');
-            },
-          ),
-          ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
-            leading: const Icon(Icons.search, size: 20),
-            title: const Text('Search'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const GlobalSearchScreen(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
-            leading: const Icon(Icons.settings_outlined, size: 20),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/settings');
-            },
-          ),
-          const SizedBox(height: 8),
         ],
       ),
     );
@@ -136,8 +135,9 @@ class AppDrawer extends ConsumerWidget {
           leading: ServiceAvatar(type: type, size: 32),
           title: Text(
             type.displayName,
-            style: theme.textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           subtitle: Text(
             instance.name,
@@ -159,8 +159,9 @@ class AppDrawer extends ConsumerWidget {
         leading: ServiceAvatar(type: type, size: 32),
         title: Text(
           type.displayName,
-          style: theme.textTheme.titleSmall
-              ?.copyWith(fontWeight: FontWeight.w600),
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       for (final instance in instances)

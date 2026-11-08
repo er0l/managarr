@@ -436,8 +436,6 @@ class _SonarrSeriesDetailScreenState
                   ],
                 ),
               ],
-
-              const ModuleHomeButton(onImage: true),
             ],
           ),
 

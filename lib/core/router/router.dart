@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/calendar/providers/calendar_providers.dart';
 import '../../features/calendar/screens/unified_calendar_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
+import '../../features/dashboard/widgets/module_launcher.dart';
 import '../../features/seer/screens/seer_home_screen.dart';
 import '../../features/prowlarr/screens/prowlarr_home_screen.dart';
 import '../../features/radarr/screens/radarr_home_screen.dart';
@@ -128,7 +129,7 @@ class _AppShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   List<Widget> _actionsForTab(BuildContext context, WidgetRef ref, int index) {
-    if (index != 2) return [];
+    if (index != 3) return [];
     return [
       PopupMenuButton<_SettingsAction>(
         icon: const Icon(Icons.more_vert),
@@ -187,7 +188,7 @@ class _AppShell extends ConsumerWidget {
         actions: [
           ..._actionsForTab(context, ref, navigationShell.currentIndex),
           // Calendar: month ↔ list view
-          if (navigationShell.currentIndex == 1)
+          if (navigationShell.currentIndex == 2)
             IconButton(
               icon: Icon(
                 ref.watch(calendarViewModeProvider)
@@ -234,6 +235,11 @@ class _AppShell extends ConsumerWidget {
             label: 'Dashboard',
           ),
           NavigationDestination(
+            icon: Icon(Icons.apps_outlined),
+            selectedIcon: Icon(Icons.apps),
+            label: 'Modules',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
             label: 'Calendar',
@@ -268,6 +274,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/',
                 builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/modules',
+                builder: (context, state) => const ModulesScreen(),
               ),
             ],
           ),
@@ -306,7 +320,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // Legacy tab location — the Services tab was merged into the drawer.
-      GoRoute(path: '/services', redirect: (_, _) => '/'),
+      GoRoute(path: '/services', redirect: (_, _) => '/modules'),
 
       // ── Module routes (outside shell — full-screen) ────────────────────
       GoRoute(

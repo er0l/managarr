@@ -33,8 +33,10 @@ class ManagarrApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Managarr',
       theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode,
+      darkTheme: themeMode == AppThemeMode.amoled
+          ? AppTheme.amoled
+          : AppTheme.dark,
+      themeMode: themeMode.materialMode,
       routerConfig: router,
     );
   }

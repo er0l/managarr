@@ -1,3 +1,4 @@
+import '../../settings/providers/ui_prefs_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -15,10 +16,9 @@ import '../api/romm_api.dart';
 final rommApiProvider = Provider.family<RommApi, Instance>((ref, instance) {
   final useLocal = ref.watch(useLocalUrlProvider(instance.id));
   final localUrl = instance.localUrl;
-  final effectiveUrl =
-      (useLocal && localUrl != null && localUrl.isNotEmpty)
-          ? localUrl
-          : instance.baseUrl;
+  final effectiveUrl = (useLocal && localUrl != null && localUrl.isNotEmpty)
+      ? localUrl
+      : instance.baseUrl;
   return RommApi.fromHost(effectiveUrl, instance.apiKey);
 });
 
@@ -29,35 +29,48 @@ final rommApiProvider = Provider.family<RommApi, Instance>((ref, instance) {
 // ---------------------------------------------------------------------------
 
 final rommPlatformViewModeProvider = StateProvider<DisplayMode>(
-  (ref) => DisplayMode.grid,
+  (ref) =>
+      ref.watch(
+            customizationProvider.select((prefs) => prefs['defaultView']),
+          ) ==
+          'list'
+      ? DisplayMode.list
+      : DisplayMode.grid,
 );
 
 // Home-screen view mode (platforms list) — per instance.
-final rommHomeDisplayModeProvider =
-    StateProvider.family<DisplayMode, int>((ref, _) => DisplayMode.grid);
+final rommHomeDisplayModeProvider = StateProvider.family<DisplayMode, int>(
+  (ref, _) =>
+      ref.watch(
+            customizationProvider.select((prefs) => prefs['defaultView']),
+          ) ==
+          'list'
+      ? DisplayMode.list
+      : DisplayMode.grid,
+);
 
 // Home-screen active search filters — per instance.
-final rommHomeFiltersProvider =
-    StateProvider.family<RommSearchFilters, int>(
-        (ref, _) => const RommSearchFilters());
+final rommHomeFiltersProvider = StateProvider.family<RommSearchFilters, int>(
+  (ref, _) => const RommSearchFilters(),
+);
 
 // ---------------------------------------------------------------------------
 // Platforms
 // ---------------------------------------------------------------------------
 
-final rommPlatformsProvider =
-    FutureProvider.autoDispose.family<List<RommPlatform>, Instance>(
-        (ref, instance) =>
-            ref.watch(rommApiProvider(instance)).getPlatforms());
+final rommPlatformsProvider = FutureProvider.autoDispose
+    .family<List<RommPlatform>, Instance>(
+      (ref, instance) => ref.watch(rommApiProvider(instance)).getPlatforms(),
+    );
 
 // ---------------------------------------------------------------------------
 // Collections
 // ---------------------------------------------------------------------------
 
-final rommCollectionsProvider =
-    FutureProvider.autoDispose.family<List<RommCollection>, Instance>(
-        (ref, instance) =>
-            ref.watch(rommApiProvider(instance)).getCollections());
+final rommCollectionsProvider = FutureProvider.autoDispose
+    .family<List<RommCollection>, Instance>(
+      (ref, instance) => ref.watch(rommApiProvider(instance)).getCollections(),
+    );
 
 // ---------------------------------------------------------------------------
 // ROMs — platform browsing
@@ -67,12 +80,12 @@ typedef RommRomsKey = ({Instance instance, int platformId, String searchTerm});
 
 final rommRomsProvider = FutureProvider.autoDispose
     .family<List<RommRom>, RommRomsKey>((ref, key) {
-  final api = ref.watch(rommApiProvider(key.instance));
-  return api.getRoms(
-    key.platformId,
-    searchTerm: key.searchTerm.isEmpty ? null : key.searchTerm,
-  );
-});
+      final api = ref.watch(rommApiProvider(key.instance));
+      return api.getRoms(
+        key.platformId,
+        searchTerm: key.searchTerm.isEmpty ? null : key.searchTerm,
+      );
+    });
 
 // ---------------------------------------------------------------------------
 // ROMs — collection browsing
@@ -81,17 +94,17 @@ final rommRomsProvider = FutureProvider.autoDispose
 typedef RommCollectionRomsKey = ({
   Instance instance,
   int collectionId,
-  String searchTerm
+  String searchTerm,
 });
 
 final rommCollectionRomsProvider = FutureProvider.autoDispose
     .family<List<RommRom>, RommCollectionRomsKey>((ref, key) {
-  final api = ref.watch(rommApiProvider(key.instance));
-  return api.getCollectionRoms(
-    key.collectionId,
-    searchTerm: key.searchTerm.isEmpty ? null : key.searchTerm,
-  );
-});
+      final api = ref.watch(rommApiProvider(key.instance));
+      return api.getCollectionRoms(
+        key.collectionId,
+        searchTerm: key.searchTerm.isEmpty ? null : key.searchTerm,
+      );
+    });
 
 // ---------------------------------------------------------------------------
 // ROMs — global search with filters
@@ -105,12 +118,12 @@ typedef RommSearchKey = ({
 
 final rommSearchProvider = FutureProvider.autoDispose
     .family<List<RommRom>, RommSearchKey>((ref, key) {
-  final api = ref.watch(rommApiProvider(key.instance));
-  return api.searchRoms(
-    key.searchTerm.isEmpty ? null : key.searchTerm,
-    key.filters,
-  );
-});
+      final api = ref.watch(rommApiProvider(key.instance));
+      return api.searchRoms(
+        key.searchTerm.isEmpty ? null : key.searchTerm,
+        key.filters,
+      );
+    });
 
 // ---------------------------------------------------------------------------
 // ROM detail
@@ -118,40 +131,44 @@ final rommSearchProvider = FutureProvider.autoDispose
 
 final rommRomDetailProvider = FutureProvider.autoDispose
     .family<RommRom, ({Instance instance, int romId})>(
-        (ref, key) =>
-            ref.watch(rommApiProvider(key.instance)).getRomDetail(key.romId));
+      (ref, key) =>
+          ref.watch(rommApiProvider(key.instance)).getRomDetail(key.romId),
+    );
 
 // ---------------------------------------------------------------------------
 // Available filters
 // ---------------------------------------------------------------------------
 
-final rommAvailableFiltersProvider =
-    FutureProvider.autoDispose.family<RommAvailableFilters, Instance>(
-        (ref, instance) =>
-            ref.watch(rommApiProvider(instance)).getAvailableFilters());
+final rommAvailableFiltersProvider = FutureProvider.autoDispose
+    .family<RommAvailableFilters, Instance>(
+      (ref, instance) =>
+          ref.watch(rommApiProvider(instance)).getAvailableFilters(),
+    );
 
 // ---------------------------------------------------------------------------
 // Stats
 // ---------------------------------------------------------------------------
 
-final rommStatsProvider =
-    FutureProvider.autoDispose.family<RommStats, Instance>(
-        (ref, instance) =>
-            ref.watch(rommApiProvider(instance)).getStats());
+final rommStatsProvider = FutureProvider.autoDispose
+    .family<RommStats, Instance>(
+      (ref, instance) => ref.watch(rommApiProvider(instance)).getStats(),
+    );
 
 // ---------------------------------------------------------------------------
 // Home rails
 // ---------------------------------------------------------------------------
 
-final rommRecentlyAddedProvider =
-    FutureProvider.autoDispose.family<List<RommRom>, Instance>(
-        (ref, instance) =>
-            ref.watch(rommApiProvider(instance)).getRecentlyAdded());
+final rommRecentlyAddedProvider = FutureProvider.autoDispose
+    .family<List<RommRom>, Instance>(
+      (ref, instance) =>
+          ref.watch(rommApiProvider(instance)).getRecentlyAdded(),
+    );
 
-final rommRecentlyPlayedProvider =
-    FutureProvider.autoDispose.family<List<RommRom>, Instance>(
-        (ref, instance) =>
-            ref.watch(rommApiProvider(instance)).getRecentlyPlayed());
+final rommRecentlyPlayedProvider = FutureProvider.autoDispose
+    .family<List<RommRom>, Instance>(
+      (ref, instance) =>
+          ref.watch(rommApiProvider(instance)).getRecentlyPlayed(),
+    );
 
 // ---------------------------------------------------------------------------
 // Virtual collections
@@ -161,9 +178,10 @@ typedef RommVirtualCollectionsKey = ({Instance instance, String type});
 
 final rommVirtualCollectionsProvider = FutureProvider.autoDispose
     .family<List<RommVirtualCollection>, RommVirtualCollectionsKey>(
-        (ref, key) => ref
-            .watch(rommApiProvider(key.instance))
-            .getVirtualCollections(key.type));
+      (ref, key) => ref
+          .watch(rommApiProvider(key.instance))
+          .getVirtualCollections(key.type),
+    );
 
 typedef RommVirtualRomsKey = ({
   Instance instance,
@@ -173,9 +191,9 @@ typedef RommVirtualRomsKey = ({
 
 final rommVirtualCollectionRomsProvider = FutureProvider.autoDispose
     .family<List<RommRom>, RommVirtualRomsKey>((ref, key) {
-  final api = ref.watch(rommApiProvider(key.instance));
-  return api.getVirtualCollectionRoms(
-    key.virtualCollectionId,
-    searchTerm: key.searchTerm.isEmpty ? null : key.searchTerm,
-  );
-});
+      final api = ref.watch(rommApiProvider(key.instance));
+      return api.getVirtualCollectionRoms(
+        key.virtualCollectionId,
+        searchTerm: key.searchTerm.isEmpty ? null : key.searchTerm,
+      );
+    });

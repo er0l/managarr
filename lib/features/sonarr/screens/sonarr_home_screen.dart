@@ -790,7 +790,7 @@ class _SeriesTile extends ConsumerWidget {
         .map((p) => p.name)
         .firstOrNull;
 
-    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg = theme.colorScheme.surface;
 
     final sizeOnDisk = series.statistics?.sizeOnDisk ?? 0;
     final episodeFileCount = series.statistics?.episodeFileCount ?? 0;

@@ -12,6 +12,7 @@ import '../../radarr/providers/radarr_providers.dart';
 import '../../rtorrent/providers/rtorrent_providers.dart';
 import '../../seer/providers/seer_providers.dart';
 import '../../settings/providers/instances_provider.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import '../../sonarr/providers/sonarr_providers.dart';
 import '../../tautulli/providers/tautulli_providers.dart';
 import '../models/health_result.dart';
@@ -19,7 +20,6 @@ import '../providers/health_check_provider.dart';
 import '../widgets/sections/downloads_section.dart';
 import '../widgets/sections/now_playing_section.dart';
 import '../widgets/sections/requests_section.dart';
-import '../widgets/module_launcher.dart';
 import '../widgets/sections/upcoming_section.dart';
 
 /// Content-hub dashboard: module launcher on top, followed by
@@ -63,6 +63,7 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final instancesAsync = ref.watch(instancesProvider);
+    final prefs = ref.watch(customizationProvider);
 
     return instancesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -86,11 +87,15 @@ class DashboardScreen extends ConsumerWidget {
                     bottom: Spacing.s24,
                   ),
                   children: [
-                    ModuleLauncher(instances: enabled),
-                    NowPlayingSection(instances: ofType(ServiceType.tautulli)),
-                    const DownloadsSection(),
-                    const UpcomingSection(),
-                    RequestsSection(instances: ofType(ServiceType.seer)),
+                    if (prefs['showNowPlaying'] == true)
+                      NowPlayingSection(
+                        instances: ofType(ServiceType.tautulli),
+                      ),
+                    if (prefs['showDownloads'] == true)
+                      const DownloadsSection(),
+                    if (prefs['showUpcoming'] == true) const UpcomingSection(),
+                    if (prefs['showRequests'] == true)
+                      RequestsSection(instances: ofType(ServiceType.seer)),
                   ],
                 ),
         );

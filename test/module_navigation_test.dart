@@ -131,7 +131,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('History'));
       expect(action, 'history');
-      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Home'), findsNothing);
       expect(find.byType(NavigationBar), findsOneWidget);
       await tester.tap(find.byType(SwitchListTile));
       await tester.pumpAndSettle();
@@ -145,7 +145,7 @@ void main() {
 
   for (final direct in [false, true]) {
     testWidgets(
-      'Home clears nested routes ${direct ? 'from direct module' : 'when launched from Calendar'}',
+      'Dashboard in the drawer clears nested routes ${direct ? 'from direct module' : 'when launched from Calendar'}',
       (tester) async {
         final router = _router(initial: '/calendar', directModule: direct);
         addTearDown(router.dispose);
@@ -161,7 +161,13 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Open nested detail'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Home'));
+        await tester.tap(find.byType(ModuleBackButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(ModuleBackButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Switch module or instance'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Dashboard'));
         await tester.pumpAndSettle();
         expect(find.text('Dashboard modules'), findsOneWidget);
         expect(router.routeInformationProvider.value.uri.path, '/');
@@ -257,7 +263,7 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          expect(find.text('Home'), findsOneWidget);
+          expect(find.text('Home'), findsNothing);
           expect(tester.takeException(), isNull);
         }
       },

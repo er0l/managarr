@@ -8,30 +8,6 @@ void returnToDashboard(BuildContext context) {
   router.go('/');
 }
 
-class ModuleHomeButton extends StatelessWidget {
-  const ModuleHomeButton({super.key, this.onImage = false});
-  final bool onImage;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: TextButton.icon(
-        onPressed: () => returnToDashboard(context),
-        style: TextButton.styleFrom(
-          foregroundColor: onImage ? Colors.white : colors.primary,
-          backgroundColor: onImage ? Colors.black54 : colors.primaryContainer,
-          minimumSize: const Size(76, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-        ),
-        icon: const Icon(Icons.home_outlined, size: 20),
-        label: const Text('Home'),
-      ),
-    );
-  }
-}
-
 class ModuleBackButton extends StatelessWidget {
   const ModuleBackButton({super.key, this.onImage = false});
   final bool onImage;
@@ -83,7 +59,7 @@ class ModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       leading: leading ?? const ModuleBackButton(),
       title: title,
-      actions: [...actions, const ModuleHomeButton()],
+      actions: actions,
       bottom: bottom,
     );
   }

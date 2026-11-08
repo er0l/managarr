@@ -123,7 +123,6 @@ class _RadarrAddMovieDetailScreenState
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            actions: [const ModuleHomeButton(onImage: true)],
           ),
           SliverToBoxAdapter(
             child: Padding(

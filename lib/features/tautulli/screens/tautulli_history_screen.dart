@@ -3,203 +3,233 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/module_app_bar.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import '../api/models/tautulli_history.dart';
 import '../providers/tautulli_providers.dart';
+import '../widgets/tautulli_artwork_card.dart';
+import 'tautulli_media_detail_screen.dart';
+import 'tautulli_user_detail_screen.dart';
+
+String historyDate(DateTime? date, bool use24Hour) => date == null
+    ? 'Unknown date'
+    : DateFormat(
+        use24Hour ? 'MMM d, y · HH:mm' : 'MMM d, y · h:mm a',
+      ).format(date);
 
 class TautulliHistoryScreen extends ConsumerWidget {
   const TautulliHistoryScreen({super.key, required this.instance});
-
   final Instance instance;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(tautulliHistoryProvider(instance));
-
-    return historyAsync.when(
+    final history = ref.watch(tautulliHistoryProvider(instance));
+    final use24 = ref.watch(customizationProvider)['use24HourTime'] == true;
+    return history.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Center(child: Text('Error: $e')),
-      data: (history) {
-        return RefreshIndicator(
-          color: AppColors.tealPrimary,
-          onRefresh: () async =>
-              ref.invalidate(tautulliHistoryProvider(instance)),
-          child: ListView.separated(
-            itemCount: history.items.length,
-            separatorBuilder: (_, i) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final item = history.items[index];
-              final dateStr = item.stoppedAt != null
-                  ? DateFormat.MMMd().add_Hm().format(item.stoppedAt!)
-                  : 'Unknown';
-
-              final displayTitle = _buildDisplayTitle(item);
-              return ListTile(
-                onTap: () => _showHistoryDetail(context, item),
-                title: Text(
-                  displayTitle,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  '${item.friendlyName ?? item.user ?? 'Unknown'} • $dateStr',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                trailing: Text(
-                  '${item.percentComplete}%',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: item.percentComplete >= 90
-                            ? AppColors.statusOnline
-                            : AppColors.statusWarning,
-                      ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  String _buildDisplayTitle(TautulliHistoryItem item) {
-    final title = item.title ?? 'Unknown';
-    if (item.grandparentTitle != null && item.grandparentTitle!.isNotEmpty) {
-      return '${item.grandparentTitle} – $title';
-    }
-    return title;
-  }
-
-  void _showHistoryDetail(BuildContext context, TautulliHistoryItem item) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => _HistoryDetailSheet(item: item),
-    );
-  }
-}
-
-class _HistoryDetailSheet extends StatelessWidget {
-  const _HistoryDetailSheet({required this.item});
-  final TautulliHistoryItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final stoppedStr = item.stoppedAt != null
-        ? DateFormat.yMMMd().add_Hm().format(item.stoppedAt!)
-        : '—';
-    final durationStr = _formatDuration(item.duration);
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.withAlpha(80),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (item.grandparentTitle != null &&
-                item.grandparentTitle!.isNotEmpty)
-              Text(
-                item.grandparentTitle!,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            Text(
-              item.title ?? 'Unknown',
-              style: item.grandparentTitle != null
-                  ? theme.textTheme.bodyMedium
-                  : theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            if (item.mediaType != null)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.tealPrimary.withAlpha(20),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  item.mediaType!,
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: AppColors.tealPrimary),
-                ),
-              ),
-            const SizedBox(height: 16),
-            LinearProgressIndicator(
-              value: item.percentComplete / 100,
-              minHeight: 6,
-              borderRadius: BorderRadius.circular(3),
-              backgroundColor: AppColors.tealPrimary.withAlpha(20),
-              color: AppColors.tealPrimary,
-            ),
-            const SizedBox(height: 4),
-            Text('${item.percentComplete}% watched',
-                style: theme.textTheme.bodySmall),
-            const Divider(height: 24),
-            _Row(label: 'User',
-                value: item.friendlyName ?? item.user ?? '—'),
-            _Row(label: 'Watched', value: stoppedStr),
-            _Row(label: 'Duration', value: durationStr),
-            const SizedBox(height: 8),
-          ],
+      error: (_, _) => Center(
+        child: TextButton.icon(
+          icon: const Icon(Icons.refresh),
+          label: const Text('Retry history'),
+          onPressed: () => ref.invalidate(tautulliHistoryProvider(instance)),
         ),
       ),
+      data: (data) => RefreshIndicator(
+        onRefresh: () async =>
+            ref.refresh(tautulliHistoryProvider(instance).future),
+        child: data.items.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: Text('No watch history')),
+                  ),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: data.items.length,
+                itemBuilder: (context, index) {
+                  final item = data.items[index];
+                  return TautulliArtworkCard(
+                    instance: instance,
+                    poster: item.poster,
+                    art: item.background,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TautulliHistoryDetailScreen(
+                          instance: instance,
+                          item: item,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.displayTitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        if (item.subtitle.isNotEmpty)
+                          Text(
+                            item.subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        const SizedBox(height: 6),
+                        Text(
+                          historyDate(item.startedAt ?? item.stoppedAt, use24),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          '${item.friendlyName ?? item.user ?? 'Unknown user'} · ${item.percentComplete}% watched',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+      ),
     );
-  }
-
-  String _formatDuration(int seconds) {
-    final h = seconds ~/ 3600;
-    final m = (seconds % 3600) ~/ 60;
-    final s = seconds % 60;
-    if (h > 0) return '${h}h ${m}m ${s}s';
-    if (m > 0) return '${m}m ${s}s';
-    return '${s}s';
   }
 }
 
-class _Row extends StatelessWidget {
-  const _Row({required this.label, required this.value});
-  final String label;
-  final String value;
-
+class TautulliHistoryDetailScreen extends ConsumerWidget {
+  const TautulliHistoryDetailScreen({
+    super.key,
+    required this.instance,
+    required this.item,
+  });
+  final Instance instance;
+  final TautulliHistoryItem item;
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final use24 = ref.watch(customizationProvider)['use24HourTime'] == true;
+    final key = (instance: instance, rowId: item.rowId);
+    final stream = item.rowId > 0
+        ? ref.watch(tautulliStreamDataProvider(key))
+        : null;
+    return Scaffold(
+      appBar: ModuleAppBar(
+        title: const Text('History details'),
+        actions: [
+          if (item.userId > 0)
+            IconButton(
+              tooltip: 'User details',
+              icon: const Icon(Icons.person_outline),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TautulliUserDetailScreen(
+                    instance: instance,
+                    userId: item.userId,
+                    displayName: item.friendlyName ?? item.user ?? 'User',
+                  ),
+                ),
+              ),
+            ),
+          if (item.ratingKey.isNotEmpty)
+            IconButton(
+              tooltip: 'Media details',
+              icon: const Icon(Icons.info_outline),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TautulliMediaDetailScreen(
+                    instance: instance,
+                    ratingKey: item.ratingKey,
+                    title: item.displayTitle,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
-          SizedBox(
-            width: 90,
-            child: Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AppColors.textSecondary)),
+          TautulliArtworkCard(
+            instance: instance,
+            poster: item.poster,
+            art: item.background,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.displayTitle,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 6),
+                Text(item.subtitle),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(value: item.percentComplete / 100),
+                const SizedBox(height: 4),
+                Text('${item.percentComplete}% watched'),
+              ],
+            ),
           ),
-          Expanded(
-            child: Text(value,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(fontWeight: FontWeight.w500)),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TautulliInfoRows(
+                  values: {
+                    'User': item.friendlyName ?? item.user ?? 'Unknown',
+                    'Started': historyDate(item.startedAt, use24),
+                    'Stopped': historyDate(item.stoppedAt, use24),
+                    'Watch time':
+                        '${item.duration ~/ 3600}h ${(item.duration % 3600) ~/ 60}m',
+                    'Player': item.player ?? '',
+                    'Platform': item.platform ?? '',
+                    'IP address': item.ipAddress ?? '',
+                    'Stream': item.transcodeDecision ?? '',
+                    'Quality': item.quality ?? '',
+                  },
+                ),
+                if (stream != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Stream information',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  stream.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (_, _) => TextButton(
+                      onPressed: () =>
+                          ref.invalidate(tautulliStreamDataProvider(key)),
+                      child: const Text(
+                        'Stream information unavailable · Retry',
+                      ),
+                    ),
+                    data: (data) => TautulliInfoRows(
+                      values: {
+                        'Video': [
+                          data['video_codec'],
+                          data['video_full_resolution'] ??
+                              data['video_resolution'],
+                        ].whereType<String>().join(' · '),
+                        'Audio': [
+                          data['audio_codec'],
+                          data['audio_language'],
+                        ].whereType<String>().join(' · '),
+                        'Container': data['container']?.toString() ?? '',
+                        'Subtitle': data['subtitle_codec']?.toString() ?? '',
+                        'Bitrate': data['bitrate'] != null
+                            ? '${data['bitrate']} kbps'
+                            : '',
+                      },
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),

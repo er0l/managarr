@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/config/spacing.dart';
 import '../../../../core/database/app_database.dart';
@@ -10,6 +9,7 @@ import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/shimmer_box.dart';
 import '../../../tautulli/api/models/tautulli_activity.dart';
 import '../../../tautulli/providers/tautulli_providers.dart';
+import '../../../tautulli/screens/tautulli_activity_detail_screen.dart';
 
 /// "Now Playing" — active Plex streams from every enabled Tautulli instance.
 /// Collapses entirely when no Tautulli instance is configured or nothing
@@ -109,7 +109,18 @@ class _SessionCard extends ConsumerWidget {
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => context.push('/tautulli/${instance.id}'),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TautulliActivityDetailScreen(
+                instance: instance,
+                session: session,
+                thumbUrl: session.thumb?.isNotEmpty == true
+                    ? api.thumbUrl(session.thumb!)
+                    : '',
+              ),
+            ),
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -132,8 +143,9 @@ class _SessionCard extends ConsumerWidget {
                     children: [
                       Text(
                         title,
-                        style: theme.textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

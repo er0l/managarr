@@ -152,7 +152,7 @@ class SonarrSeasonDetailScreen extends ConsumerWidget {
                 : null,
             // When no image, show title inline in the AppBar.
             title: headerImageUrl == null ? titleWidget : null,
-            actions: [...actions, const ModuleHomeButton(onImage: true)],
+            actions: [...actions],
           ),
         ],
         body: episodesAsync.when(

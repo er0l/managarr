@@ -642,10 +642,9 @@ class _ArtistTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final posterUrl = artist.posterUrl;
     final accentColor = ServiceType.lidarr.brandColor;
-    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg = theme.colorScheme.surface;
 
     final stats = artist.statistics;
     final sizeOnDisk = stats?.sizeOnDisk ?? 0;

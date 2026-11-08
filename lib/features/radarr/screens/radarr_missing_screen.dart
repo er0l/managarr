@@ -85,11 +85,13 @@ class _RadarrMissingScreenState extends ConsumerState<RadarrMissingScreen> {
   List<RadarrMovie> _filterMissing(List<RadarrMovie> movies) {
     final q = _query.toLowerCase();
     return movies
-        .where((m) =>
-            m.monitored &&
-            !m.hasFile &&
-            (m.status?.toLowerCase() == 'released') &&
-            (q.isEmpty || m.title.toLowerCase().contains(q)))
+        .where(
+          (m) =>
+              m.monitored &&
+              !m.hasFile &&
+              (m.status?.toLowerCase() == 'released') &&
+              (q.isEmpty || m.title.toLowerCase().contains(q)),
+        )
         .toList()
       ..sort((a, b) {
         final da = _mostRecentPastRelease(a);
@@ -105,8 +107,9 @@ class _RadarrMissingScreenState extends ConsumerState<RadarrMissingScreen> {
   @override
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(radarrMoviesProvider(widget.instance));
-    final profilesAsync =
-        ref.watch(radarrQualityProfilesProvider(widget.instance));
+    final profilesAsync = ref.watch(
+      radarrQualityProfilesProvider(widget.instance),
+    );
 
     return Column(
       children: [
@@ -160,8 +163,11 @@ class _RadarrMissingScreenState extends ConsumerState<RadarrMissingScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline,
-                      size: 48, color: AppColors.statusOffline),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: AppColors.statusOffline,
+                  ),
                   const SizedBox(height: 12),
                   Text('$e'),
                   const SizedBox(height: 8),
@@ -182,8 +188,11 @@ class _RadarrMissingScreenState extends ConsumerState<RadarrMissingScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle_outline,
-                          size: 48, color: AppColors.statusOnline),
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 48,
+                        color: AppColors.statusOnline,
+                      ),
                       SizedBox(height: 12),
                       Text('No missing movies'),
                     ],
@@ -211,8 +220,9 @@ class _RadarrMissingScreenState extends ConsumerState<RadarrMissingScreen> {
                       profileName: profileName,
                       instance: widget.instance,
                       onSearch: () async {
-                        final api =
-                            ref.read(radarrApiProvider(widget.instance));
+                        final api = ref.read(
+                          radarrApiProvider(widget.instance),
+                        );
                         try {
                           await api.searchMovie(movie.id);
                           if (context.mounted) {
@@ -265,8 +275,7 @@ class _MissingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final posterUrl = movie.posterUrl;
-    final isDark = theme.brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg = theme.colorScheme.surface;
 
     final line2Parts = [
       '${movie.year}',
@@ -278,8 +287,7 @@ class _MissingTile extends StatelessWidget {
     final line3Parts = [
       if (profileName != null && profileName!.isNotEmpty) profileName!,
       _formatStatus(movie.status),
-      if (releaseDate != null)
-        DateFormat('MMM y').format(releaseDate!),
+      if (releaseDate != null) DateFormat('MMM y').format(releaseDate!),
     ].where((s) => s.isNotEmpty).toList();
 
     final agoText = _releasedAgoText(releaseDate);

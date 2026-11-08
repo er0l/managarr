@@ -6,10 +6,10 @@ import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../settings/providers/ui_prefs_provider.dart';
 import '../api/models/tautulli_activity.dart';
-import '../api/models/tautulli_library.dart';
 import '../providers/tautulli_providers.dart';
-import 'tautulli_library_detail_screen.dart';
+import 'tautulli_media_detail_screen.dart';
 import 'tautulli_user_detail_screen.dart';
 
 class TautulliActivityDetailScreen extends ConsumerStatefulWidget {
@@ -66,6 +66,7 @@ class _TautulliActivityDetailScreenState
     try {
       final api = ref.read(tautulliApiProvider(widget.instance));
       await api.terminateSession(sessionKey);
+      ref.invalidate(tautulliActivityProvider(widget.instance));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -112,35 +113,16 @@ class _TautulliActivityDetailScreenState
     );
   }
 
-  void _navigateToLibrary(BuildContext context, WidgetRef ref) {
-    final session = widget.session;
-    final sectionId = session.sectionId;
-    if (sectionId == null || sectionId == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Library info not available'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-    final libraries = ref
-        .read(tautulliLibrariesProvider(widget.instance))
-        .valueOrNull;
-    final lib =
-        libraries?.where((l) => l.sectionId == sectionId).firstOrNull ??
-        TautulliLibrary(
-          sectionId: sectionId,
-          sectionName: session.libraryName ?? 'Library',
-          sectionType: '',
-          count: 0,
-        );
+  void _navigateToMedia(BuildContext context) {
+    final key = widget.session.ratingKey;
+    if (key == null || key.isEmpty) return;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => TautulliLibraryDetailScreen(
+        builder: (_) => TautulliMediaDetailScreen(
           instance: widget.instance,
-          library: lib,
+          ratingKey: key,
+          title: widget.session.displayTitle,
         ),
       ),
     );
@@ -151,7 +133,6 @@ class _TautulliActivityDetailScreenState
     final theme = Theme.of(context);
     final session = widget.session;
     final isDark = theme.brightness == Brightness.dark;
-    const muted = Color(0xA0FFFFFF);
 
     return Scaffold(
       appBar: ModuleAppBar(
@@ -164,49 +145,42 @@ class _TautulliActivityDetailScreenState
             fontWeight: FontWeight.w600,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'User details',
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => _navigateToUser(context),
+          ),
+          if (session.ratingKey?.isNotEmpty == true)
+            IconButton(
+              tooltip: 'Media details',
+              icon: const Icon(Icons.info_outline),
+              onPressed: () => _navigateToMedia(context),
+            ),
+        ],
       ),
-      floatingActionButton: session.sessionKey != null
-          ? FloatingActionButton(
-              backgroundColor: AppColors.statusOffline,
-              foregroundColor: Colors.white,
-              tooltip: 'Terminate Session',
-              onPressed: _stopping ? null : _stopStream,
-              child: _stopping
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.close),
+      bottomNavigationBar: session.sessionKey?.isNotEmpty == true
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  ),
+                  onPressed: _stopping ? null : _stopStream,
+                  icon: _stopping
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.stop_circle_outlined),
+                  label: Text(_stopping ? 'Terminating…' : 'Terminate Session'),
+                ),
+              ),
             )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
-        child: Row(
-          children: [
-            // Left: User details
-            IconButton(
-              icon: const Icon(Icons.person_outline),
-              color: muted,
-              tooltip: 'User details',
-              onPressed: () => _navigateToUser(context),
-            ),
-            const Spacer(),
-            // Right: Library info
-            IconButton(
-              icon: const Icon(Icons.info_outline),
-              color: muted,
-              tooltip: 'Library item',
-              onPressed: () => _navigateToLibrary(context, ref),
-            ),
-          ],
-        ),
-      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -222,6 +196,9 @@ class _TautulliActivityDetailScreenState
                   child: widget.thumbUrl.isNotEmpty
                       ? Image.network(
                           widget.thumbUrl,
+                          headers: ref
+                              .read(tautulliApiProvider(widget.instance))
+                              .imageHeaders,
                           fit: BoxFit.cover,
                           errorBuilder: (ctx, e, s) =>
                               _PlaceholderPoster(mediaType: session.mediaType),
@@ -301,7 +278,11 @@ class _TautulliActivityDetailScreenState
               if (session.eta != null)
                 _InfoRow(
                   label: 'ETA',
-                  value: DateFormat('h:mm a').format(session.eta!),
+                  value: DateFormat(
+                    ref.watch(customizationProvider)['use24HourTime'] == true
+                        ? 'HH:mm'
+                        : 'h:mm a',
+                  ).format(session.eta!),
                 ),
               if (session.libraryName?.isNotEmpty == true)
                 _InfoRow(label: 'LIBRARY', value: session.libraryName!),
@@ -373,7 +354,7 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cardBg = isDark ? const Color(0xFF1A2233) : const Color(0xFFF2F4F7);
+    final cardBg = theme.colorScheme.surface;
 
     return Container(
       decoration: BoxDecoration(
@@ -388,7 +369,7 @@ class _InfoCard extends StatelessWidget {
             child: Text(
               title,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: AppColors.tealPrimary,
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
               ),
@@ -426,7 +407,7 @@ class _InfoRowWidget extends StatelessWidget {
             child: Text(
               row.label,
               style: theme.textTheme.labelSmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.4,
               ),

@@ -24,8 +24,9 @@ List<DateTime> _allReleaseDates(RadarrMovie movie) {
 
 DateTime? _nearestFutureRelease(RadarrMovie movie) {
   final now = DateTime.now();
-  final candidates =
-      _allReleaseDates(movie).where((d) => d.isAfter(now)).toList();
+  final candidates = _allReleaseDates(
+    movie,
+  ).where((d) => d.isAfter(now)).toList();
   if (candidates.isEmpty) return null;
   candidates.sort();
   return candidates.first;
@@ -92,8 +93,9 @@ class _RadarrCalendarScreenState extends ConsumerState<RadarrCalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(radarrMoviesProvider(widget.instance));
-    final profilesAsync =
-        ref.watch(radarrQualityProfilesProvider(widget.instance));
+    final profilesAsync = ref.watch(
+      radarrQualityProfilesProvider(widget.instance),
+    );
     final theme = Theme.of(context);
 
     return moviesAsync.when(
@@ -115,13 +117,16 @@ class _RadarrCalendarScreenState extends ConsumerState<RadarrCalendarScreen> {
 
         // Movies for selected day
         final selKey = DateTime(
-            _selectedDay.year, _selectedDay.month, _selectedDay.day);
+          _selectedDay.year,
+          _selectedDay.month,
+          _selectedDay.day,
+        );
         final dayMovies = (byDay[selKey] ?? upcoming)
-            .where((m) =>
-                _searchTerm.isEmpty ||
-                m.title
-                    .toLowerCase()
-                    .contains(_searchTerm.toLowerCase()))
+            .where(
+              (m) =>
+                  _searchTerm.isEmpty ||
+                  m.title.toLowerCase().contains(_searchTerm.toLowerCase()),
+            )
             .toList();
 
         // Sort by nearest release date
@@ -151,8 +156,7 @@ class _RadarrCalendarScreenState extends ConsumerState<RadarrCalendarScreen> {
                   firstDay: DateTime.utc(2020, 1, 1),
                   lastDay: DateTime.utc(2030, 12, 31),
                   focusedDay: _focusedDay,
-                  selectedDayPredicate: (day) =>
-                      isSameDay(_selectedDay, day),
+                  selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                   calendarFormat: CalendarFormat.month,
                   availableCalendarFormats: const {
                     CalendarFormat.month: 'Month',
@@ -183,8 +187,7 @@ class _RadarrCalendarScreenState extends ConsumerState<RadarrCalendarScreen> {
                       color: AppColors.tealPrimary,
                       shape: BoxShape.circle,
                     ),
-                    selectedTextStyle:
-                        const TextStyle(color: Colors.white),
+                    selectedTextStyle: const TextStyle(color: Colors.white),
                     markerDecoration: const BoxDecoration(
                       color: AppColors.orangeAccent,
                       shape: BoxShape.circle,
@@ -195,18 +198,25 @@ class _RadarrCalendarScreenState extends ConsumerState<RadarrCalendarScreen> {
                   headerStyle: HeaderStyle(
                     formatButtonVisible: false,
                     titleCentered: true,
-                    titleTextStyle: theme.textTheme.titleMedium!
-                        .copyWith(fontWeight: FontWeight.w700),
-                    leftChevronIcon: const Icon(Icons.chevron_left,
-                        color: AppColors.tealPrimary),
-                    rightChevronIcon: const Icon(Icons.chevron_right,
-                        color: AppColors.tealPrimary),
+                    titleTextStyle: theme.textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    leftChevronIcon: const Icon(
+                      Icons.chevron_left,
+                      color: AppColors.tealPrimary,
+                    ),
+                    rightChevronIcon: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.tealPrimary,
+                    ),
                   ),
                   daysOfWeekStyle: DaysOfWeekStyle(
-                    weekdayStyle: theme.textTheme.bodySmall!
-                        .copyWith(color: AppColors.textSecondary),
-                    weekendStyle: theme.textTheme.bodySmall!
-                        .copyWith(color: AppColors.textSecondary),
+                    weekdayStyle: theme.textTheme.bodySmall!.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    weekendStyle: theme.textTheme.bodySmall!.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ),
@@ -235,8 +245,7 @@ class _RadarrCalendarScreenState extends ConsumerState<RadarrCalendarScreen> {
                             )
                           : null,
                       isDense: true,
-                      contentPadding:
-                          const EdgeInsets.symmetric(vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
@@ -262,7 +271,11 @@ class _RadarrCalendarScreenState extends ConsumerState<RadarrCalendarScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
-                      Spacing.pageHorizontal, 4, Spacing.pageHorizontal, 8),
+                    Spacing.pageHorizontal,
+                    4,
+                    Spacing.pageHorizontal,
+                    8,
+                  ),
                   child: Text(
                     isFiltered
                         ? _selectedDayLabel(_selectedDay)
@@ -285,63 +298,62 @@ class _RadarrCalendarScreenState extends ConsumerState<RadarrCalendarScreen> {
                             ? 'No upcoming movies on this date'
                             : 'No upcoming movies',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary),
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ),
                 )
               else
                 SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, i) {
-                      final movie = dayMovies[i];
-                      final releaseDate = _nearestFutureRelease(movie);
-                      final profileName = profiles
-                          .where((p) => p.id == movie.qualityProfileId)
-                          .map((p) => p.name)
-                          .firstOrNull;
-                      return _UpcomingTile(
-                        movie: movie,
-                        releaseDate: releaseDate,
-                        profileName: profileName,
-                        instance: widget.instance,
-                        onTap: () => Navigator.push(
-                          ctx,
-                          MaterialPageRoute(
-                            builder: (_) => RadarrMovieDetailScreen(
-                              movie: movie,
-                              instance: widget.instance,
-                            ),
+                  delegate: SliverChildBuilderDelegate((ctx, i) {
+                    final movie = dayMovies[i];
+                    final releaseDate = _nearestFutureRelease(movie);
+                    final profileName = profiles
+                        .where((p) => p.id == movie.qualityProfileId)
+                        .map((p) => p.name)
+                        .firstOrNull;
+                    return _UpcomingTile(
+                      movie: movie,
+                      releaseDate: releaseDate,
+                      profileName: profileName,
+                      instance: widget.instance,
+                      onTap: () => Navigator.push(
+                        ctx,
+                        MaterialPageRoute(
+                          builder: (_) => RadarrMovieDetailScreen(
+                            movie: movie,
+                            instance: widget.instance,
                           ),
                         ),
-                        onSearch: () async {
-                          final api = ref.read(
-                              radarrApiProvider(widget.instance));
-                          try {
-                            await api.searchMovie(movie.id);
-                            if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Search started'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error: $e'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
+                      ),
+                      onSearch: () async {
+                        final api = ref.read(
+                          radarrApiProvider(widget.instance),
+                        );
+                        try {
+                          await api.searchMovie(movie.id);
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(
+                                content: Text('Search started'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
                           }
-                        },
-                      );
-                    },
-                    childCount: dayMovies.length,
-                  ),
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    );
+                  }, childCount: dayMovies.length),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: Spacing.s24)),
             ],
@@ -386,9 +398,7 @@ class _UpcomingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final posterUrl = movie.posterUrl;
-    final isDark = theme.brightness == Brightness.dark;
-    final cardBg =
-        isDark ? const Color(0xFF141E2E) : const Color(0xFFF2F4F7);
+    final cardBg = theme.colorScheme.surface;
 
     final line2Parts = [
       '${movie.year}',
@@ -433,9 +443,7 @@ class _UpcomingTile extends StatelessWidget {
                             color: AppColors.tealDark,
                             alignment: Alignment.center,
                             child: Text(
-                              movie.title.isNotEmpty
-                                  ? movie.title[0]
-                                  : 'M',
+                              movie.title.isNotEmpty ? movie.title[0] : 'M',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -463,7 +471,8 @@ class _UpcomingTile extends StatelessWidget {
                       Text(
                         line2Parts.join(' · '),
                         style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary),
+                          color: AppColors.textSecondary,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
