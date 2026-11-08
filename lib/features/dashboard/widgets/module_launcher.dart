@@ -36,20 +36,15 @@ class ModulesScreen extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Grid view',
-                    isSelected: grid,
-                    icon: const Icon(Icons.grid_view_outlined),
+                    tooltip: 'Switch to ${grid ? 'List' : 'Grid'}',
+                    icon: Icon(
+                      grid
+                          ? Icons.view_list_outlined
+                          : Icons.grid_view_outlined,
+                    ),
                     onPressed: () => ref
                         .read(customizationProvider.notifier)
-                        .set('modulesView', 'grid'),
-                  ),
-                  IconButton(
-                    tooltip: 'List view',
-                    isSelected: !grid,
-                    icon: const Icon(Icons.view_list_outlined),
-                    onPressed: () => ref
-                        .read(customizationProvider.notifier)
-                        .set('modulesView', 'list'),
+                        .set('modulesView', grid ? 'list' : 'grid'),
                   ),
                 ],
               ),
@@ -137,7 +132,9 @@ class _ModuleTile extends ConsumerWidget {
     final theme = Theme.of(context);
     final health = ref.watch(healthCheckProvider(instance));
     final result = health.valueOrNull;
-    final local = ref.watch(useLocalUrlProvider(instance.id));
+    final local =
+        ref.watch(useLocalUrlProvider(instance.id)) &&
+        instance.localUrl?.isNotEmpty == true;
     return Material(
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
@@ -177,7 +174,11 @@ class _ModuleTile extends ConsumerWidget {
                         style: theme.textTheme.bodySmall,
                       ),
                       Text(
-                        '${local ? 'Local' : 'Remote'} connection${result?.version != null ? ' · v${result!.version}' : ''}',
+                        '${local ? 'Local' : 'Remote'} connection · ${result?.version != null
+                            ? 'v${result!.version}'
+                            : health.isLoading
+                            ? 'Checking version…'
+                            : 'Version unavailable'}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

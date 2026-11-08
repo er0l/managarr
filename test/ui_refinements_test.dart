@@ -244,10 +244,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Manage'), findsNothing);
     expect(find.textContaining('Reachable'), findsNothing);
-    await tester.tap(find.byTooltip('List view'));
+    await tester.tap(find.byTooltip('Switch to List'));
     await tester.pumpAndSettle();
     expect(find.text('Reachable · 12 ms'), findsOneWidget);
     expect(find.text('Remote connection · v2.14'), findsOneWidget);
+    expect(find.byTooltip('Switch to Grid'), findsOneWidget);
+    expect(find.byTooltip('Switch to List'), findsNothing);
+    await tester.tap(find.byTooltip('Switch to Grid'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Reachable'), findsNothing);
+    expect(find.byTooltip('Switch to List'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -10,6 +10,9 @@ import 'models/torrent.dart';
 class RTorrentApi {
   RTorrentApi._(this._dio, this._endpoint);
 
+  /// Reuses an authenticated transport and its configured XML-RPC endpoint.
+  RTorrentApi.withClient(this._dio, this._endpoint);
+
   final Dio _dio;
   final String _endpoint;
 
@@ -131,6 +134,15 @@ class RTorrentApi {
   // ── Public API ───────────────────────────────────────────────────────────
 
   Future<void> testConnection() => _call('system.listMethods');
+
+  Future<String?> getVersion() async {
+    final response = await _call('system.client_version');
+    final value = XmlDocument.parse(response)
+        .findAllElements('param')
+        .firstOrNull
+        ?.getElement('value');
+    return value == null ? null : _parseValue(value);
+  }
 
   Future<List<RTorrentTorrent>> getTorrents() async {
     final data = await _call('d.multicall2', [
