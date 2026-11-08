@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/config/spacing.dart';
 import '../../../../core/database/app_database.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/shimmer_box.dart';
 import '../../../seer/api/models/media_request.dart';
 import '../../../seer/providers/seer_providers.dart';
+import '../../../seer/screens/seer_media_detail_screen.dart';
 
-/// "Requests" — pending Seer/Overseerr requests as a horizontal poster rail.
-/// Collapses when no Seer instance is configured or nothing is pending.
+/// Latest Seer requests across all statuses and enabled instances.
 class RequestsSection extends ConsumerWidget {
   const RequestsSection({super.key, required this.instances});
 
@@ -23,52 +21,42 @@ class RequestsSection extends ConsumerWidget {
     if (instances.isEmpty) return const SizedBox.shrink();
 
     var anyLoading = false;
-    final cards = <Widget>[];
-
+    final recent = <({Instance instance, SeerMediaRequest request})>[];
+    final failed = <Instance>[];
     for (final instance in instances) {
-      final requestsAsync = ref.watch(seerRequestsProvider(instance));
-      final requests = requestsAsync.valueOrNull;
-      if (requests != null) {
-        for (final request in requests.where((r) => r.status == 1)) {
-          cards.add(_RequestCard(instance: instance, request: request));
-        }
-      } else if (requestsAsync.isLoading) {
-        anyLoading = true;
+      final result = ref.watch(seerRequestsProvider(instance));
+      if (result.hasError) failed.add(instance);
+      if (result.isLoading) anyLoading = true;
+      for (final request in result.valueOrNull ?? <SeerMediaRequest>[]) {
+        recent.add((instance: instance, request: request));
       }
-      // Unreachable Seer: skip silently — the status strip shows it offline.
     }
-
-    if (cards.isEmpty && !anyLoading) return const SizedBox.shrink();
+    recent.sort((a, b) => b.request.createdAt.compareTo(a.request.createdAt));
+    final cards = [
+      for (final item in recent.take(20))
+        _RequestCard(instance: item.instance, request: item.request),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(
-          title: 'Requests',
-          trailing: cards.isNotEmpty
-              ? Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.orangeAccent.withAlpha(25),
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(
-                        color: AppColors.orangeAccent.withAlpha(80)),
-                  ),
-                  child: Text(
-                    '${cards.length} pending',
-                    style: const TextStyle(
-                      color: AppColors.orangeAccent,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                )
-              : null,
-        ),
+        const SectionHeader(title: 'Recent Requests'),
+        for (final instance in failed)
+          ListTile(
+            title: Text('Requests unavailable · ${instance.name}'),
+            trailing: TextButton(
+              onPressed: () => ref.invalidate(seerRequestsProvider(instance)),
+              child: const Text('Retry'),
+            ),
+          ),
+        if (cards.isEmpty && !anyLoading && failed.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: Spacing.pageHorizontal),
+            child: Text('No recent requests'),
+          ),
         if (cards.isNotEmpty)
           SizedBox(
-            height: 196,
+            height: 218,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(
@@ -79,7 +67,7 @@ class RequestsSection extends ConsumerWidget {
               itemBuilder: (context, index) => cards[index],
             ),
           )
-        else
+        else if (anyLoading)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: Spacing.pageHorizontal),
             child: Row(
@@ -112,7 +100,17 @@ class _RequestCard extends StatelessWidget {
       width: 100,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => context.push('/seer/${instance.id}'),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SeerMediaDetailScreen(
+              instance: instance,
+              tmdbId: request.tmdbId,
+              mediaType: request.mediaType,
+              initialTitle: request.title,
+            ),
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -133,8 +131,18 @@ class _RequestCard extends StatelessWidget {
             const SizedBox(height: Spacing.s4),
             Text(
               request.title,
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              request.statusText,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: request.statusColor,
+                fontSize: 10,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

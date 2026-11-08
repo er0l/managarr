@@ -47,7 +47,12 @@ class SeerApi {
   }
 
   Future<List<SeerMediaRequest>> getRequests({int page = 1}) async {
-    final res = await _dio.get('/request', queryParameters: {'take': 20, 'skip': (page - 1) * 20});
+    final res = await _dio.get('/request', queryParameters: {
+      'take': 20,
+      'skip': (page - 1) * 20,
+      'filter': 'all',
+      'sort': 'added',
+    });
     final results = (res.data['results'] as List? ?? []);
     final requests = results
         .map((j) => SeerMediaRequest.fromJson(j as Map<String, dynamic>))

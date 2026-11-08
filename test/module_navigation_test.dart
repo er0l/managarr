@@ -8,6 +8,7 @@ import 'package:managarr/core/network/dio_client.dart';
 import 'package:managarr/core/widgets/module_app_bar.dart';
 import 'package:managarr/core/widgets/service_detail_shell.dart';
 import 'package:managarr/features/settings/providers/instances_provider.dart';
+import 'package:managarr/features/settings/providers/drawer_order_provider.dart';
 
 const _instance = Instance(
   id: 1,
@@ -71,9 +72,17 @@ Widget _shell({VoidCallback? onSecondMount, ValueChanged<String>? onMore}) =>
     );
 
 Widget _providers(Widget child) => ProviderScope(
-  overrides: [instancesByServiceProvider.overrideWithValue({})],
+  overrides: [
+    instancesByServiceProvider.overrideWithValue({}),
+    drawerOrderProvider.overrideWith(_DefaultDrawerOrder.new),
+  ],
   child: child,
 );
+
+class _DefaultDrawerOrder extends DrawerOrderNotifier {
+  @override
+  List<ServiceType> build() => ServiceType.values;
+}
 
 GoRouter _router({String initial = '/', bool directModule = false}) => GoRouter(
   initialLocation: directModule ? '/module' : initial,

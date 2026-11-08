@@ -135,6 +135,9 @@ class TautulliApi {
       'count': count,
       'media_type': ?mediaType,
     });
+    if (response['response']?['result'] != 'success') {
+      throw StateError('Recently added media is unavailable');
+    }
     final data =
         response['response']?['data']?['recently_added'] as List? ?? [];
     return data

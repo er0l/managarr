@@ -631,6 +631,43 @@ class _DayCell extends StatelessWidget {
                 ),
               ),
             ),
+            // Mark every release type, including entries hidden by the chip limit.
+            if (entries.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2, bottom: 2),
+                child: Semantics(
+                  label: [
+                    if (entries.any((e) => e.type == CalendarEntryType.episode))
+                      'TV shows',
+                    if (entries.any((e) => e.type == CalendarEntryType.movie))
+                      'Movies',
+                  ].join(' and '),
+                  child: SizedBox(
+                    width: 20,
+                    child: Row(
+                      spacing: 2,
+                      children: [
+                        for (final type in [
+                          CalendarEntryType.episode,
+                          CalendarEntryType.movie,
+                        ])
+                          if (entries.any((e) => e.type == type))
+                            Expanded(
+                              child: Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  color: type == CalendarEntryType.episode
+                                      ? AppColors.tealPrimary
+                                      : AppColors.orangeAccent,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             // Entry chips (max 2)
             for (int i = 0; i < entries.length && i < maxVisible; i++)
               Container(

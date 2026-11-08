@@ -21,7 +21,12 @@ class TautulliMediaItem {
     this.grandparentTitle,
     this.libraryName,
     this.sectionId,
+    this.seasonNumber,
+    this.episodeNumber,
+    this.grandparentThumb,
   });
+  final int? seasonNumber, episodeNumber;
+  final String? grandparentThumb;
 
   factory TautulliMediaItem.fromJson(Map<String, dynamic> json) {
     return TautulliMediaItem(
@@ -35,17 +40,21 @@ class TautulliMediaItem {
       grandparentTitle: json['grandparent_title'],
       libraryName: json['library_name'],
       sectionId: int.tryParse(json['section_id']?.toString() ?? ''),
+      seasonNumber: int.tryParse(json['parent_media_index']?.toString() ?? ''),
+      episodeNumber: int.tryParse(json['media_index']?.toString() ?? ''),
+      grandparentThumb: json['grandparent_thumb'],
     );
   }
 
-  DateTime? get addedAtDate => addedAt > 0
-      ? DateTime.fromMillisecondsSinceEpoch(addedAt * 1000)
-      : null;
+  DateTime? get addedAtDate =>
+      addedAt > 0 ? DateTime.fromMillisecondsSinceEpoch(addedAt * 1000) : null;
 
   /// Builds a Tautulli pms_image_proxy URL for the poster.
   String? thumbUrl(String baseUrl, String apiKey) {
     if (thumb == null || thumb!.isEmpty) return null;
-    final host = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final host = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
     final base = host.contains('/api/v2') ? host : '$host/api/v2';
     return '$base?cmd=pms_image_proxy&img=${Uri.encodeComponent(thumb!)}&apikey=$apiKey&width=150&height=225';
   }

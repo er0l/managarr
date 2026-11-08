@@ -21,10 +21,11 @@ import '../widgets/sections/downloads_section.dart';
 import '../widgets/sections/now_playing_section.dart';
 import '../widgets/sections/requests_section.dart';
 import '../widgets/sections/upcoming_section.dart';
+import '../widgets/sections/recently_added_section.dart';
+import '../providers/recently_added_provider.dart';
+import '../../romm/providers/romm_providers.dart';
 
-/// Content-hub dashboard: module launcher on top, followed by
-/// Now Playing, Downloads, Upcoming and Requests sections. Sections
-/// collapse automatically when no relevant service is configured.
+/// Activity and recent additions across all enabled service instances.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -43,9 +44,18 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(rtorrentTorrentsProvider(instance));
         case ServiceType.tautulli:
           ref.invalidate(tautulliActivityProvider(instance));
+          for (final kind in RecentKind.values.where(
+            (k) => k.mediaType != null,
+          )) {
+            ref.invalidate(
+              dashboardPlexRecentProvider((instance: instance, kind: kind)),
+            );
+          }
         case ServiceType.seer:
           ref.invalidate(seerRequestsProvider(instance));
-        case ServiceType.prowlarr || ServiceType.romm:
+        case ServiceType.romm:
+          ref.invalidate(rommRecentlyAddedProvider(instance));
+        case ServiceType.prowlarr:
           break;
       }
     }
@@ -96,6 +106,8 @@ class DashboardScreen extends ConsumerWidget {
                     if (prefs['showUpcoming'] == true) const UpcomingSection(),
                     if (prefs['showRequests'] == true)
                       RequestsSection(instances: ofType(ServiceType.seer)),
+                    if (prefs['showRecentlyAdded'] == true)
+                      const RecentlyAddedSection(),
                   ],
                 ),
         );
@@ -142,7 +154,7 @@ class _NoInstancesHint extends StatelessWidget {
             FilledButton.icon(
               onPressed: () => context.go('/settings'),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.orangeAccent,
+                backgroundColor: AppColors.tealPrimary,
                 foregroundColor: AppColors.textOnPrimary,
                 shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(

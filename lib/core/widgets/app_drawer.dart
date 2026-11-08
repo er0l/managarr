@@ -11,6 +11,7 @@ import 'status_dot.dart';
 import 'module_app_bar.dart';
 import '../../features/dashboard/providers/health_check_provider.dart';
 import '../../features/settings/providers/instances_provider.dart';
+import '../../features/settings/providers/drawer_order_provider.dart';
 import '../../features/search/screens/global_search_screen.dart';
 
 /// Module launcher drawer — branded entries per service with per-instance
@@ -92,7 +93,7 @@ class AppDrawer extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
-                for (final type in ServiceType.values)
+                for (final type in ref.watch(drawerOrderProvider))
                   if (grouped[type]?.isNotEmpty ?? false)
                     ..._moduleEntries(
                       context,

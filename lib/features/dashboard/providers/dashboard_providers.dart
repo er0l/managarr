@@ -16,6 +16,7 @@ class DashboardDownload {
     required this.title,
     this.progress,
     this.detail,
+    this.uploading = false,
   });
 
   final String title;
@@ -25,6 +26,7 @@ class DashboardDownload {
 
   /// Secondary line — size left, ETA, status, …
   final String? detail;
+  final bool uploading;
 }
 
 /// Per-instance download queue snapshot. Each instance resolves
@@ -35,6 +37,7 @@ class InstanceDownloads {
     required this.type,
     required this.items,
     this.speedLabel,
+    this.uploadSpeedLabel,
   });
 
   final Instance instance;
@@ -43,6 +46,7 @@ class InstanceDownloads {
 
   /// Client-level download speed (rTorrent), when known.
   final String? speedLabel;
+  final String? uploadSpeedLabel;
 }
 
 /// Merges download queues across all enabled instances of every
@@ -50,85 +54,113 @@ class InstanceDownloads {
 /// same failure-tolerant pattern as [rtorrentAggregatedStatsProvider].
 final dashboardDownloadsProvider =
     Provider.autoDispose<List<InstanceDownloads>>((ref) {
-  final grouped = ref.watch(instancesByServiceProvider);
-  final result = <InstanceDownloads>[];
+      final grouped = ref.watch(instancesByServiceProvider);
+      final result = <InstanceDownloads>[];
 
-  for (final instance in _enabled(grouped[ServiceType.radarr])) {
-    result.add(InstanceDownloads(
-      instance: instance,
-      type: ServiceType.radarr,
-      items: ref.watch(radarrQueueProvider(instance)).whenData(
-            (q) => [
-              for (final r in q.records)
-                DashboardDownload(
-                  title: r.title,
-                  progress: _arrProgress(r.size, r.sizeleft),
-                  detail: _arrDetail(r.sizeleft, r.status),
+      for (final instance in _enabled(grouped[ServiceType.radarr])) {
+        result.add(
+          InstanceDownloads(
+            instance: instance,
+            type: ServiceType.radarr,
+            items: ref
+                .watch(radarrQueueProvider(instance))
+                .whenData(
+                  (q) => [
+                    for (final r in q.records)
+                      DashboardDownload(
+                        title: r.title,
+                        progress: _arrProgress(r.size, r.sizeleft),
+                        detail: _arrDetail(r.sizeleft, r.status),
+                      ),
+                  ],
                 ),
-            ],
           ),
-    ));
-  }
+        );
+      }
 
-  for (final instance in _enabled(grouped[ServiceType.sonarr])) {
-    result.add(InstanceDownloads(
-      instance: instance,
-      type: ServiceType.sonarr,
-      items: ref.watch(sonarrQueueProvider(instance)).whenData(
-            (q) => [
-              for (final r in q.records)
-                DashboardDownload(
-                  title: r.title ?? 'Unknown',
-                  progress: _arrProgress(r.size, r.sizeleft),
-                  detail: _arrDetail(r.sizeleft, r.status),
+      for (final instance in _enabled(grouped[ServiceType.sonarr])) {
+        result.add(
+          InstanceDownloads(
+            instance: instance,
+            type: ServiceType.sonarr,
+            items: ref
+                .watch(sonarrQueueProvider(instance))
+                .whenData(
+                  (q) => [
+                    for (final r in q.records)
+                      DashboardDownload(
+                        title: r.title ?? 'Unknown',
+                        progress: _arrProgress(r.size, r.sizeleft),
+                        detail: _arrDetail(r.sizeleft, r.status),
+                      ),
+                  ],
                 ),
-            ],
           ),
-    ));
-  }
+        );
+      }
 
-  for (final instance in _enabled(grouped[ServiceType.lidarr])) {
-    result.add(InstanceDownloads(
-      instance: instance,
-      type: ServiceType.lidarr,
-      items: ref.watch(lidarrQueueProvider(instance)).whenData(
-            (q) => [
-              for (final r in q.records)
-                DashboardDownload(
-                  title: r.title ?? 'Unknown',
-                  progress: _arrProgress(r.size, r.sizeleft),
-                  detail: _arrDetail(r.sizeleft, r.status),
+      for (final instance in _enabled(grouped[ServiceType.lidarr])) {
+        result.add(
+          InstanceDownloads(
+            instance: instance,
+            type: ServiceType.lidarr,
+            items: ref
+                .watch(lidarrQueueProvider(instance))
+                .whenData(
+                  (q) => [
+                    for (final r in q.records)
+                      DashboardDownload(
+                        title: r.title ?? 'Unknown',
+                        progress: _arrProgress(r.size, r.sizeleft),
+                        detail: _arrDetail(r.sizeleft, r.status),
+                      ),
+                  ],
                 ),
-            ],
           ),
-    ));
-  }
+        );
+      }
 
-  for (final instance in _enabled(grouped[ServiceType.rtorrent])) {
-    final stats = ref.watch(rtorrentGlobalStatsProvider(instance));
-    result.add(InstanceDownloads(
-      instance: instance,
-      type: ServiceType.rtorrent,
-      speedLabel: stats.totalDownRate > 0
-          ? '${ByteFormatter.format(stats.totalDownRate)}/s'
-          : null,
-      items: ref.watch(rtorrentTorrentsProvider(instance)).whenData(
-            (list) => [
-              for (final t in list.where((t) => t.isDownloading))
-                DashboardDownload(
-                  title: t.name,
-                  progress: (t.percentageDone / 100).clamp(0.0, 1.0),
-                  detail: t.downRate > 0
-                      ? '${ByteFormatter.format(t.downRate)}/s'
-                      : t.statusLabel,
+      for (final instance in _enabled(grouped[ServiceType.rtorrent])) {
+        final stats = ref.watch(rtorrentGlobalStatsProvider(instance));
+        result.add(
+          InstanceDownloads(
+            instance: instance,
+            type: ServiceType.rtorrent,
+            speedLabel: stats.totalDownRate > 0
+                ? '${ByteFormatter.format(stats.totalDownRate)}/s'
+                : null,
+            uploadSpeedLabel: stats.totalUpRate > 0
+                ? '${ByteFormatter.format(stats.totalUpRate)}/s'
+                : null,
+            items: ref
+                .watch(rtorrentTorrentsProvider(instance))
+                .whenData(
+                  (list) => [
+                    for (final t in list.where(
+                      (t) => t.isDownloading || t.downRate > 0 || t.upRate > 0,
+                    ))
+                      DashboardDownload(
+                        title: t.name,
+                        progress: (t.percentageDone / 100).clamp(0.0, 1.0),
+                        uploading: t.isCompleted && t.upRate > 0,
+                        detail: [
+                          t.isCompleted && t.upRate > 0
+                              ? 'Uploading'
+                              : t.statusLabel,
+                          if (t.downRate > 0)
+                            '↓ ${ByteFormatter.format(t.downRate)}/s',
+                          if (t.upRate > 0)
+                            '↑ ${ByteFormatter.format(t.upRate)}/s',
+                        ].join(' · '),
+                      ),
+                  ],
                 ),
-            ],
           ),
-    ));
-  }
+        );
+      }
 
-  return result;
-});
+      return result;
+    });
 
 List<Instance> _enabled(List<Instance>? instances) =>
     (instances ?? const []).where((i) => i.enabled).toList();

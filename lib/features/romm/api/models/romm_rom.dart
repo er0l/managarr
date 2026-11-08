@@ -27,6 +27,7 @@ class RommRom {
     this.isFavourite = false,
     this.hasManual = false,
     this.pathManual,
+    this.createdAt,
   });
 
   final int id;
@@ -60,6 +61,7 @@ class RommRom {
   /// Whether the ROM has a game manual (PDF) stored in RomM.
   final bool hasManual;
   final String? pathManual;
+  final DateTime? createdAt;
 
   int? get releaseYear {
     if (firstReleaseDate == null) return null;
@@ -122,6 +124,7 @@ class RommRom {
     return RommRom(
       id: (json['id'] as num).toInt(),
       name: json['name'] as String? ?? json['fs_name'] as String? ?? '',
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
       fsName: json['fs_name'] as String? ?? '',
       fsSizeBytes: (json['fs_size_bytes'] as num?)?.toInt() ?? 0,
       platformId: (json['platform_id'] as num?)?.toInt() ?? 0,
@@ -149,10 +152,10 @@ class RommRom {
       pathScreenshots: (json['path_screenshots'] as List? ?? [])
           .whereType<String>()
           .toList(),
-      isFavourite: json['is_favourite'] as bool? ??
-          json['favourite'] as bool? ??
-          false,
-      hasManual: json['has_manual'] as bool? ??
+      isFavourite:
+          json['is_favourite'] as bool? ?? json['favourite'] as bool? ?? false,
+      hasManual:
+          json['has_manual'] as bool? ??
           (json['path_manual'] as String?)?.isNotEmpty == true,
       pathManual: json['path_manual'] as String?,
     );
@@ -167,8 +170,10 @@ class RommRomFile {
   factory RommRomFile.fromJson(Map<String, dynamic> json) {
     return RommRomFile(
       id: (json['id'] as num).toInt(),
-      fileName: json['file_name'] as String? ?? json['fs_name'] as String? ?? '',
-      sizeBytes: (json['file_size_bytes'] as num?)?.toInt() ??
+      fileName:
+          json['file_name'] as String? ?? json['fs_name'] as String? ?? '',
+      sizeBytes:
+          (json['file_size_bytes'] as num?)?.toInt() ??
           (json['fs_size_bytes'] as num?)?.toInt(),
     );
   }
@@ -177,14 +182,7 @@ class RommRomFile {
 String _ageRatingLabel(int category, int rating) {
   if (category == 1) {
     // ESRB
-    const labels = {
-      6: 'EC',
-      7: 'E',
-      8: 'E10+',
-      9: 'T',
-      10: 'M',
-      11: 'AO',
-    };
+    const labels = {6: 'EC', 7: 'E', 8: 'E10+', 9: 'T', 10: 'M', 11: 'AO'};
     final label = labels[rating];
     return label != null ? 'ESRB $label' : '';
   } else if (category == 2) {
@@ -195,4 +193,3 @@ String _ageRatingLabel(int category, int rating) {
   }
   return '';
 }
-

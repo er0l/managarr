@@ -21,6 +21,23 @@ ThemeData applyBrandControlTheme(ThemeData theme) {
         ),
       );
   return theme.copyWith(
+    navigationBarTheme: theme.navigationBarTheme.copyWith(
+      indicatorColor: AppColors.tealPrimary,
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          color: states.contains(WidgetState.selected)
+              ? AppColors.textOnPrimary
+              : colors.onSurfaceVariant,
+        ),
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => (theme.textTheme.labelMedium ?? const TextStyle()).copyWith(
+          color: states.contains(WidgetState.selected)
+              ? AppColors.tealPrimary
+              : colors.onSurfaceVariant,
+        ),
+      ),
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: (theme.filledButtonTheme.style ?? const ButtonStyle()).copyWith(
         backgroundColor: WidgetStateProperty.resolveWith(

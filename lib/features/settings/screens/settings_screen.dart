@@ -14,6 +14,7 @@ import '../providers/ui_prefs_provider.dart';
 import '../repositories/instance_repository.dart';
 import '../services/image_cache_service.dart';
 import '../widgets/instance_list_tile.dart';
+import 'drawer_settings_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -51,6 +52,18 @@ class SettingsScreen extends ConsumerWidget {
           const SectionHeader(title: 'Customize'),
           _SettingsCard(
             children: [
+              ListTile(
+                leading: const Icon(Icons.menu_open),
+                title: const Text('Drawer'),
+                subtitle: const Text('Reorder modules in the sidebar'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DrawerSettingsScreen(),
+                  ),
+                ),
+              ),
               for (final category in const [
                 (
                   'Appearance',
@@ -581,15 +594,42 @@ class CustomizationScreen extends ConsumerWidget {
                 ),
                 toggle(
                   'showDownloads',
-                  'Downloads',
-                  'Current download activity',
+                  'Downloads & torrents',
+                  'Download queues and torrents downloading or uploading',
                 ),
                 toggle(
                   'showUpcoming',
                   'Upcoming',
                   'Upcoming movies and episodes',
                 ),
-                toggle('showRequests', 'Requests', 'Recent Seer requests'),
+                toggle(
+                  'showRequests',
+                  'Recent Requests',
+                  'Latest Seer requests in every status',
+                ),
+                toggle(
+                  'showRecentlyAdded',
+                  'Recently Added',
+                  'New library items from Tautulli and ROMM',
+                ),
+                if (prefs['showRecentlyAdded'] == true) ...[
+                  toggle(
+                    'recentMovies',
+                    'Movies',
+                    'Recent movies from Tautulli',
+                  ),
+                  toggle(
+                    'recentEpisodes',
+                    'TV episodes',
+                    'Recent TV episodes from Tautulli',
+                  ),
+                  toggle(
+                    'recentMusic',
+                    'Music',
+                    'Recent music albums from Tautulli',
+                  ),
+                  toggle('recentRoms', 'ROMs', 'Recent games from ROMM'),
+                ],
               ],
             )
           else

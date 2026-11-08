@@ -409,13 +409,25 @@ class _AddEditInstanceScreenState
                   obscureText: true,
                 ),
                 const SizedBox(height: Spacing.s16),
-                SwitchListTile(
-                  value: _enabled,
-                  onChanged: (v) => setState(() => _enabled = v),
-                  title: const Text('Enabled'),
-                  subtitle: const Text('Include in dashboard and sync'),
-                  activeThumbColor: AppColors.tealPrimary,
-                  contentPadding: EdgeInsets.zero,
+                Theme(
+                  // LunaSea's classic switch keeps the thumb distinct from
+                  // its slim track, rather than looking like a filled button.
+                  data: ThemeData(
+                    useMaterial3: false,
+                    colorScheme: theme.colorScheme.copyWith(
+                      secondary: AppColors.tealPrimary,
+                    ),
+                    textTheme: theme.textTheme,
+                    visualDensity: theme.visualDensity,
+                    materialTapTargetSize: theme.materialTapTargetSize,
+                  ),
+                  child: SwitchListTile(
+                    value: _enabled,
+                    onChanged: (v) => setState(() => _enabled = v),
+                    title: Text('Enable ${_serviceType.displayName}'),
+                    subtitle: Text(_enabled ? 'Enabled' : 'Disabled'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
                 const SizedBox(height: Spacing.s8),
                 if (_testMessage != null)

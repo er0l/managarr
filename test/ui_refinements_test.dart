@@ -196,6 +196,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            dbProvider.overrideWithValue(MemorySettings()),
             instancesByServiceProvider.overrideWithValue({
               ServiceType.tautulli: [instance],
             }),
@@ -527,5 +528,6 @@ class SilentDashboardPreferences extends CustomizationNotifier {
     'showDownloads': false,
     'showUpcoming': false,
     'showRequests': false,
+    'showRecentlyAdded': false,
   };
 }

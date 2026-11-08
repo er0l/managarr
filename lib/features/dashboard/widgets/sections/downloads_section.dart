@@ -46,19 +46,20 @@ class DownloadsSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SectionHeader(
-          title: 'Downloads',
+          title: 'Downloads & torrents',
           trailing: activeCount > 0
               ? Text(
                   '$activeCount active',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 )
               : null,
         ),
         Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: Spacing.pageHorizontal),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.pageHorizontal,
+          ),
           child: Column(
             children: [
               for (var i = 0; i < blocks.length; i++) ...[
@@ -103,23 +104,38 @@ class _InstanceBlock extends StatelessWidget {
                   Expanded(
                     child: Text(
                       entry.instance.name,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (entry.speedLabel != null)
-                    Text(
-                      '↓ ${entry.speedLabel}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppColors.statusOnline,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'JetBrainsMono',
-                      ),
-                    ),
                 ],
               ),
+              if (entry.speedLabel != null || entry.uploadSpeedLabel != null)
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    if (entry.speedLabel != null)
+                      Text(
+                        '↓ ${entry.speedLabel}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppColors.statusOnline,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    if (entry.uploadSpeedLabel != null)
+                      Text(
+                        '↑ ${entry.uploadSpeedLabel}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppColors.tealPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
               const SizedBox(height: Spacing.s8),
               for (final item in visible) _DownloadRow(item: item),
               if (hidden > 0)
@@ -154,28 +170,22 @@ class _DownloadRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  item.title,
-                  style: theme.textTheme.bodySmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (item.detail != null) ...[
-                const SizedBox(width: Spacing.s8),
-                Text(
-                  item.detail!,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ],
+          Text(
+            item.title,
+            style: theme.textTheme.bodySmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+          if (item.detail != null)
+            Text(
+              item.detail!,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 10,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           const SizedBox(height: 4),
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
@@ -183,7 +193,9 @@ class _DownloadRow extends StatelessWidget {
               value: item.progress,
               minHeight: 3,
               backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              color: AppColors.orangeAccent,
+              color: item.uploading
+                  ? AppColors.tealPrimary
+                  : AppColors.orangeAccent,
             ),
           ),
         ],
@@ -224,8 +236,11 @@ class _ErrorBlock extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.cloud_off,
-                size: 14, color: AppColors.statusOffline),
+            const Icon(
+              Icons.cloud_off,
+              size: 14,
+              color: AppColors.statusOffline,
+            ),
           ],
         ),
       ),

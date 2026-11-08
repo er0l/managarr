@@ -58,6 +58,11 @@ class UpcomingSection extends ConsumerWidget {
             SectionHeader(
               title: 'Upcoming',
               trailing: TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
+                ),
                 onPressed: () => context.go('/calendar'),
                 child: const Text('See all'),
               ),
@@ -70,8 +75,7 @@ class UpcomingSection extends ConsumerWidget {
                   horizontal: Spacing.pageHorizontal,
                 ),
                 itemCount: upcoming.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(width: Spacing.s12),
+                separatorBuilder: (_, _) => const SizedBox(width: Spacing.s12),
                 itemBuilder: (context, index) =>
                     _UpcomingCard(entry: upcoming[index]),
               ),
@@ -120,8 +124,7 @@ class _UpcomingCard extends StatelessWidget {
                         ? Image.network(
                             entry.posterUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) =>
-                                const _PosterFallback(),
+                            errorBuilder: (_, _, _) => const _PosterFallback(),
                           )
                         : const _PosterFallback(),
                   ),
@@ -143,8 +146,9 @@ class _UpcomingCard extends StatelessWidget {
             const SizedBox(height: Spacing.s4),
             Text(
               entry.title,
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

@@ -93,8 +93,7 @@ abstract final class AppTheme {
     inputDecoratorRadius: 8.0,
     elevatedButtonRadius: 100.0,
     filledButtonRadius: 100.0,
-    // Active nav indicator uses secondary (orange) instead of primary (teal).
-    navigationBarIndicatorSchemeColor: SchemeColor.secondary,
+    navigationBarIndicatorSchemeColor: SchemeColor.primary,
     inputDecoratorBorderType: FlexInputBorderType.outline,
     inputDecoratorUnfocusedBorderIsColored: false,
   );
@@ -124,6 +123,10 @@ abstract final class AppTheme {
       base.copyWith(
         scaffoldBackgroundColor: background,
         canvasColor: background,
+        drawerTheme: base.drawerTheme.copyWith(
+          backgroundColor: background,
+          surfaceTintColor: Colors.transparent,
+        ),
         cardColor: surface,
         cardTheme: _cardTheme(border),
         dividerColor: border,
