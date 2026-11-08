@@ -2,6 +2,7 @@
 nzb360/
 
 # Miscellaneous
+/AGENTS.md
 *.class
 *.log
 *.pyc
