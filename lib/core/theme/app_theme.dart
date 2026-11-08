@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../database/app_database.dart';
 import 'app_colors.dart';
+import 'control_theme.dart';
 
 // ---------------------------------------------------------------------------
 // Theme mode persistence
@@ -98,17 +99,19 @@ abstract final class AppTheme {
     inputDecoratorUnfocusedBorderIsColored: false,
   );
 
-  static ThemeData get light => FlexThemeData.light(
-    colors: _colors,
-    surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-    blendLevel: 4,
-    subThemesData: _subThemes,
-    textTheme: _applyHierarchy(GoogleFonts.interTextTheme()),
-    primaryTextTheme: GoogleFonts.interTextTheme(),
-    appBarElevation: 0,
-    visualDensity: FlexColorScheme.comfortablePlatformDensity,
-    useMaterial3: true,
-  ).copyWith(cardTheme: _cardTheme(AppColors.divider));
+  static ThemeData get light => applyBrandControlTheme(
+    FlexThemeData.light(
+      colors: _colors,
+      surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
+      blendLevel: 4,
+      subThemesData: _subThemes,
+      textTheme: _applyHierarchy(GoogleFonts.interTextTheme()),
+      primaryTextTheme: GoogleFonts.interTextTheme(),
+      appBarElevation: 0,
+      visualDensity: FlexColorScheme.comfortablePlatformDensity,
+      useMaterial3: true,
+    ).copyWith(cardTheme: _cardTheme(AppColors.divider)),
+  );
 
   /// LunaSea Midnight surfaces, retaining managarr's accent colors.
   static ThemeData get dark {
@@ -117,34 +120,36 @@ abstract final class AppTheme {
     const surface = Color(0xFF282834);
     const elevated = Color(0xFF3B3B49);
     const border = Color(0x24FFFFFF);
-    return base.copyWith(
-      scaffoldBackgroundColor: background,
-      canvasColor: background,
-      cardColor: surface,
-      cardTheme: _cardTheme(border),
-      dividerColor: border,
-      dialogTheme: base.dialogTheme.copyWith(backgroundColor: surface),
-      bottomSheetTheme: base.bottomSheetTheme.copyWith(
-        backgroundColor: surface,
-        modalBackgroundColor: surface,
-      ),
-      appBarTheme: base.appBarTheme.copyWith(
-        backgroundColor: surface,
-        foregroundColor: Colors.white,
-      ),
-      navigationBarTheme: base.navigationBarTheme.copyWith(
-        backgroundColor: surface,
-      ),
-      colorScheme: base.colorScheme.copyWith(
-        surface: surface,
-        surfaceContainer: elevated,
-        surfaceContainerHighest: elevated,
-        surfaceContainerLow: surface,
-        surfaceContainerLowest: surface,
-        surfaceContainerHigh: elevated,
-        outlineVariant: border,
-        onSurface: const Color(0xFFF2F2F5),
-        onSurfaceVariant: const Color(0xFFBBBBBB),
+    return applyBrandControlTheme(
+      base.copyWith(
+        scaffoldBackgroundColor: background,
+        canvasColor: background,
+        cardColor: surface,
+        cardTheme: _cardTheme(border),
+        dividerColor: border,
+        dialogTheme: base.dialogTheme.copyWith(backgroundColor: surface),
+        bottomSheetTheme: base.bottomSheetTheme.copyWith(
+          backgroundColor: surface,
+          modalBackgroundColor: surface,
+        ),
+        appBarTheme: base.appBarTheme.copyWith(
+          backgroundColor: surface,
+          foregroundColor: Colors.white,
+        ),
+        navigationBarTheme: base.navigationBarTheme.copyWith(
+          backgroundColor: surface,
+        ),
+        colorScheme: base.colorScheme.copyWith(
+          surface: surface,
+          surfaceContainer: elevated,
+          surfaceContainerHighest: elevated,
+          surfaceContainerLow: surface,
+          surfaceContainerLowest: surface,
+          surfaceContainerHigh: elevated,
+          outlineVariant: border,
+          onSurface: const Color(0xFFF2F2F5),
+          onSurfaceVariant: const Color(0xFFBBBBBB),
+        ),
       ),
     );
   }
@@ -163,21 +168,23 @@ abstract final class AppTheme {
       useMaterial3: true,
     );
     // Apply v2 cinematic dark surface palette.
-    return base.copyWith(
-      scaffoldBackgroundColor: AppColors.backgroundDark,
-      cardColor: AppColors.surfaceCardDark,
-      cardTheme: _cardTheme(AppColors.borderDark),
-      dividerColor: AppColors.borderDark,
-      navigationBarTheme: base.navigationBarTheme.copyWith(
-        backgroundColor: AppColors.chromeDark,
-      ),
-      colorScheme: base.colorScheme.copyWith(
-        surface: AppColors.surfaceCardDark,
-        surfaceContainerHighest: AppColors.surfaceElevatedDark,
-        surfaceContainer: AppColors.surfaceElevatedDark,
-        outlineVariant: AppColors.borderDark,
-        secondary: AppColors.orangeAccent,
-        secondaryContainer: AppColors.orangeAccent.withAlpha(45),
+    return applyBrandControlTheme(
+      base.copyWith(
+        scaffoldBackgroundColor: AppColors.backgroundDark,
+        cardColor: AppColors.surfaceCardDark,
+        cardTheme: _cardTheme(AppColors.borderDark),
+        dividerColor: AppColors.borderDark,
+        navigationBarTheme: base.navigationBarTheme.copyWith(
+          backgroundColor: AppColors.chromeDark,
+        ),
+        colorScheme: base.colorScheme.copyWith(
+          surface: AppColors.surfaceCardDark,
+          surfaceContainerHighest: AppColors.surfaceElevatedDark,
+          surfaceContainer: AppColors.surfaceElevatedDark,
+          outlineVariant: AppColors.borderDark,
+          secondary: AppColors.orangeAccent,
+          secondaryContainer: AppColors.orangeAccent.withAlpha(45),
+        ),
       ),
     );
   }

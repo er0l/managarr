@@ -240,8 +240,23 @@ class ServiceToolbar extends StatelessWidget {
   const ServiceToolbar({super.key, required this.children});
   final List<Widget> children;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-    child: Wrap(spacing: 4, runSpacing: 4, children: children),
-  );
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final foreground = theme.colorScheme.onSurfaceVariant;
+    return Theme(
+      data: theme.copyWith(
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(foregroundColor: foreground),
+        ),
+        iconButtonTheme: IconButtonThemeData(
+          style: IconButton.styleFrom(foregroundColor: foreground),
+        ),
+        iconTheme: theme.iconTheme.copyWith(color: foreground),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Wrap(spacing: 4, runSpacing: 4, children: children),
+      ),
+    );
+  }
 }

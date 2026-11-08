@@ -232,12 +232,7 @@ class _LidarrHomeScreenState extends ConsumerState<LidarrHomeScreen> {
             children: [
               TextButton.icon(
                 onPressed: _showFilterBottomSheet,
-                icon: Icon(
-                  Icons.filter_list,
-                  color: filterActive
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
+                icon: const Icon(Icons.filter_list),
                 label: Text(filterActive ? currentFilter.label : 'Filter'),
               ),
               TextButton.icon(
